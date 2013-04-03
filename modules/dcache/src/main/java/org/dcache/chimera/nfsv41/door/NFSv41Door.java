@@ -497,6 +497,17 @@ public class NFSv41Door extends AbstractCellComponent implements
         return sb.toString();
     }
 
+    public static final String fh_exports_for = " <client ip> # show exports for given IP address";
+    public String ac_exports_for_$_1(Args args) throws UnknownHostException {
+        InetAddress address = InetAddress.getByName(args.argv(0));
+        StringBuilder sb = new StringBuilder();
+        for (FsExport export : _exportFile.exportsFor(address)) {
+            sb.append(export).append("\n");
+        }
+
+        return sb.toString();
+    }
+
     private static deviceid4 deviceidOf(int id) {
         byte[] deviceidBytes = new byte[nfs4_prot.NFS4_DEVICEID4_SIZE];
         Bytes.putInt(deviceidBytes, 0, id);
