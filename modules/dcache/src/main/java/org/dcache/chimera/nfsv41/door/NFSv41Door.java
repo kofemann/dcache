@@ -62,6 +62,7 @@ import org.dcache.chimera.nfs.v4.MDSOperationFactory;
 import org.dcache.chimera.nfs.v4.NFS4Client;
 import org.dcache.chimera.nfs.v4.NFSServerV41;
 import org.dcache.chimera.nfs.v4.NFSv41DeviceManager;
+import org.dcache.chimera.nfs.v4.NFSv41Session;
 import org.dcache.chimera.nfs.v4.NfsIdMapping;
 import org.dcache.chimera.nfs.v4.RoundRobinStripingPattern;
 import org.dcache.chimera.nfs.v4.StripingPattern;
@@ -467,6 +468,11 @@ public class NFSv41Door extends AbstractCellComponent implements
         pw.println("  Known clients:");
         for (NFS4Client client : _nfs4.getClients()) {
             pw.println( String.format("    %s", client ));
+            for (NFSv41Session session: client.sessions()) {
+                pw.println( String.format("        %s, max slot: %d/%d",
+                             session, session.getHighestSlot(), session.getHighestUsedSlot() ));
+
+            }
         }
     }
 
