@@ -20,6 +20,20 @@
         <property name="timeout" value="${poolTimeout}"/>
     </bean>
 
+    <bean id="scheduled-executor"
+        class="java.util.concurrent.Executors"
+        factory-method="newScheduledThreadPool"
+        destroy-method="shutdown">
+        <description>Task scheduler</description>
+        <constructor-arg value="2"/>
+    </bean>
+
+    <bean id="pool-monitor" class="org.dcache.poolmanager.RemotePoolMonitorFactoryBean" init-method="init">
+        <description>Maintains runtime information about all pools</description>
+        <property name="poolManagerStub" ref="poolManagerStub"/>
+        <property name="executor" ref="scheduled-executor"/>
+    </bean>
+
     <bean id="billing-stub" class="org.dcache.cells.CellStub">
         <description>Billing communication stub</description>
         <property name="destination" value="billing"/>

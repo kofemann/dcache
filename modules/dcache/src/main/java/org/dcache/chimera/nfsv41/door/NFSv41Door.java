@@ -3,6 +3,10 @@
  */
 package org.dcache.chimera.nfsv41.door;
 
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
+import diskCacheV111.util.AccessLatency;
 import org.glassfish.grizzly.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,16 +32,26 @@ import diskCacheV111.util.FileInCacheException;
 import diskCacheV111.util.FsPath;
 import diskCacheV111.util.PnfsHandler;
 import diskCacheV111.util.PnfsId;
+import diskCacheV111.util.RetentionPolicy;
 import diskCacheV111.vehicles.DoorTransferFinishedMessage;
 import diskCacheV111.vehicles.IoDoorEntry;
 import diskCacheV111.vehicles.IoDoorInfo;
+import diskCacheV111.vehicles.OSMStorageInfo;
 import diskCacheV111.vehicles.PoolMoverKillMessage;
 import diskCacheV111.vehicles.PoolPassiveIoFileMessage;
+import diskCacheV111.vehicles.StorageInfo;
 
 import dmg.cells.nucleus.CellMessage;
 import dmg.cells.nucleus.CellPath;
 import dmg.cells.services.login.LoginManagerChildrenInfo;
 import dmg.util.Args;
+import java.io.BufferedReader;
+import java.io.CharArrayReader;
+import java.net.URI;
+import java.net.URISyntaxException;
+import java.util.Collections;
+import java.util.StringTokenizer;
+import java.util.concurrent.ExecutionException;
 
 import org.dcache.auth.Subjects;
 import org.dcache.cells.AbstractCellComponent;
@@ -45,9 +59,13 @@ import org.dcache.cells.CellCommandListener;
 import org.dcache.cells.CellInfoProvider;
 import org.dcache.cells.CellMessageReceiver;
 import org.dcache.cells.CellStub;
+import org.dcache.chimera.ChimeraFsException;
 import org.dcache.chimera.FsInode;
 import org.dcache.chimera.FsInodeType;
+import org.dcache.chimera.FsInode_TAG;
 import org.dcache.chimera.JdbcFs;
+import org.dcache.chimera.StorageGenericLocation;
+import org.dcache.chimera.StorageLocatable;
 import org.dcache.chimera.nfs.ChimeraNFSException;
 import org.dcache.chimera.nfs.ExportFile;
 import org.dcache.chimera.nfs.FsExport;
@@ -81,10 +99,16 @@ import org.dcache.chimera.nfs.vfs.ChimeraVfs;
 import org.dcache.chimera.nfs.vfs.Inode;
 import org.dcache.chimera.nfs.vfs.VirtualFileSystem;
 import org.dcache.chimera.nfsv41.mover.NFS4ProtocolInfo;
+import org.dcache.chimera.posix.Stat;
+import org.dcache.chimera.store.InodeStorageInformation;
+import org.dcache.namespace.FileType;
+import org.dcache.poolmanager.PoolInfo;
+import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.util.RedirectedTransfer;
 import org.dcache.util.Transfer;
 import org.dcache.util.TransferRetryPolicy;
 import org.dcache.utils.Bytes;
+import org.dcache.vehicles.FileAttributes;
 import org.dcache.xdr.IpProtocolType;
 import org.dcache.xdr.OncRpcException;
 import org.dcache.xdr.OncRpcProgram;
@@ -165,6 +189,12 @@ public class NFSv41Door extends AbstractCellComponent implements
     private final static TransferRetryPolicy RETRY_POLICY =
         new TransferRetryPolicy(Integer.MAX_VALUE, NFS_RETRY_PERIOD,
                                 NFS_REPLY_TIMEOUT, NFS_REPLY_TIMEOUT);
+
+    private PoolMonitor _poolMonitor;
+
+    public void setPoolMonitor(PoolMonitor poolMonitor) {
+        _poolMonitor = poolMonitor;
+    }
 
     public void setGssSessionManager(GssSessionManager sessionManager) {
         _gssSessionManager = sessionManager;
@@ -356,6 +386,16 @@ public class NFSv41Door extends AbstractCellComponent implements
                 NFS4ProtocolInfo protocolInfo = transfer.getProtocolInfoForPool();
                 protocolInfo.door(new CellPath(getCellAddress()));
 
+                FileAttributes fileAttributes = new FileAttributes();
+                fileAttributes.setStorageInfo(getFileStorageInfo(inode));
+                fileAttributes.setSize(0);
+                fileAttributes.setLocations( Collections.EMPTY_SET);
+                fileAttributes.setPnfsId(pnfsId);
+                fileAttributes.setFileType(FileType.REGULAR);
+                fileAttributes.setAccessLatency(AccessLatency.NEARLINE);
+                fileAttributes.setRetentionPolicy(RetentionPolicy.CUSTODIAL);
+
+                transfer.setFileAttributes(fileAttributes);
                 transfer.setCellName(this.getCellName());
                 transfer.setDomainName(this.getCellDomainName());
                 transfer.setBillingStub(_billingStub);
@@ -363,7 +403,6 @@ public class NFSv41Door extends AbstractCellComponent implements
                 transfer.setPoolManagerStub(_poolManagerStub);
                 transfer.setPnfsId(pnfsId);
                 transfer.setClientAddress(remote);
-                transfer.readNameSpaceEntry();
 
                 _ioMessages.put(protocolInfo.stateId(), transfer);
 
@@ -393,14 +432,20 @@ public class NFSv41Door extends AbstractCellComponent implements
     {
 
 
+        PoolInfo poolInfo;
+
         if ((iomode == layoutiomode4.LAYOUTIOMODE4_READ) || !transfer.getStorageInfo().isCreatedOnly()) {
             _log.debug("looking for read pool for {}", transfer.getPnfsId());
             transfer.setWrite(false);
+            poolInfo = _poolMonitor.getPoolSelector(transfer.getFileAttributes(), protocolInfo, null).selectReadPool();
         } else {
             _log.debug("looking for write pool for {}", transfer.getPnfsId());
             transfer.setWrite(true);
+             poolInfo = _poolMonitor.getPoolSelector(transfer.getFileAttributes(), protocolInfo, null).selectWritePool(0);
         }
-        transfer.selectPoolAndStartMover(_ioQueue, RETRY_POLICY);
+        transfer.setPoolAddress( poolInfo.getAddress() );
+        transfer.setPool(poolInfo.getName());
+        transfer.startMover(_ioQueue);
 
         _log.debug("mover ready: pool={} moverid={}", transfer.getPool(),
                 transfer.getMoverId());
@@ -438,7 +483,7 @@ public class NFSv41Door extends AbstractCellComponent implements
         Transfer transfer = _ioMessages.get(stateid);
         if (transfer != null) {
             _log.debug("Sending KILL to {}@{}", transfer.getMoverId(), transfer.getPool());
-            transfer.killMover(5000);
+            transfer.killMover(0);
         }
     }
 
@@ -671,5 +716,145 @@ public class NFSv41Door extends AbstractCellComponent implements
         sb.append("Stats:").append("\n").append(_nfs4.getStatistics());
 
         return sb.toString();
+    }
+
+    private final LoadingCache<FsInode, StorageInfo> _storageInfoCache = CacheBuilder.newBuilder()
+                 .maximumSize(1024)
+                 .expireAfterWrite(1, TimeUnit.HOURS)
+                .build( new StorageInfoLoader(AccessLatency.NEARLINE, RetentionPolicy.CUSTODIAL));
+
+
+    public StorageInfo getFileStorageInfo(FsInode inode) throws CacheException {
+
+        OSMStorageInfo info;
+
+        try {
+            Stat stat = inode.statCache();
+            FsInode level2 = new FsInode(inode.getFs(), inode.toString(), 2);
+
+            boolean isNew = (stat.getSize() == 0) && (!level2.exists());
+
+            if (!isNew) {
+                List<StorageLocatable> locations = inode.getFs().getInodeLocations(inode, StorageGenericLocation.TAPE);
+
+                if (locations.isEmpty()) {
+                    info = (OSMStorageInfo) _storageInfoCache.get(inode.getParent());
+                } else {
+                    InodeStorageInformation inodeStorageInfo = inode.getFs().getStorageInfo(inode);
+
+                    info = new OSMStorageInfo(inodeStorageInfo.storageGroup(),
+                            inodeStorageInfo.storageSubGroup());
+
+                    for (StorageLocatable location : locations) {
+                        if (location.isOnline()) {
+                            try {
+                                info.addLocation(new URI(location.location()));
+                            } catch (URISyntaxException e) {
+                                // bad URI
+                            }
+                        }
+                    }
+                }
+            } else {
+                info = (OSMStorageInfo) _storageInfoCache.get(inode.getParent());
+                info.setIsNew(isNew);
+            }
+
+        }catch (ExecutionException e) {
+            throw new CacheException(e.getCause().getMessage(), e.getCause());
+        } catch (ChimeraFsException e) {
+            throw new CacheException(e.getMessage());
+        }
+        return info;
+    }
+
+    private static class StorageInfoLoader extends CacheLoader<FsInode, StorageInfo> {
+
+        /**
+         * default access latency for newly created files
+         */
+        private final AccessLatency _defaultAccessLatency;
+        /**
+         * default retention policy for newly created files
+         */
+        private final RetentionPolicy _defaultRetentionPolicy;
+
+        public StorageInfoLoader(AccessLatency defaultAccessLatency, RetentionPolicy defaultRetentionPolicy) {
+            _defaultAccessLatency = defaultAccessLatency;
+            _defaultRetentionPolicy = defaultRetentionPolicy;
+        }
+
+        public StorageInfo getDirStorageInfo(FsInode inode) throws CacheException {
+
+            try {
+                HashMap<String, String> hash = new HashMap<>();
+                String store = null;
+                String group = null;
+                String[] OSMTemplate = getTag(inode, "OSMTemplate");
+                if (OSMTemplate != null) {
+                    for (String line : OSMTemplate) {
+                        StringTokenizer st = new StringTokenizer(line);
+                        if (st.countTokens() < 2) {
+                            continue;
+                        }
+                        hash.put(st.nextToken(), st.nextToken());
+                    }
+                    store = hash.get("StoreName");
+                    if (store == null) {
+                        throw new CacheException(37, "StoreName not found in template");
+                    }
+                }
+                String[] sGroup = getTag(inode, "sGroup");
+                if (sGroup != null) {
+                    group = sGroup[0].trim();
+                }
+                OSMStorageInfo info = new OSMStorageInfo(store, group);
+                info.addKeys(hash);
+                info.setLegacyAccessLatency(_defaultAccessLatency);
+                info.setLegacyRetentionPolicy(_defaultRetentionPolicy);
+                return info;
+            } catch (IOException e) {
+                throw new CacheException(e.getMessage());
+            }
+        }
+
+        public static String[] getTag(FsInode dirInode, String tag)
+                throws IOException {
+
+            FsInode_TAG tagInode = new FsInode_TAG(dirInode.getFs(), dirInode
+                    .toString(), tag);
+
+
+            if (!tagInode.exists()) {
+                return null;
+            }
+
+            byte[] buff = new byte[256];
+
+            int len = tagInode.read(0, buff, 0, buff.length);
+            /* empty and bad tags are treated as non existing tags */
+            if (len <= 0) {
+                return null;
+            }
+
+            List<String> lines = new ArrayList<>();
+            CharArrayReader ca = new CharArrayReader(new String(buff, 0, len)
+                    .toCharArray());
+
+            BufferedReader br = new BufferedReader(ca);
+
+            String line;
+            while ((line = br.readLine()) != null) {
+                lines.add(line);
+            }
+
+            return lines.toArray(new String[lines.size()]);
+
+        }
+
+        @Override
+        public StorageInfo load(FsInode inode) throws Exception {
+            return getDirStorageInfo(inode);
+        }
     }
 }

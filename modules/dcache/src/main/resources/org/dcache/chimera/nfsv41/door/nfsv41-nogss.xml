@@ -18,6 +18,7 @@
         <property name="idMapper" ref="id-mapper" />
         <property name="portNumber" value="${nfs.port}" />
         <property name="enableV3" value="${nfs.v3}" />
+        <property name="poolMonitor" ref="pool-monitor"/>
     </bean>
 
 </beans>
