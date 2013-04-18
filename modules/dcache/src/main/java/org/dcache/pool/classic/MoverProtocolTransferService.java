@@ -1,5 +1,6 @@
 package org.dcache.pool.classic;
 
+import com.google.common.base.Optional;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -25,6 +26,7 @@ import dmg.cells.nucleus.CellEndpoint;
 import dmg.cells.nucleus.CellPath;
 import dmg.util.command.Argument;
 import dmg.util.command.Command;
+import java.io.Serializable;
 
 import org.dcache.cells.AbstractCellComponent;
 import org.dcache.cells.CellCommandListener;
@@ -206,6 +208,11 @@ public class MoverProtocolTransferService extends AbstractCellComponent
 
         private synchronized void cleanThread() {
             _thread = null;
+        }
+
+        @Override
+        public Optional<? extends Serializable> getAttachment() {
+            return Optional.absent();
         }
 
         @Override

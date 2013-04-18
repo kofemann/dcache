@@ -17,6 +17,7 @@
  */
 package org.dcache.util;
 
+import com.google.common.base.Optional;
 import com.google.common.io.Closer;
 
 import java.io.Closeable;
@@ -26,6 +27,7 @@ import org.dcache.pool.classic.Cancellable;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import java.io.Serializable;
 
 /**
  * Implements an asynchronous variant of the try-with-resource construct of Java 7.
@@ -87,6 +89,14 @@ public abstract class TryCatchTemplate<V, A> implements Cancellable, CompletionH
         if (_cancellable != null) {
             _cancellable.cancel();
         }
+    }
+
+    @Override
+    public Optional<? extends Serializable> getAttachment() {
+        //return Optional.absent() ;
+        return (Optional<? extends Serializable>)
+                ((_cancellable == null) ? Optional.absent() :
+                    _cancellable.getAttachment());
     }
 
     @Override

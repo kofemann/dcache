@@ -1,5 +1,6 @@
 package org.dcache.pool.movers;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Maps;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.jboss.netty.bootstrap.ServerBootstrap;
@@ -28,6 +29,7 @@ import diskCacheV111.util.TimeoutCacheException;
 import diskCacheV111.vehicles.ProtocolInfo;
 
 import dmg.cells.nucleus.CDC;
+import java.io.Serializable;
 
 import org.dcache.pool.classic.Cancellable;
 import org.dcache.util.CDCThreadFactory;
@@ -294,6 +296,11 @@ public abstract class AbstractNettyServer<T extends ProtocolInfo>
                     _completionHandler.failed(new InterruptedException("Transfer was interrupted"), null);
                 }
             }
+        }
+
+        @Override
+        public Optional<? extends Serializable> getAttachment() {
+            return Optional.absent();
         }
 
         private class Sync

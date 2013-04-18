@@ -1,5 +1,6 @@
 package org.dcache.chimera.nfsv41.mover;
 
+import com.google.common.base.Optional;
 import org.ietf.jgss.GSSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -17,6 +18,7 @@ import diskCacheV111.vehicles.PoolPassiveIoFileMessage;
 
 import dmg.cells.nucleus.CellPath;
 import dmg.util.Args;
+import java.io.Serializable;
 
 import org.dcache.cells.AbstractCellComponent;
 import org.dcache.cells.CellCommandListener;
@@ -113,6 +115,11 @@ public class NfsTransferService extends AbstractCellComponent
                         _log.error("failed to close RAF", e);
                     }
                     completionHandler.completed(null, null);
+                }
+
+                @Override
+                public Optional<? extends Serializable> getAttachment() {
+                    return Optional.of(_localSocketAddresses);
                 }
             };
         } catch (Throwable e) {

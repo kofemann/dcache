@@ -2,6 +2,7 @@ package org.dcache.pool.classic;
 
 import com.google.common.base.Function;
 import com.google.common.base.Joiner;
+import com.google.common.base.Optional;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,7 @@ import org.dcache.util.LifoPriorityComparator;
 
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.transform;
+import java.io.Serializable;
 import static org.dcache.pool.classic.IoRequestState.*;
 
 /**
@@ -285,7 +287,7 @@ public class SimpleIoScheduler implements IoScheduler, Runnable {
                 try {
                     final PrioritizedRequest request = _queue.take();
                     request.getCdc().restore();
-                    request.transfer(
+                    Optional<? extends Serializable> attachement = request.transfer(
                             new CompletionHandler<Void,Void>()
                             {
                                 @Override
@@ -331,6 +333,7 @@ public class SimpleIoScheduler implements IoScheduler, Runnable {
                                             });
                                 }
                             });
+                    System.out.println(attachement);
                 } catch (RuntimeException | Error | InterruptedException e) {
                     _semaphore.release();
                     throw e;
@@ -418,7 +421,7 @@ public class SimpleIoScheduler implements IoScheduler, Runnable {
             return new IoJobInfo(_submitTime, _startTime, _state, _id, _mover);
         }
 
-        public synchronized void transfer(CompletionHandler<Void,Void> completionHandler) {
+        public synchronized Optional<? extends Serializable> transfer(CompletionHandler<Void,Void> completionHandler) {
             try {
                 if (_state != QUEUED) {
                     completionHandler.failed(new InterruptedException("Transfer cancelled"), null);
@@ -426,9 +429,11 @@ public class SimpleIoScheduler implements IoScheduler, Runnable {
                 _state = RUNNING;
                 _startTime = System.currentTimeMillis();
                 _cancellable = _mover.execute(completionHandler);
+                return _cancellable.getAttachment();
             } catch (RuntimeException e) {
                 completionHandler.failed(e, null);
             }
+            return Optional.absent();
         }
 
         public synchronized void kill()
