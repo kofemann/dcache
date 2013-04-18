@@ -99,8 +99,7 @@ public class NfsTransferService extends AbstractCellComponent
                     transfer.getFileAttributes().getPnfsId(), stateid, repositoryChannel, transfer.getIoMode(), transfer.getIoHandle());
             _nfsIO.addHandler(moverBridge);
 
-            CellPath directDoorPath = new CellPath(transfer.getPathToDoor().getDestinationAddress());
-            _door.send(directDoorPath, new PoolPassiveIoFileMessage<>(getCellName(), _localSocketAddresses, stateid));
+            final PoolPassiveIoFileMessage passiveIoFileMessage = new PoolPassiveIoFileMessage<>(getCellName(), _localSocketAddresses, stateid);
 
             /* An NFS mover doesn't complete until it is cancelled (the door sends a mover kill
              * message when the file is closed).
@@ -119,7 +118,7 @@ public class NfsTransferService extends AbstractCellComponent
 
                 @Override
                 public Optional<? extends Serializable> getAttachment() {
-                    return Optional.of(_localSocketAddresses);
+                    return Optional.of(passiveIoFileMessage);
                 }
             };
         } catch (Throwable e) {
