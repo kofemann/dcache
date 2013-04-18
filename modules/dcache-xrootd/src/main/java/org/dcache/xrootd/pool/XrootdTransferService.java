@@ -213,7 +213,7 @@ public class XrootdTransferService
     public Mover<?> createMover(ReplicaDescriptor handle, PoolIoFileMessage message,
                              CellPath pathToDoor) throws CacheException
     {
-        return new XrootdMover(handle, message, pathToDoor, this, postTransferService);
+        return new XrootdMover(handle, message, pathToDoor, getCellEndpoint(), this, postTransferService);
     }
 
     @Override

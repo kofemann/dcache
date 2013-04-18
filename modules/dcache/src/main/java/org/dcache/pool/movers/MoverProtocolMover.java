@@ -25,6 +25,7 @@ import java.util.Set;
 import diskCacheV111.vehicles.PoolIoFileMessage;
 import diskCacheV111.vehicles.ProtocolInfo;
 
+import dmg.cells.nucleus.CellEndpoint;
 import dmg.cells.nucleus.CellPath;
 
 import org.dcache.pool.classic.PostTransferService;
@@ -43,10 +44,11 @@ public class MoverProtocolMover extends AbstractMover<ProtocolInfo, MoverProtoco
     protected final MoverProtocol _moverProtocol;
 
     public MoverProtocolMover(ReplicaDescriptor handle, PoolIoFileMessage message, CellPath pathToDoor,
+                              CellEndpoint cellEndpoint,
                               TransferService<MoverProtocolMover> transferService,
                               PostTransferService postTransferService, MoverProtocol moverProtocol)
     {
-        super(handle, message, pathToDoor, transferService, postTransferService);
+        super(handle, message, pathToDoor, cellEndpoint, transferService, postTransferService);
         _moverProtocol = moverProtocol;
     }
 

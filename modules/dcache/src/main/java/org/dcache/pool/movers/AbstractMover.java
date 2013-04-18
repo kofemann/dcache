@@ -45,6 +45,11 @@ import org.dcache.util.TryCatchTemplate;
 import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import dmg.cells.nucleus.CellEndpoint;
+import dmg.cells.nucleus.CellMessage;
+import dmg.cells.nucleus.NoRouteToCellException;
+import dmg.cells.nucleus.SerializationException;
+import java.io.Serializable;
 
 /**
  * Abstract base class for movers.
@@ -68,8 +73,10 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends Mover<P>> 
     protected final PostTransferService _postTransferService;
     protected volatile int _errorCode;
     protected volatile String _errorMessage = "";
+    protected final CellEndpoint _cellEndpoint;
 
     public AbstractMover(ReplicaDescriptor handle, PoolIoFileMessage message, CellPath pathToDoor,
+                         CellEndpoint cellEndpoint,
                          TransferService<M> transferService,
                          PostTransferService postTransferService)
     {
@@ -85,6 +92,7 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends Mover<P>> 
         _handle = handle;
         _transferService = (TransferService<Mover<P>>) transferService;
         _postTransferService = postTransferService;
+        _cellEndpoint = cellEndpoint;
     }
 
     @Override
@@ -267,5 +275,14 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends Mover<P>> 
         return sb.toString();
     }
 
+    @Override
+    public void sendToDoor(Serializable message) {
+        CellMessage cellMessage = new CellMessage(_pathToDoor, message);
+        try {
+            _cellEndpoint.sendMessage(cellMessage);
+        } catch (NoRouteToCellException | SerializationException e) {
+            LOGGER.warn("failed to send message to the door: {}", e.toString());
+        }
+    }
     protected abstract String getStatus();
 }

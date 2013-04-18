@@ -30,6 +30,7 @@ import org.dcache.pool.classic.TransferService;
 import org.dcache.pool.repository.ReplicaDescriptor;
 
 import static com.google.common.base.Preconditions.checkState;
+import dmg.cells.nucleus.CellEndpoint;
 
 /**
  * A Mover implementation based on the MoverChannel class.
@@ -40,10 +41,11 @@ public abstract class MoverChannelMover<P extends ProtocolInfo, M extends Mover<
 
     public MoverChannelMover(ReplicaDescriptor handle, PoolIoFileMessage message,
                              CellPath pathToDoor,
+                             CellEndpoint cellEndpoint,
                              TransferService<M> transferService,
                              PostTransferService postTransferService)
     {
-        super(handle, message, pathToDoor, transferService, postTransferService);
+        super(handle, message, pathToDoor, cellEndpoint, transferService, postTransferService);
     }
 
     @Override

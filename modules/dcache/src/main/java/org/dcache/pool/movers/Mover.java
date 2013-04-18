@@ -25,6 +25,7 @@ import java.util.Set;
 import diskCacheV111.vehicles.ProtocolInfo;
 
 import dmg.cells.nucleus.CellPath;
+import java.io.Serializable;
 
 import org.dcache.pool.classic.Cancellable;
 import org.dcache.pool.repository.ReplicaDescriptor;
@@ -136,6 +137,12 @@ public interface Mover<T extends ProtocolInfo>
      * Initiates the actual transfer phase. The operation is asynchronous.
      */
     Cancellable execute(CompletionHandler<Void, Void> completionHandler);
+
+    /**
+     * Send an object to the door
+     * @param message
+     */
+    void sendToDoor(Serializable message);
 
     /**
      * Initiates any postprocessing. This marks the end of the transfer and the mover's descriptor

@@ -333,7 +333,10 @@ public class SimpleIoScheduler implements IoScheduler, Runnable {
                                             });
                                 }
                             });
-                    System.out.println(attachement);
+                    // send attachement to the door
+                    if (attachement.isPresent()) {
+                        request.getMover().sendToDoor(attachement.get());
+                    }
                 } catch (RuntimeException | Error | InterruptedException e) {
                     _semaphore.release();
                     throw e;

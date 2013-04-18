@@ -84,7 +84,7 @@ public class NfsTransferService extends AbstractCellComponent
     @Override
     public Mover<?> createMover(ReplicaDescriptor handle, PoolIoFileMessage message, CellPath pathToDoor) throws CacheException
     {
-        return new MoverProtocolMover(handle, message, pathToDoor, this, _postTransferService,
+        return new MoverProtocolMover(handle, message, pathToDoor, getCellEndpoint(), this, _postTransferService,
                 new NFSv41ProtocolMover(getCellEndpoint()));
     }
 

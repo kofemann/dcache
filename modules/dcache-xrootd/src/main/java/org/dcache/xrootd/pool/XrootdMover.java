@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.Set;
 
 import diskCacheV111.vehicles.PoolIoFileMessage;
+import dmg.cells.nucleus.CellEndpoint;
 
 import dmg.cells.nucleus.CellPath;
 
@@ -43,10 +44,11 @@ public class XrootdMover extends MoverChannelMover<XrootdProtocolInfo, XrootdMov
     public XrootdMover(ReplicaDescriptor handle,
                        PoolIoFileMessage message,
                        CellPath pathToDoor,
+                       CellEndpoint cellEndpoint,
                        XrootdTransferService xrootdTransferService,
                        PostTransferService postTransferService)
     {
-        super(handle, message, pathToDoor, xrootdTransferService, postTransferService);
+        super(handle, message, pathToDoor, cellEndpoint, xrootdTransferService, postTransferService);
     }
 
     @Override

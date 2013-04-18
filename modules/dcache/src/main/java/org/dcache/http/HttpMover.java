@@ -40,6 +40,7 @@ import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.util.Checksum;
 
 import static com.google.common.base.Preconditions.checkState;
+import dmg.cells.nucleus.CellEndpoint;
 
 public class HttpMover extends MoverChannelMover<HttpProtocolInfo, HttpMover>
 {
@@ -47,11 +48,12 @@ public class HttpMover extends MoverChannelMover<HttpProtocolInfo, HttpMover>
     private ChecksumChannel checksumChannel;
 
     public HttpMover(ReplicaDescriptor handle, PoolIoFileMessage message, CellPath pathToDoor,
+                     CellEndpoint cellEndpoint,
                      HttpTransferService httpTransferService,
                      PostTransferService postTransferService,
                      ChecksumFactory checksumFactory)
     {
-        super(handle, message, pathToDoor, httpTransferService, postTransferService);
+        super(handle, message, pathToDoor, cellEndpoint, httpTransferService, postTransferService);
         this.checksumFactory = checksumFactory;
     }
 
