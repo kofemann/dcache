@@ -1,5 +1,6 @@
 package org.dcache.util;
 
+import com.google.common.base.Optional;
 import com.google.common.collect.Sets;
 import com.google.common.primitives.Longs;
 import org.slf4j.Logger;
@@ -53,6 +54,7 @@ import org.dcache.namespace.FileType;
 import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
+import java.io.Serializable;
 import static org.dcache.namespace.FileAttribute.*;
 import static org.dcache.util.MathUtils.addWithInfinity;
 import static org.dcache.util.MathUtils.subWithInfinity;
@@ -788,10 +790,10 @@ public class Transfer implements Comparable<Transfer>
      *
      * @param queue The mover queue of the transfer; may be null
      */
-    public void startMover(String queue)
+    public Optional<? extends Serializable> startMover(String queue)
             throws CacheException, InterruptedException
     {
-        startMover(queue, _pool.getTimeout());
+        return startMover(queue, _pool.getTimeout());
     }
 
     /**
@@ -799,11 +801,12 @@ public class Transfer implements Comparable<Transfer>
      *
      * @param queue The mover queue of the transfer; may be null
      */
-    public void startMover(String queue, long timeout)
+    public Optional<? extends Serializable> startMover(String queue, long timeout)
         throws CacheException, InterruptedException
     {
         FileAttributes fileAttributes = getFileAttributes();
         String pool = getPool();
+         Optional<? extends Serializable> attachemt = Optional.absent();
 
         if (fileAttributes == null|| pool == null) {
             throw new IllegalStateException("Need PNFS ID, file attributes and pool before a mover can be started");
@@ -832,10 +835,13 @@ public class Transfer implements Comparable<Transfer>
                 (CellPath) _poolManager.getDestinationPath().clone();
             poolPath.add(getPoolAddress());
 
-            setMoverId(_pool.sendAndWait(poolPath, message, timeout).getMoverId());
+            message = _pool.sendAndWait(poolPath, message, timeout);
+            attachemt = message.getAttachemt();
+            setMoverId(message.getMoverId());
         } finally {
             setStatus(null);
         }
+        return attachemt;
     }
 
     /**
@@ -967,7 +973,7 @@ public class Transfer implements Comparable<Transfer>
      * @throws CacheException
      * @throws InterruptedException
      */
-    public void
+    public  Optional<? extends Serializable>
         selectPoolAndStartMover(String queue, TransferRetryPolicy policy)
         throws CacheException, InterruptedException
     {
@@ -983,10 +989,10 @@ public class Transfer implements Comparable<Transfer>
             try {
                 selectPool(subWithInfinity(deadLine, System.currentTimeMillis()));
                 gotPool = true;
-                startMover(queue,
+                 Optional<? extends Serializable> attachemt = startMover(queue,
                         Math.min(subWithInfinity(deadLine, System.currentTimeMillis()),
                                 policy.getMoverStartTimeout()));
-                return;
+                return attachemt;
             } catch (TimeoutCacheException e) {
                 _log.warn(e.getMessage());
                 if (gotPool && isWrite()) {

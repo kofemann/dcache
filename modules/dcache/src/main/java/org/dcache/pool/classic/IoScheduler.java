@@ -20,7 +20,7 @@ public interface IoScheduler {
      * @param priority priority of the transfer.
      * @return a mover id for the transfer
      */
-    public int add(Mover<?> transfer, IoPriority priority);
+    public MoverId add(Mover<?> transfer, IoPriority priority);
 
     /**
      * Cancel the request. Any IO in progress will be interrupted.

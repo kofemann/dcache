@@ -68,6 +68,7 @@ COPYRIGHT STATUS:
 
 package diskCacheV111.doors;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.collect.Ranges;
 
@@ -145,6 +146,7 @@ import dmg.cells.nucleus.NoRouteToCellException;
 import dmg.util.Args;
 import dmg.util.CommandExitException;
 import dmg.util.StreamEngine;
+import java.io.Serializable;
 
 import org.dcache.acl.enums.AccessType;
 import org.dcache.auth.KauthFileLoginStrategy;
@@ -908,14 +910,15 @@ public abstract class AbstractFtpDoorV1
         }
 
         @Override
-        public synchronized void startMover(String queue, long timeout)
+        public synchronized Optional<? extends Serializable> startMover(String queue, long timeout)
             throws CacheException, InterruptedException
         {
-            super.startMover(queue, timeout);
+            Optional<? extends Serializable> attachment = super.startMover(queue, timeout);
             setStatus("Mover " + getPool() + "/" + getMoverId());
             if (_version == 1) {
                 startTransfer();
             }
+            return attachment;
         }
 
         public synchronized void transferStarted(CellMessage envelope,

@@ -75,13 +75,13 @@ public class IoQueueManager {
         return _queues.get(pos);
     }
 
-    public int add(String queueName, Mover<?> transfer, IoPriority priority)
+    public MoverId add(String queueName, Mover<?> transfer, IoPriority priority)
     {
         IoScheduler js = (queueName == null) ? null : _queuesByName.get(queueName);
         return (js == null) ? add(transfer, priority) : js.add(transfer, priority);
     }
 
-    public int add(Mover<?> transfer, IoPriority priority)
+    public MoverId add(Mover<?> transfer, IoPriority priority)
     {
         return getDefaultQueue().add(transfer, priority);
     }

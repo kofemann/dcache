@@ -1,5 +1,6 @@
 package diskCacheV111.vehicles;
 
+import com.google.common.base.Optional;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.util.EnumSet;
@@ -10,6 +11,7 @@ import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
+import java.io.Serializable;
 import static org.dcache.namespace.FileAttribute.PNFSID;
 import static org.dcache.namespace.FileAttribute.STORAGEINFO;
 
@@ -30,6 +32,7 @@ public class PoolIoFileMessage extends PoolMessage {
     private int          _moverId;
     private String       _initiator = "<undefined>";
     private boolean      _forceSourceMode;
+    private Optional<? extends Serializable> _payload;
 
     private static final long serialVersionUID = -6549886547049510754L;
 
@@ -46,6 +49,7 @@ public class PoolIoFileMessage extends PoolMessage {
        _storageInfo  = StorageInfos.extractFrom(fileAttributes);
        _protocolInfo = protocolInfo ;
        _pnfsId       = fileAttributes.getPnfsId();
+       _payload = Optional.absent();
     }
 
     public PoolIoFileMessage( String pool ,
@@ -56,6 +60,7 @@ public class PoolIoFileMessage extends PoolMessage {
        _pnfsId       = pnfsId ;
         _fileAttributes = new FileAttributes();
         _fileAttributes.setPnfsId(pnfsId);
+        _payload = Optional.absent();
     }
     public PnfsId       getPnfsId(){ return _fileAttributes.getPnfsId(); }
     public ProtocolInfo getProtocolInfo(){ return _protocolInfo ; }
@@ -99,6 +104,14 @@ public class PoolIoFileMessage extends PoolMessage {
         return _fileAttributes;
     }
 
+    public void setAttachment(Optional<? extends Serializable> attachement) {
+        _payload = attachement;
+    }
+
+    public Optional<? extends Serializable> getAttachemt() {
+        return _payload;
+    }
+
     private void readObject(ObjectInputStream stream)
             throws IOException, ClassNotFoundException
     {
@@ -109,6 +122,9 @@ public class PoolIoFileMessage extends PoolMessage {
                 StorageInfos.injectInto(_storageInfo, _fileAttributes);
             }
             _fileAttributes.setPnfsId(_pnfsId);
+        }
+        if(_payload == null) {
+            _payload = Optional.absent();
         }
     }
 

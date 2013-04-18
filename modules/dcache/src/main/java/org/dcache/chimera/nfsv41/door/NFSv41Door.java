@@ -3,6 +3,7 @@
  */
 package org.dcache.chimera.nfsv41.door;
 
+import com.google.common.base.Optional;
 import org.glassfish.grizzly.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -38,6 +39,7 @@ import dmg.cells.nucleus.CellMessage;
 import dmg.cells.nucleus.CellPath;
 import dmg.cells.services.login.LoginManagerChildrenInfo;
 import dmg.util.Args;
+import java.io.Serializable;
 
 import org.dcache.auth.Subjects;
 import org.dcache.cells.AbstractCellComponent;
@@ -248,30 +250,7 @@ public class NFSv41Door extends AbstractCellComponent implements
         _log.debug("NFS mover ready: {}", poolName);
 
         InetSocketAddress[] poolAddress = message.socketAddresses();
-        PoolDS device = _poolNameToIpMap.get(poolName);
-
-        if (device == null || !Arrays.equals(device.getInetSocketAddress(), poolAddress)) {
-            /* pool is unknown yet or has been restarted so create new device and device-id */
-            int id = this.nextDeviceID();
-
-            if (device != null) {
-                /*
-                 * clean stale entry
-                 */
-                deviceid4 oldId = device.getDeviceId();
-                _deviceMap.remove(oldId);
-            }
-            /*
-             * TODO: the PoolPassiveIoFileMessage have to be adopted to send
-             * list of all interfaces
-             */
-            deviceid4 deviceid = deviceidOf(id);
-            device = new PoolDS(deviceid, poolAddress);
-
-            _poolNameToIpMap.put(poolName, device);
-            _deviceMap.put(deviceid, device);
-            _log.debug("new mapping: {}", device);
-        }
+        PoolDS device = createOrGetPool(poolName, poolAddress);
 
         stateid4 stateid = message.challange();
 
@@ -400,7 +379,7 @@ public class NFSv41Door extends AbstractCellComponent implements
             _log.debug("looking for write pool for {}", transfer.getPnfsId());
             transfer.setWrite(true);
         }
-        transfer.selectPoolAndStartMover(_ioQueue, RETRY_POLICY);
+         Optional<? extends Serializable> attachemt  = transfer.selectPoolAndStartMover(_ioQueue, RETRY_POLICY);
 
         _log.debug("mover ready: pool={} moverid={}", transfer.getPool(),
                 transfer.getMoverId());
@@ -413,7 +392,14 @@ public class NFSv41Door extends AbstractCellComponent implements
          * or GRACE.
          *
          */
-        return transfer.waitForRedirect(NFS_REPLY_TIMEOUT);
+        if(attachemt.isPresent()) {
+            PoolPassiveIoFileMessage<stateid4> redirect = (PoolPassiveIoFileMessage<stateid4>)attachemt.get();
+            String poolName = redirect.getPoolName();
+            InetSocketAddress[] poolAddress = redirect.socketAddresses();
+            return createOrGetPool(poolName, poolAddress);
+        } else {
+            return transfer.waitForRedirect(NFS_REPLY_TIMEOUT);
+        }
     }
 
     @Override
@@ -520,6 +506,33 @@ public class NFSv41Door extends AbstractCellComponent implements
         Bytes.putInt(deviceidBytes, 0, id);
 
         return new deviceid4(deviceidBytes);
+    }
+
+    private PoolDS createOrGetPool(String poolName, InetSocketAddress[] poolAddress) {
+        PoolDS device = _poolNameToIpMap.get(poolName);
+        if (device == null || !Arrays.equals(device.getInetSocketAddress(), poolAddress)) {
+            /* pool is unknown yet or has been restarted so create new device and device-id */
+            int id = this.nextDeviceID();
+
+            if (device != null) {
+                /*
+                 * clean stale entry
+                 */
+                deviceid4 oldId = device.getDeviceId();
+                _deviceMap.remove(oldId);
+            }
+            /*
+             * TODO: the PoolPassiveIoFileMessage have to be adopted to send
+             * list of all interfaces
+             */
+            deviceid4 deviceid = deviceidOf(id);
+            device = new PoolDS(deviceid, poolAddress);
+
+            _poolNameToIpMap.put(poolName, device);
+            _deviceMap.put(deviceid, device);
+            _log.debug("new mapping: {}", device);
+        }
+        return device;
     }
 
     private static class PoolDS {

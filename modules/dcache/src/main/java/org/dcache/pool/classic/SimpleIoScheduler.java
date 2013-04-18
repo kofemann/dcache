@@ -119,7 +119,7 @@ public class SimpleIoScheduler implements IoScheduler, Runnable {
      * @return mover id
      */
     @Override
-    public synchronized int add(Mover<?> mover, IoPriority priority) {
+    public synchronized MoverId add(Mover<?> mover, IoPriority priority) {
         checkState(!_shutdown);
 
         int id = _queueId << 24 | nextId();
@@ -129,10 +129,19 @@ public class SimpleIoScheduler implements IoScheduler, Runnable {
         }
 
         PrioritizedRequest wrapper = new PrioritizedRequest(id, mover, priority);
-        _queue.add(wrapper);
+        /*
+         * if we get an free slot send to execution right away and reply send reply
+         */
+        Optional<? extends Serializable> attachement;
+        if (_semaphore.tryAcquire()) {
+            attachement = sentToExecution(wrapper);
+        } else {
+            attachement = Optional.absent();
+            _queue.add(wrapper);
+        }
         _jobs.put(id, wrapper);
 
-        return id;
+        return new MoverId(id, attachement);
     }
 
     private synchronized int nextId() {
@@ -287,52 +296,9 @@ public class SimpleIoScheduler implements IoScheduler, Runnable {
                 try {
                     final PrioritizedRequest request = _queue.take();
                     request.getCdc().restore();
-                    Optional<? extends Serializable> attachement = request.transfer(
-                            new CompletionHandler<Void,Void>()
-                            {
-                                @Override
-                                public void completed(Void result, Void attachment)
-                                {
-                                    postprocess();
-                                }
+                    Optional<? extends Serializable> attachement =
+                            sentToExecution(request);
 
-                                @Override
-                                public void failed(Throwable exc, Void attachment)
-                                {
-                                    if (exc instanceof InterruptedException || exc instanceof InterruptedIOException) {
-                                        request.getMover().setTransferStatus(CacheException.DEFAULT_ERROR_CODE, "Transfer was killed");
-                                    }
-                                    postprocess();
-                                }
-
-                                private void postprocess()
-                                {
-                                    request.getMover().postprocess(
-                                            new CompletionHandler<Void, Void>()
-                                            {
-                                                @Override
-                                                public void completed(Void result,
-                                                                      Void attachment)
-                                                {
-                                                    release();
-                                                }
-
-                                                @Override
-                                                public void failed(Throwable exc,
-                                                                   Void attachment)
-                                                {
-                                                    release();
-                                                }
-
-                                                private void release()
-                                                {
-                                                    request.done();
-                                                    _jobs.remove(request.getId());
-                                                    _semaphore.release();
-                                                }
-                                            });
-                                }
-                            });
                     // send attachement to the door
                     if (attachement.isPresent()) {
                         request.getMover().sendToDoor(attachement.get());
@@ -340,12 +306,57 @@ public class SimpleIoScheduler implements IoScheduler, Runnable {
                 } catch (RuntimeException | Error | InterruptedException e) {
                     _semaphore.release();
                     throw e;
-                } finally {
-                    CDC.clear();
                 }
             }
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
+        }
+    }
+
+    private Optional< ? extends Serializable> sentToExecution(final PrioritizedRequest request) {
+
+        try {
+            request.getCdc().restore();
+            return request.transfer(
+                    new CompletionHandler<Void, Void>() {
+                @Override
+                public void completed(Void result, Void attachment) {
+                    postprocess();
+                }
+
+                @Override
+                public void failed(Throwable exc, Void attachment) {
+                    if (exc instanceof InterruptedException || exc instanceof InterruptedIOException) {
+                        request.getMover().setTransferStatus(CacheException.DEFAULT_ERROR_CODE, "Transfer was killed");
+                    }
+                    postprocess();
+                }
+
+                private void postprocess() {
+                    request.getMover().postprocess(
+                            new CompletionHandler<Void, Void>() {
+                        @Override
+                        public void completed(Void result,
+                                Void attachment) {
+                            release();
+                        }
+
+                        @Override
+                        public void failed(Throwable exc,
+                                Void attachment) {
+                            release();
+                        }
+
+                        private void release() {
+                            request.done();
+                            _jobs.remove(request.getId());
+                            _semaphore.release();
+                        }
+                    });
+                }
+            });
+        } finally {
+            CDC.clear();
         }
     }
 

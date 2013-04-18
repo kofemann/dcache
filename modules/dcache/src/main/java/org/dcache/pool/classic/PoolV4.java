@@ -744,7 +744,7 @@ public class PoolV4
         }
     }
 
-    private int queueIoRequest(PoolIoFileMessage message, Mover<?> mover)
+    private MoverId queueIoRequest(PoolIoFileMessage message, Mover<?> mover)
     {
         String queueName = message.getIoQueueName();
 
@@ -765,7 +765,9 @@ public class PoolV4
             }
             Mover<?> mover = createMover(envelope.getSourcePath().revert(), message);
             try {
-                message.setMoverId(queueIoRequest(message, mover));
+                MoverId moverId = queueIoRequest(message, mover);
+                message.setMoverId(moverId.getId());
+                message.setAttachment(moverId.getAttachement());
             } catch (Throwable t) {
                 mover.postprocess(new NopCompletionHandler<Void, Void>());
                 throw Throwables.propagate(t);
