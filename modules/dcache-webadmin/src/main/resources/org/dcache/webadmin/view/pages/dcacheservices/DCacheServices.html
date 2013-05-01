@@ -10,18 +10,117 @@
 <body>
 <wicket:extend>
     <h1><span wicket:id="dCacheInstanceName"></span></h1>
-    <div class="clear">&nbsp;</div>
-    <span wicket:id="feedback"></span>
-    <p><wicket:message key="loginLinkMessage"></wicket:message>
-    <a href="#" wicket:id="loginLink">
-        <img wicket:id="loginImage" class="login"></img>
+    <center>
+        <div id="pool_usage_chart"></div>
+    </center>
+    <div>
+        <script src="js/d3.v3.min.js" charset="utf-8"></script>
+        <script>
 
-    </a></p>
-<p><wicket:message key="logoutLinkMessage"></wicket:message>
-<a href="#" wicket:id="logoutLink">
-    <img wicket:id="logoutImage" class="logout"></img>
-</a></p>
+            var width = 940,
+                    height = 500,
+                    radius = Math.min(width, height) / 4;
+
+            var labelr = radius; // radius for label anchor
+            var colorMap = {};
+            colorMap["Used"] = "#cc0000";
+            colorMap["Free"] = "#b5cf6b ";
+            colorMap["Precious"] = "#843c39";
+            colorMap["Pinned"] = "#fd8d3c";
+            colorMap["Removable"] = "#9c9ede";
+            var color = d3.scale.ordinal().domain(["Used", "Removable", "Precious", "Pinned", "Free"])
+                    .range(["#d84b2a", "#ee9586", "#e4b7b2", "#AAA", "#beccae", "#9caf84", "#7aa25c"]);
+
+            var arc = d3.svg.arc()
+                    .outerRadius(radius - 20)
+                    .innerRadius(radius * 0.70);
+
+            var pie = d3.layout.pie()
+                    .sort(null)
+                    .value(function(d) {
+                return d.value;
+            });
+
+            var svg = d3.select(document.getElementById('pool_usage_chart')).append("svg")
+                    .attr("width", width)
+                    .attr("height", height)
+                    .append("g")
+                    .attr("transform", "translate(" + width / 2 + "," + height / 2 + ")");
+
+            var bytes2Size = function(bytes) {
+                var sizes = ['n/a', 'bytes', 'KiB', 'MiB', 'GiB', 'TiB', 'PiB', 'EiB', 'ZiB', 'YiB'];
+                if (bytes == 0) {
+                    return '0 bytes';
+                }
+                var i = +Math.floor(Math.log(bytes) / Math.log(1024));
+                return  (bytes / Math.pow(1024, i)).toFixed(i ? 1 : 0) + ' ' + sizes[ isNaN(bytes) ? 0 : i + 1 ];
+            }
+
+            d3.json("/api/PoolManager/cm.poolCostInfos", function(error, json) {
+
+                var usedSpace = 0;
+                var pinnedSpace = 0;
+                var preciousSpace = 0;
+                var freeSpace = 0;
+                var totalSpace = 0;
+                var removableSpace = 0;
+
+                for (var i = 0, len = json.length; i < len; i++) {
+                    var spaceInfo = json[i].spaceInfo;
+                    console.log(spaceInfo);
+                    pinnedSpace += spaceInfo.pinnedSpace;
+                    freeSpace += spaceInfo.freeSpace;
+                    preciousSpace += spaceInfo.preciousSpace;
+                    usedSpace += spaceInfo.usedSpace;
+                    totalSpace += spaceInfo.totalSpace;
+                    removableSpace += spaceInfo.removableSpace;
+                }
+
+                var data = [
+                    {"type": "Pinned", "value": pinnedSpace},
+                    {"type": "Removable", "value": removableSpace},
+                    {"type": "Free", "value": freeSpace},
+                    {"type": "Precious", "value": preciousSpace},
+                ];
+
+                var g = svg.selectAll(".arc")
+                        .data(pie(data))
+                        .enter().append("g")
+                        .attr("class", "arc");
+
+                g.append("path")
+                        .attr("d", arc)
+                        .style("fill", function(d) {
+                    return color(d.data.type);
+                });
+
+                g.append("text")
+                        .attr("transform", function(d) {
+                    var c = arc.centroid(d),
+                            x = c[0],
+                            y = c[1],
+                            // pythagorean theorem for hypotenuse
+                            h = Math.sqrt(x * x + y * y);
+                    return "translate(" + (x / h * labelr) + ',' +
+                            (y / h * labelr) + ")";
+                })
+                        .attr("dy", ".35em")
+                        .attr("text-anchor", function(d) {
+                    // are we past the center?
+                    return (d.endAngle + d.startAngle) / 2 > Math.PI ?
+                            "end" : "start";
+                })
+                        .text(function(d) {
+                    return d.data.type + " " + bytes2Size(d.data.value);
+                });
+
+            });
+
+        </script>
+
+    </div>
 </wicket:extend>
+
 </body>
 </html>
 
