@@ -447,7 +447,7 @@ public class NFSv41Door extends AbstractCellComponent implements
         Transfer transfer = _ioMessages.get(stateid);
         if (transfer != null) {
             _log.debug("Sending KILL to {}@{}", transfer.getMoverId(), transfer.getPool());
-            transfer.killMover(5000);
+            transfer.killMover(0);
         }
     }
 
