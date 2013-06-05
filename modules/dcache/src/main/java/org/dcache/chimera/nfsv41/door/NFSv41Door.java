@@ -4,6 +4,7 @@
 package org.dcache.chimera.nfsv41.door;
 
 import com.google.common.base.Joiner;
+import diskCacheV111.util.AccessLatency;
 import org.glassfish.grizzly.Buffer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,9 @@ import diskCacheV111.util.FileInCacheException;
 import diskCacheV111.util.FsPath;
 import diskCacheV111.util.PnfsHandler;
 import diskCacheV111.util.PnfsId;
+import diskCacheV111.util.RetentionPolicy;
 import diskCacheV111.vehicles.DoorTransferFinishedMessage;
+import diskCacheV111.vehicles.GenericStorageInfo;
 import diskCacheV111.vehicles.IoDoorEntry;
 import diskCacheV111.vehicles.IoDoorInfo;
 import diskCacheV111.vehicles.PoolMoverKillMessage;
@@ -88,6 +91,7 @@ import org.dcache.util.RedirectedTransfer;
 import org.dcache.util.Transfer;
 import org.dcache.util.TransferRetryPolicy;
 import org.dcache.utils.Bytes;
+import org.dcache.vehicles.FileAttributes;
 import org.dcache.xdr.IpProtocolType;
 import org.dcache.xdr.OncRpcException;
 import org.dcache.xdr.OncRpcProgram;
@@ -372,7 +376,7 @@ public class NFSv41Door extends AbstractCellComponent implements
                 transfer.setPoolManagerStub(_poolManagerStub);
                 transfer.setPnfsId(pnfsId);
                 transfer.setClientAddress(remote);
-                transfer.readNameSpaceEntry();
+                transfer.setFileAttributes( getFileAttributes(pnfsId) );
 
                 _ioMessages.put(protocolInfo.stateId(), transfer);
 
@@ -397,12 +401,23 @@ public class NFSv41Door extends AbstractCellComponent implements
 
     }
 
+    private FileAttributes getFileAttributes(PnfsId id) {
+        FileAttributes attr = new FileAttributes();
+        GenericStorageInfo si = new GenericStorageInfo("<Unknown>", "<Unoknow>");
+        si.setIsNew(true);
+        attr.setStorageInfo(si);
+        attr.setPnfsId(id);
+        attr.setSize(0);
+        attr.setAccessLatency(AccessLatency.ONLINE);
+        attr.setRetentionPolicy(RetentionPolicy.REPLICA);
+        return attr;
+    }
     private PoolDS getPool(NfsTransfer transfer, NFS4ProtocolInfo protocolInfo, int iomode)
             throws InterruptedException, CacheException
     {
 
 
-        if ((iomode == layoutiomode4.LAYOUTIOMODE4_READ) || !transfer.getStorageInfo().isCreatedOnly()) {
+        if ((iomode == layoutiomode4.LAYOUTIOMODE4_READ)) {
             _log.debug("looking for read pool for {}", transfer.getPnfsId());
             transfer.setWrite(false);
         } else {
