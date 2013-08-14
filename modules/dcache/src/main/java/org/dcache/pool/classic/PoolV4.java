@@ -795,8 +795,10 @@ public class PoolV4
     private class ReplicationHandler
         extends AbstractStateChangeListener
     {
+        private final static String DEFAULT_REPLICATION_MANAGER = "PoolManager";
+
         private boolean _enabled;
-        private CellPath _replicationManager = new CellPath("PoolManager");
+        private CellPath _replicationManager = new CellPath(DEFAULT_REPLICATION_MANAGER);
         private String _destinationHostName;
         private String _destinationMode = "keep";
         private boolean _replicateOnRestore;
@@ -814,13 +816,19 @@ public class PoolV4
             EntryState from = event.getOldState();
             EntryState to = event.getNewState();
 
+            if (!_enabled) {
+                return;
+            }
+
             if (to == EntryState.CACHED || to == EntryState.PRECIOUS) {
                 switch (from) {
                 case FROM_CLIENT:
                     initiateReplication(event.getPnfsId(), "write");
                     break;
                 case FROM_STORE:
-                    initiateReplication(event.getPnfsId(), "restore");
+                    if (_replicateOnRestore) {
+                        initiateReplication(event.getPnfsId(), "restore");
+                    }
                     break;
                 }
             }
@@ -846,8 +854,9 @@ public class PoolV4
             _enabled = true;
 
             String[] args = vars.split(",");
-            if (args.length > 0 && !args[0].equals("")) {
+            if (args.length > 0 && !args[0].equals("") && !args[0].equals(DEFAULT_REPLICATION_MANAGER)) {
                 _replicationManager = new CellPath(args[0]);
+                _replicateOnRestore = true;
             }
             _destinationHostName = ((args.length > 1) && !args[1].equals("")) ? args[1]
                 : _destinationHostName;
@@ -881,10 +890,7 @@ public class PoolV4
 
         private void initiateReplication(PnfsId id, String source)
         {
-            if ((!_enabled)
-                || (source.equals("restore") && !_replicateOnRestore)) {
-                return;
-            }
+
             try {
                 _initiateReplication(_repository.getEntry(id), source);
             } catch (InterruptedException e) {
