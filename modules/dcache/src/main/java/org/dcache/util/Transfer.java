@@ -57,6 +57,7 @@ import static com.google.common.base.Preconditions.checkNotNull;
 import static org.dcache.namespace.FileAttribute.*;
 import static org.dcache.util.MathUtils.addWithInfinity;
 import static org.dcache.util.MathUtils.subWithInfinity;
+import org.dcache.vehicles.PoolModifyFileMessage;
 
 /**
  * Facade for transfer related operations. Encapulates information
@@ -348,6 +349,7 @@ public class Transfer implements Comparable<Transfer>
     public synchronized void setPool(String pool)
     {
         _poolName = pool;
+        _poolAddress = new CellAddressCore(pool);
     }
 
     /**
@@ -837,6 +839,41 @@ public class Transfer implements Comparable<Transfer>
              */
             CellPath poolPath =
                 (CellPath) _poolManager.getDestinationPath().clone();
+            poolPath.add(getPoolAddress());
+
+            setMoverId(_pool.sendAndWait(poolPath, message, timeout).getMoverId());
+        } finally {
+            setStatus(null);
+        }
+    }
+
+    public void startUpdateMover(String queue) throws InterruptedException, CacheException {
+         startUpdateMover(queue, _pool.getTimeoutInMillis());
+    }
+
+    public void startUpdateMover(String queue, long timeout) throws InterruptedException, CacheException {
+        FileAttributes fileAttributes = getFileAttributes();
+        String pool = getPool();
+
+        if (fileAttributes == null || pool == null) {
+            throw new IllegalStateException("Need PNFS ID, file attributes and pool before a mover can be started");
+        }
+
+        setStatus("Pool " + pool + ": Creating mover");
+        try {
+            ProtocolInfo protocolInfo = getProtocolInfoForPool();
+            PoolIoFileMessage message = new PoolModifyFileMessage(pool, protocolInfo, fileAttributes);
+
+            message.setIoQueueName(queue);
+            message.setInitiator(getTransaction());
+            message.setId(_sessionId);
+            message.setSubject(_subject);
+
+            /* As always, PoolIoFileMessage has to be sent via the
+             * PoolManager (which could be the SpaceManager).
+             */
+            CellPath poolPath
+                    = (CellPath) _poolManager.getDestinationPath().clone();
             poolPath.add(getPoolAddress());
 
             setMoverId(_pool.sendAndWait(poolPath, message, timeout).getMoverId());

@@ -103,6 +103,7 @@ import org.dcache.vehicles.FileAttributes;
 import org.dcache.vehicles.PnfsSetFileAttributes;
 
 import static com.google.common.base.Preconditions.checkState;
+import org.dcache.vehicles.PoolModifyFileMessage;
 
 public class PoolV4
     extends AbstractCellComponent
@@ -743,6 +744,10 @@ public class PoolV4
                         targetState,
                         stickyRecords,
                         EnumSet.of(Repository.OpenFlags.CREATEFILE));
+            } else if (message instanceof PoolModifyFileMessage) {
+                Set<Repository.OpenFlags> openFlags
+                        = EnumSet.of(Repository.OpenFlags.UPDATE);
+                handle = _repository.openEntry(pnfsId, openFlags);
             } else {
                 Set<Repository.OpenFlags> openFlags =
                         message.isPool2Pool()

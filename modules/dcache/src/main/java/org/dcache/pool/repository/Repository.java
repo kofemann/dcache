@@ -24,7 +24,8 @@ public interface Repository
 
         /* Create the data file when creating an entry.
          */
-        CREATEFILE
+        CREATEFILE,
+        UPDATE
     }
 
     /**

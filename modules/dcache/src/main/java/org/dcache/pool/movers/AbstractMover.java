@@ -45,6 +45,7 @@ import org.dcache.util.TryCatchTemplate;
 import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import diskCacheV111.vehicles.PoolDeliverFileMessage;
 
 /**
  * Abstract base class for movers.
@@ -78,7 +79,7 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends Mover<P>> 
         _protocolInfo = (P) message.getProtocolInfo();
         _initiator = message.getInitiator();
         _isPoolToPoolTransfer = message.isPool2Pool();
-        _ioMode = (message instanceof PoolAcceptFileMessage) ? IoMode.WRITE : IoMode.READ;
+        _ioMode = (message instanceof PoolDeliverFileMessage) ? IoMode.READ : IoMode.WRITE;
         _subject = message.getSubject();
         _id = message.getId();
         _pathToDoor = pathToDoor;

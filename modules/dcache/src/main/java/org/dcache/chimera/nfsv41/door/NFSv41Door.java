@@ -42,6 +42,7 @@ import dmg.cells.nucleus.CellPath;
 import dmg.cells.nucleus.CellInfoProvider;
 import dmg.cells.services.login.LoginManagerChildrenInfo;
 import dmg.util.Args;
+import java.util.Collection;
 import java.util.Set;
 
 import org.dcache.auth.Subjects;
@@ -424,18 +425,29 @@ public class NFSv41Door extends AbstractCellComponent implements
             throws InterruptedException, CacheException
     {
 
-
-        if ((iomode == layoutiomode4.LAYOUTIOMODE4_READ) || !transfer.getStorageInfo().isCreatedOnly()) {
+        if ((iomode == layoutiomode4.LAYOUTIOMODE4_READ)) {
             _log.debug("looking for read pool for {}", transfer.getPnfsId());
             transfer.setWrite(false);
+            transfer.selectPoolAndStartMover(_ioQueue, RETRY_POLICY);
+
+            _log.debug("mover ready: pool={} moverid={}", transfer.getPool(),
+                    transfer.getMoverId());
+
         } else {
+            if (transfer.getStorageInfo().isCreatedOnly()) {
             _log.debug("looking for write pool for {}", transfer.getPnfsId());
             transfer.setWrite(true);
-        }
-        transfer.selectPoolAndStartMover(_ioQueue, RETRY_POLICY);
+            transfer.selectPoolAndStartMover(_ioQueue, RETRY_POLICY);
 
-        _log.debug("mover ready: pool={} moverid={}", transfer.getPool(),
-                transfer.getMoverId());
+            _log.debug("mover ready: pool={} moverid={}", transfer.getPool(),
+                    transfer.getMoverId());
+            } else {
+                Collection<String> locations =  transfer.getFileAttributes().getLocations();
+                String pool = locations.iterator().next();
+                transfer.setPool(pool);
+                transfer.startUpdateMover(_ioQueue);
+            }
+        }
 
         /*
          * FIXME;
@@ -610,7 +622,8 @@ public class NFSv41Door extends AbstractCellComponent implements
         protected NFS4ProtocolInfo getProtocolInfoForPool() {
             return _protocolInfo;
         }
-        }
+
+    }
 
     /**
      * To allow the transfer monitoring in the httpd cell to recognize us

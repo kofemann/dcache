@@ -494,7 +494,8 @@ public class CacheRepositoryV5
                 case REMOVED:
                     break;
                 }
-                handle = new ReadHandleImpl(this, _pnfs, entry);
+                handle = flags.contains(OpenFlags.UPDATE)?
+                        new UpdateHandleImpl(this, _allocator, _pnfs, entry) : new ReadHandleImpl(this, _pnfs, entry);
             }
 
             if (!flags.contains(OpenFlags.NOATIME)) {
