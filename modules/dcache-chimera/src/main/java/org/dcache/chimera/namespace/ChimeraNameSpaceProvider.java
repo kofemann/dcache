@@ -3,6 +3,7 @@
  */
 package org.dcache.chimera.namespace;
 
+import com.google.common.base.Charsets;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Range;
@@ -219,6 +220,9 @@ public class ChimeraNameSpaceProvider
                 inode = _fs.mkdir(parent, newEntryFile.getName(), uid, gid, mode);
             }else if (type == FileType.REGULAR) {
                 inode = _fs.createFile(parent, newEntryFile.getName(), uid, gid, mode);
+            } else if (type == FileType.LINK) {
+                String link = attrs.getSymLink();
+                inode = _fs.createLink(parent, newEntryFile.getName(), uid, gid, mode, link.getBytes(Charsets.UTF_8));
             } else {
                 throw new CacheException(CacheException.UNEXPECTED_SYSTEM_EXCEPTION,
                         "Unsupported object type: " + type);
