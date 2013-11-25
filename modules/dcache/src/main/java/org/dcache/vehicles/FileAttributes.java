@@ -54,7 +54,7 @@ public class FileAttributes implements Serializable {
     /**
      * Set of attributes which have been set.
      */
-    private Set<FileAttribute> _definedAttributes =
+    private final Set<FileAttribute> _definedAttributes =
         EnumSet.noneOf(FileAttribute.class);
 
     /**
@@ -141,6 +141,11 @@ public class FileAttributes implements Serializable {
      * The storage info of a file.
      */
     private StorageInfo _storageInfo;
+
+    /**
+     * Symbolic link for the file.
+     */
+    private String _symLink;
 
     /** Throws IllegalStateException if attribute is not defined. */
     private void guard(FileAttribute attribute)
@@ -297,6 +302,12 @@ public class FileAttributes implements Serializable {
         return _storageInfo;
     }
 
+    public String getSymLink()
+    {
+        guard(SYMLINK);
+        return _symLink;
+    }
+
     public void setAccessTime(long atime)
     {
         define(ACCESS_TIME);
@@ -396,6 +407,12 @@ public class FileAttributes implements Serializable {
         _storageInfo = storageInfo;
     }
 
+    public void setSymlink(String symLink)
+    {
+        define(SYMLINK);
+        _symLink = symLink;
+    }
+
     @Override
     public String toString()
     {
@@ -418,6 +435,7 @@ public class FileAttributes implements Serializable {
                 .add("flags", _flags)
                 .add("pnfsId", _pnfsId)
                 .add("storageInfo", _storageInfo)
+                .add("symlink", _symLink)
                 .omitNullValues()
                 .toString();
     }
