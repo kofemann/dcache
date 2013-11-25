@@ -158,13 +158,17 @@ public class ChimeraNameSpaceProvider
     }
 
     @Override
-    public PnfsId createEntry(Subject subject, String path,
-                              int uid, int gid, int mode, FileType type)
+    public PnfsId createEntry(Subject subject, String path, FileAttributes attrs)
         throws CacheException
     {
         FsInode inode;
 
         try {
+            int uid = attrs.getOwner();
+            int gid = attrs.getGroup();
+            int mode = attrs.getMode();
+            FileType type = attrs.getFileType();
+
             File newEntryFile = new File(path);
             String parentPath = newEntryFile.getParent();
             if (parentPath == null) {

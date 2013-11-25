@@ -52,10 +52,13 @@ public class RemoteNameSpaceProvider implements NameSpaceProvider
     }
 
     @Override
-    public PnfsId createEntry(Subject subject, String path, int uid, int gid,
-            int mode, FileType type) throws CacheException
+    public PnfsId createEntry(Subject subject, String path, FileAttributes attrs) throws CacheException
     {
         PnfsHandler pnfs = new PnfsHandler(_pnfs, subject);
+        int uid = attrs.getOwner();
+        int gid = attrs.getGroup();
+        int mode = attrs.getMode();
+        FileType type = attrs.getFileType();
 
         PnfsCreateEntryMessage returnMsg;
 

@@ -205,7 +205,12 @@ public class PerformanceTest extends Thread
             FileAttributes fileAttributes;
             switch (aOp) {
                 case CREATE_ENTRY:
-                    provider.createEntry(Subjects.ROOT, path, UID, GID, PERMISSION, FileType.REGULAR);
+                    FileAttributes createAttrs = new FileAttributes();
+                    createAttrs.setOwner(UID);
+                    createAttrs.setGroup(GID);
+                    createAttrs.setMode(PERMISSION);
+                    createAttrs.setFileType(FileType.REGULAR);
+                    provider.createEntry(Subjects.ROOT, path, createAttrs);
                     break;
                 case PATH_TO_PNFS_ID:
                     getPnfsid(path);

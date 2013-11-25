@@ -998,10 +998,14 @@ public class PnfsManagerV3
             checkMask(pnfsMessage.getSubject(), file.getParent(),
                       pnfsMessage.getAccessMask());
 
+            FileAttributes createAttrs = new FileAttributes();
+            createAttrs.setOwner(pnfsMessage.getUid());
+            createAttrs.setGroup(pnfsMessage.getGid());
+            createAttrs.setMode(pnfsMessage.getMode());
+            createAttrs.setFileType(FileType.DIR);
             pnfsId = _nameSpaceProvider.createEntry(pnfsMessage.getSubject(),
                     pnfsMessage.getPath(),
-                    pnfsMessage.getUid(), pnfsMessage.getGid(),
-                    pnfsMessage.getMode(), FileType.DIR);
+                    createAttrs);
 
             pnfsMessage.setPnfsId(pnfsId);
             pnfsMessage.setSucceeded();
@@ -1049,10 +1053,14 @@ public class PnfsManagerV3
             checkMask(pnfsMessage.getSubject(), file.getParent(),
                       pnfsMessage.getAccessMask());
 
+            FileAttributes createAttrs = new FileAttributes();
+            createAttrs.setOwner(pnfsMessage.getUid());
+            createAttrs.setGroup(pnfsMessage.getGid());
+            createAttrs.setMode(pnfsMessage.getMode());
+            createAttrs.setFileType(FileType.REGULAR);
             pnfsId = _nameSpaceProvider.createEntry(pnfsMessage.getSubject(),
                     pnfsMessage.getPath(),
-                    pnfsMessage.getUid(),pnfsMessage.getGid(),
-                    pnfsMessage.getMode(), FileType.REGULAR);
+                    createAttrs);
 
             pnfsMessage.setPnfsId(pnfsId);
             pnfsMessage.setSucceeded();

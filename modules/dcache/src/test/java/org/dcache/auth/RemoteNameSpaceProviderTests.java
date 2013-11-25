@@ -199,7 +199,12 @@ public class RemoteNameSpaceProviderTests
     {
         givenSuccessfulResponse();
 
-        _namespace.createEntry(ROOT, "/path/to/file", 100, 200, 0644, FileType.REGULAR);
+        FileAttributes createAttrs = new FileAttributes();
+        createAttrs.setOwner(100);
+        createAttrs.setGroup(200);
+        createAttrs.setMode(0644);
+        createAttrs.setFileType(FileType.REGULAR);
+        _namespace.createEntry(ROOT, "/path/to/file", createAttrs);
 
         PnfsCreateEntryMessage sent =
                 getSingleSendAndWaitMessage(PnfsCreateEntryMessage.class);
@@ -217,7 +222,12 @@ public class RemoteNameSpaceProviderTests
     {
         givenFailureResponse(FILE_EXISTS);
 
-        _namespace.createEntry(ROOT, "/path/to/file", 100, 200, 0644, FileType.REGULAR);
+        FileAttributes createAttrs = new FileAttributes();
+        createAttrs.setOwner(100);
+        createAttrs.setGroup(200);
+        createAttrs.setMode(0644);
+        createAttrs.setFileType(FileType.REGULAR);
+        _namespace.createEntry(ROOT, "/path/to/file", createAttrs);
     }
 
 
@@ -226,7 +236,12 @@ public class RemoteNameSpaceProviderTests
     {
         givenSuccessfulResponse();
 
-        _namespace.createEntry(ROOT, "/path/to/dir", 100, 200, 0755, FileType.DIR);
+        FileAttributes createAttrs = new FileAttributes();
+        createAttrs.setOwner(100);
+        createAttrs.setGroup(200);
+        createAttrs.setMode(0755);
+        createAttrs.setFileType(FileType.DIR);
+        _namespace.createEntry(ROOT, "/path/to/dir", createAttrs);
 
         PnfsCreateDirectoryMessage sent =
                 getSingleSendAndWaitMessage(PnfsCreateDirectoryMessage.class);

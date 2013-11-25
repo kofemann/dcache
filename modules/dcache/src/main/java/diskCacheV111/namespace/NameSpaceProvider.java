@@ -57,14 +57,11 @@ public interface NameSpaceProvider
      *
      * @param subject Subject of user who invoked this method.
      * @param path full path of new object
-     * @param uid uid of new entry or -1 for default
-     * @param gid gid of new entry or -1 for default
-     * @param mode mode of new entry or -1 for default
-     * @param type of object to create
+     * @param attrs file attributes, like uid, gid, mode and type
      * @return PnfsId of newly created object
      * @throws CacheException
      */
-    PnfsId createEntry(Subject subject, String path, int uid, int gid, int mode, FileType type) throws CacheException;
+    PnfsId createEntry(Subject subject, String path, FileAttributes attrs) throws CacheException;
 
     /**
      * remove file or directory associated with given pnfsid
