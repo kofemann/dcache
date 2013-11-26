@@ -81,6 +81,7 @@ import org.dcache.vehicles.PnfsGetFileAttributes;
 import org.dcache.vehicles.PnfsListDirectoryMessage;
 import org.dcache.vehicles.PnfsRemoveChecksumMessage;
 import org.dcache.vehicles.PnfsSetFileAttributes;
+import org.dcache.vehicles.PnfsCreateLinkMessage;
 
 import static org.dcache.acl.enums.AccessType.*;
 import static org.dcache.auth.Subjects.ROOT;
@@ -180,6 +181,7 @@ public class PnfsManagerV3
         _gauges.addGauge(PnfsGetFileAttributes.class);
         _gauges.addGauge(PnfsListDirectoryMessage.class);
         _gauges.addGauge(PnfsRemoveChecksumMessage.class);
+        _gauges.addGauge(PnfsCreateLinkMessage.class);
     }
 
     public PnfsManagerV3()
@@ -990,6 +992,60 @@ public class PnfsManagerV3
 
     }
 
+    public void createLink(PnfsCreateLinkMessage pnfsMessage) {
+        PnfsId pnfsId;
+        _log.info("create link {} to {}", pnfsMessage.getPath(), pnfsMessage.getDestination() );
+        try {
+            File file = new File(pnfsMessage.getPath());
+            checkMask(pnfsMessage.getSubject(), file.getParent(),
+                    pnfsMessage.getAccessMask());
+
+            FileAttributes createAttrs = new FileAttributes();
+            createAttrs.setOwner(pnfsMessage.getUid());
+            createAttrs.setGroup(pnfsMessage.getGid());
+            createAttrs.setMode(pnfsMessage.getMode());
+            createAttrs.setSymlink(pnfsMessage.getDestination());
+            createAttrs.setFileType(FileType.LINK);
+            pnfsId = _nameSpaceProvider.createEntry(pnfsMessage.getSubject(),
+                    pnfsMessage.getPath(),
+                    createAttrs);
+
+            pnfsMessage.setPnfsId(pnfsId);
+            pnfsMessage.setSucceeded();
+
+            //
+            // FIXME : is it really true ?
+            //
+            // now we try to get the storageInfo out of the
+            // parent directory. If it fails, we don't care.
+            // We declare the request to be successful because
+            // the createEntry seem to be ok.
+            try {
+                _log.info("Trying to get storageInfo for " + pnfsId);
+
+                /* If we were allowed to create the entry above, then
+                 * we also ought to be allowed to read it here. Hence
+                 * we use ROOT as the subject.
+                 */
+                Set<FileAttribute> requested
+                        = pnfsMessage.getRequestedAttributes();
+                FileAttributes attrs
+                        = _nameSpaceProvider.getFileAttributes(ROOT,
+                                pnfsId,
+                                requested);
+                pnfsMessage.setFileAttributes(attrs);
+            } catch (CacheException e) {
+                _log.warn("Can't determine storageInfo: " + e);
+            }
+        } catch (CacheException e) {
+            pnfsMessage.setFailed(e.getRc(), e.getMessage());
+        } catch (RuntimeException e) {
+            _log.error("Failed to create a symlink", e);
+            pnfsMessage.setFailed(CacheException.UNEXPECTED_SYSTEM_EXCEPTION, e);
+        }
+
+    }
+
     public void createDirectory(PnfsCreateDirectoryMessage pnfsMessage){
         PnfsId pnfsId;
         _log.info("create directory "+pnfsMessage.getPath());
@@ -1592,6 +1648,9 @@ public class PnfsManagerV3
         }
         else if (pnfsMessage instanceof PnfsGetCacheLocationsMessage){
             getCacheLocations((PnfsGetCacheLocationsMessage)pnfsMessage);
+        }
+        else if (pnfsMessage instanceof PnfsCreateLinkMessage) {
+            createLink((PnfsCreateLinkMessage) pnfsMessage);
         }
         else if (pnfsMessage instanceof PnfsCreateDirectoryMessage){
             createDirectory((PnfsCreateDirectoryMessage)pnfsMessage);

@@ -39,6 +39,7 @@ import org.dcache.namespace.FileType;
 import org.dcache.util.Checksum;
 import org.dcache.util.ChecksumType;
 import org.dcache.vehicles.FileAttributes;
+import org.dcache.vehicles.PnfsCreateLinkMessage;
 import org.dcache.vehicles.PnfsGetFileAttributes;
 import org.dcache.vehicles.PnfsRemoveChecksumMessage;
 import org.dcache.vehicles.PnfsSetFileAttributes;
@@ -299,6 +300,13 @@ public class PnfsHandler
        return pnfsRequest(new PnfsCreateEntryMessage( path )) ;
 
    }
+
+    public PnfsCreateEntryMessage createLink(String path, String dest, int uid, int gid, int mode)
+            throws CacheException {
+
+        return pnfsRequest(new PnfsCreateLinkMessage(path, dest, uid, gid, mode));
+
+    }
 
     public void renameEntry(PnfsId pnfsId, String newName)
         throws CacheException
