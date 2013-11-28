@@ -214,6 +214,22 @@
         <constructor-arg value="${webdav.authn.ciphers}"/>
     </bean>
 
+    <bean id="pnfs" class="diskCacheV111.util.PnfsHandler">
+        <description>PNFS manager client module</description>
+        <constructor-arg>
+            <bean class="dmg.cells.nucleus.CellPath">
+                <constructor-arg value="${webdav.service.pnfsmanager}"/>
+            </bean>
+        </constructor-arg>
+    </bean>
+
+    <bean id="share-mgr" class="org.dcache.services.cloud.ShareManger">
+         <description>Sharing manager</description>
+        <property name="pnfs" ref="pnfs"/>
+        <property name="shareBase" value="/public"/>
+        <property name="listDirectoryHandler" ref="list-handler" />
+    </bean>
+
     <beans profile="connector-http">
       <bean id="jetty" class="org.eclipse.jetty.server.Server"
 	    init-method="start" destroy-method="stop">
