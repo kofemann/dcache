@@ -44,7 +44,6 @@ import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.util.TryCatchTemplate;
 import org.dcache.vehicles.FileAttributes;
 
-import static com.google.common.base.Preconditions.checkArgument;
 
 /**
  * Abstract base class for movers.
@@ -73,7 +72,6 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends Mover<P>> 
                          TransferService<M> transferService,
                          PostTransferService postTransferService)
     {
-        checkArgument(type.isAssignableFrom(message.getProtocolInfo().getClass()));
         _queue = message.getIoQueueName();
         _protocolInfo = (P) message.getProtocolInfo();
         _initiator = message.getInitiator();
