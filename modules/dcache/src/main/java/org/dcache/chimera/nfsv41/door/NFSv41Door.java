@@ -86,6 +86,7 @@ import org.dcache.chimera.nfsv41.mover.NFS4ProtocolInfo;
 import org.dcache.commons.stats.RequestExecutionTimeGauges;
 import org.dcache.commons.util.NDC;
 import dmg.cells.services.login.LoginBrokerHandler;
+import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.util.RedirectedTransfer;
 import org.dcache.util.Transfer;
 import org.dcache.util.TransferRetryPolicy;
@@ -402,6 +403,7 @@ public class NFSv41Door extends AbstractCellComponent implements
                 transfer.setPoolManagerStub(_poolManagerStub);
                 transfer.setPnfsId(pnfsId);
                 transfer.setClientAddress(remote);
+                transfer.setPoolMonitor(_poolMonitor);
                 transfer.readNameSpaceEntry();
 
                 _ioMessages.put(protocolInfo.stateId(), transfer);
@@ -729,4 +731,11 @@ public class NFSv41Door extends AbstractCellComponent implements
         }
         return sb.toString();
     }
+
+    private PoolMonitor _poolMonitor;
+
+    public void setPoolMonitor(PoolMonitor poolMonitor) {
+        _poolMonitor = poolMonitor;
+    }
+
 }

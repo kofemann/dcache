@@ -55,6 +55,8 @@ import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import static org.dcache.namespace.FileAttribute.*;
+import org.dcache.poolmanager.PoolInfo;
+import org.dcache.poolmanager.PoolMonitor;
 import static org.dcache.util.MathUtils.addWithInfinity;
 import static org.dcache.util.MathUtils.subWithInfinity;
 
@@ -101,6 +103,8 @@ public class Transfer implements Comparable<Transfer>
     private PoolMgrSelectReadPoolMsg.Context _readPoolSelectionContext;
     private boolean _isBillingNotified;
     private boolean _isOverwriteAllowed;
+
+    private PoolMonitor _poolMonitor;
 
     private Set<FileAttribute> _additionalAttributes =
             EnumSet.noneOf(FileAttribute.class);
@@ -385,6 +389,15 @@ public class Transfer implements Comparable<Transfer>
     public synchronized CellAddressCore getPoolAddress()
     {
         return _poolAddress;
+    }
+
+    /**
+     * Sets {@link PoolMonitor} for this transfer
+     * @param poolMonitor
+     */
+    public synchronized void setPoolMonitor(PoolMonitor poolMonitor)
+    {
+        _poolMonitor = poolMonitor;
     }
 
     /**
@@ -758,40 +771,54 @@ public class Transfer implements Comparable<Transfer>
                 if (allocated == 0) {
                     allocated = fileAttributes.getSize();
                 }
-                PoolMgrSelectWritePoolMsg request =
-                    new PoolMgrSelectWritePoolMsg(fileAttributes,
-                                                  protocolInfo,
-                                                  allocated);
-                request.setId(_sessionId);
-                request.setSubject(_subject);
-                request.setPnfsPath(_path.toString());
 
-                PoolMgrSelectWritePoolMsg reply =
-                    _poolManager.sendAndWait(request, timeout);
-                setPool(reply.getPoolName());
-                setPoolAddress(reply.getPoolAddress());
-                setFileAttributes(reply.getFileAttributes());
+                PoolInfo poolInfo = getWritePoolWithMonitor(fileAttributes, protocolInfo, null, allocated);
+                if (poolInfo == null) {
+                    PoolMgrSelectWritePoolMsg request
+                            = new PoolMgrSelectWritePoolMsg(fileAttributes,
+                                    protocolInfo,
+                                    allocated);
+                    request.setId(_sessionId);
+                    request.setSubject(_subject);
+                    request.setPnfsPath(_path.toString());
+
+                    PoolMgrSelectWritePoolMsg reply
+                            = _poolManager.sendAndWait(request, timeout);
+                    setPool(reply.getPoolName());
+                    setPoolAddress(reply.getPoolAddress());
+                    setFileAttributes(reply.getFileAttributes());
+                } else {
+                    setPool(poolInfo.getName());
+                    setPoolAddress(poolInfo.getAddress());
+                }
             } else if (!_fileAttributes.getStorageInfo().isCreatedOnly()) {
-                EnumSet<RequestContainerV5.RequestState> allowedStates =
-                    _checkStagePermission.canPerformStaging(_subject, fileAttributes.getStorageInfo())
-                    ? RequestContainerV5.allStates
-                    : RequestContainerV5.allStatesExceptStage;
+                PoolInfo poolInfo = getReadPoolWithMonitor(fileAttributes, protocolInfo);
+                if (poolInfo == null) {
+                    EnumSet<RequestContainerV5.RequestState> allowedStates
+                            = _checkStagePermission.canPerformStaging(_subject, fileAttributes.getStorageInfo())
+                            ? RequestContainerV5.allStates
+                            : RequestContainerV5.allStatesExceptStage;
 
-                PoolMgrSelectReadPoolMsg request =
-                    new PoolMgrSelectReadPoolMsg(fileAttributes,
-                                                 protocolInfo,
-                                                 getReadPoolSelectionContext(),
-                                                 allowedStates);
-                request.setId(_sessionId);
-                request.setSubject(_subject);
-                request.setPnfsPath(_path.toString());
+                    PoolMgrSelectReadPoolMsg request
+                            = new PoolMgrSelectReadPoolMsg(fileAttributes,
+                                    protocolInfo,
+                                    getReadPoolSelectionContext(),
+                                    allowedStates);
+                    request.setId(_sessionId);
+                    request.setSubject(_subject);
+                    request.setPnfsPath(_path.toString());
 
-                PoolMgrSelectReadPoolMsg reply =
-                    _poolManager.sendAndWait(request, timeout);
-                setPool(reply.getPoolName());
-                setPoolAddress(reply.getPoolAddress());
-                setFileAttributes(reply.getFileAttributes());
-                setReadPoolSelectionContext(reply.getContext());
+                    PoolMgrSelectReadPoolMsg reply
+                            = _poolManager.sendAndWait(request, timeout);
+                    setPool(reply.getPoolName());
+                    setPoolAddress(reply.getPoolAddress());
+                    setFileAttributes(reply.getFileAttributes());
+                    setReadPoolSelectionContext(reply.getContext());
+                } else {
+                    setPool(poolInfo.getName());
+                    setPoolAddress(poolInfo.getAddress());
+                }
+
             } else {
                 throw new FileIsNewCacheException();
             }
@@ -1066,5 +1093,34 @@ public class Transfer implements Comparable<Transfer>
                 readNameSpaceEntry();
             }
         }
+    }
+
+    private synchronized PoolInfo getWritePoolWithMonitor(FileAttributes fileAttributes,
+            ProtocolInfo protocolInfo,  String linkGroup, long size) {
+
+        try {
+            if (_poolMonitor != null) {
+                PoolInfo poolInfo =  _poolMonitor.getPoolSelector(fileAttributes, protocolInfo, linkGroup).selectWritePool(size);
+                return poolInfo;
+            }
+        } catch (CacheException ignored) {
+            // we are going to retry
+        }
+
+        return null;
+    }
+
+    private synchronized PoolInfo getReadPoolWithMonitor(FileAttributes fileAttributes, ProtocolInfo protocolInfo) {
+
+        try {
+            if (_poolMonitor != null) {
+                PoolInfo poolInfo =  _poolMonitor.getPoolSelector(fileAttributes, protocolInfo, null).selectReadPool();
+                return poolInfo;
+            }
+        } catch (CacheException ignored) {
+            // we are going to retry
+        }
+
+        return null;
     }
 }
