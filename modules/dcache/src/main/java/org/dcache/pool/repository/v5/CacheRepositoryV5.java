@@ -448,7 +448,6 @@ public class CacheRepositoryV5
 
             MetaDataRecord entry = _store.create(fileAttributes.getPnfsId());
             synchronized (entry) {
-                entry.setFileAttributes(fileAttributes);
                 setState(entry, transferState);
 
                 return new WriteHandleImpl(
