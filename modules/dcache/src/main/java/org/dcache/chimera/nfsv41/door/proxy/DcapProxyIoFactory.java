@@ -9,6 +9,7 @@ import diskCacheV111.util.PnfsId;
 import diskCacheV111.vehicles.DCapProtocolInfo;
 import diskCacheV111.vehicles.DoorTransferFinishedMessage;
 import diskCacheV111.vehicles.PoolPassiveIoFileMessage;
+import dmg.cells.nucleus.CDC;
 import dmg.cells.nucleus.CellAddressCore;
 import dmg.cells.nucleus.CellPath;
 import java.io.IOException;
@@ -86,24 +87,26 @@ public class DcapProxyIoFactory extends AbstractCell {
 
         final PnfsId  pnfsId = new PnfsId(_fileFileSystemProvider.inodeFromBytes(inode.getFileId()).toString());
         final DcapTransfer transfer = new DcapTransfer(_pnfsHandler, subject);
-        DcapTransfer.initSession();
-        transfer.setProtocolInfo(protocolInfo);
-        transfer.setCellName(getCellName());
-        transfer.setDomainName(getCellDomainName());
-        transfer.setBillingStub(_billingStub);
-        transfer.setPoolStub(_poolManagerStub);
-        transfer.setPoolManagerStub(_poolManagerStub);
-        transfer.setPnfsId(pnfsId);
-        transfer.setClientAddress(client);
-        transfer.readNameSpaceEntry();
+        try(CDC cdc = CDC.reset(getCellName(), getCellDomainName())) {
+            DcapTransfer.initSession();
+            transfer.setProtocolInfo(protocolInfo);
+            transfer.setCellName(getCellName());
+            transfer.setDomainName(getCellDomainName());
+            transfer.setBillingStub(_billingStub);
+            transfer.setPoolStub(_poolManagerStub);
+            transfer.setPoolManagerStub(_poolManagerStub);
+            transfer.setPnfsId(pnfsId);
+            transfer.setClientAddress(client);
+            transfer.readNameSpaceEntry();
 
-        _pendingIO.put(session, transfer);
-        transfer.selectPoolAndStartMover(_ioQueue, _retryPolicy);
-        PoolPassiveIoFileMessage<byte[]> redirect = transfer.waitForRedirect(NFS_RETRY_PERIOD);
+            _pendingIO.put(session, transfer);
+            transfer.selectPoolAndStartMover(_ioQueue, _retryPolicy);
+            PoolPassiveIoFileMessage<byte[]> redirect = transfer.waitForRedirect(NFS_RETRY_PERIOD);
 
-        return new DcapChannelImpl(redirect.socketAddress(), session,
-                Base64.byteArrayToBase64(redirect.challange()).getBytes(Charsets.US_ASCII),
-                transfer.getFileAttributes().getSize());
+            return new DcapChannelImpl(redirect.socketAddress(), session,
+                    Base64.byteArrayToBase64(redirect.challange()).getBytes(Charsets.US_ASCII),
+                    transfer.getFileAttributes().getSize());
+        }
     }
 
     public void startAdapter() throws InterruptedException, ExecutionException {
