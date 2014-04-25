@@ -276,7 +276,18 @@
           <groupId>com.google.code.gson</groupId>
           <artifactId>gson</artifactId>
       </dependency>
-
+    <dependency>
+        <groupId>org.quartz-scheduler</groupId>
+        <artifactId>quartz</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.quartz-scheduler</groupId>
+        <artifactId>quartz-jobs</artifactId>
+    </dependency>
+    <dependency>
+        <groupId>org.codehaus.groovy</groupId>
+        <artifactId>groovy-all</artifactId>
+    </dependency>
   </dependencies>
 
   <build>

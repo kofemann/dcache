@@ -28,6 +28,10 @@ import org.springframework.context.support.ClassPathXmlApplicationContext;
 import org.springframework.core.env.ConfigurableEnvironment;
 import org.springframework.core.env.MapPropertySource;
 import org.springframework.core.env.PropertySource;
+import org.quartz.Job;
+import org.quartz.JobDetail;
+import org.quartz.SchedulerException;
+import org.quartz.Trigger;
 
 import java.beans.PropertyDescriptor;
 import java.io.BufferedReader;
@@ -81,9 +85,15 @@ import org.dcache.util.ClassNameComparator;
 import org.dcache.vehicles.BeanQueryAllPropertiesMessage;
 import org.dcache.vehicles.BeanQueryMessage;
 import org.dcache.vehicles.BeanQuerySinglePropertyMessage;
+import org.dcache.services.quartz.GroovyExecutionJob;
+import org.dcache.services.quartz.QuartzScheduler;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
+
+import static org.quartz.CronScheduleBuilder.cronSchedule;
+import static org.quartz.JobBuilder.newJob;
+import static org.quartz.TriggerBuilder.newTrigger;
 
 /**
  * Universal cell for building complex cells from simpler components.
@@ -142,6 +152,11 @@ public class UniversalSpringCell
      */
     private final Set<CellLifeCycleAware> _lifeCycleAware =
         new TreeSet<>(new ClassNameComparator());
+
+    /**
+     * Scheduler for internal periodic tasks.
+     */
+    private QuartzScheduler _quartzScheduler;
 
     /**
      * Cell name of the setup controller.
@@ -218,6 +233,9 @@ public class UniversalSpringCell
          */
         createContext();
 
+
+        _quartzScheduler = new QuartzScheduler();
+
         /* Cell threading is configurable through arguments to
          * UniversalSpringCell. The executors have to be created as
          * beans in the Spring file, however the names of the beans
@@ -246,6 +264,8 @@ public class UniversalSpringCell
         for (CellLifeCycleAware bean: _lifeCycleAware) {
             bean.afterStart();
         }
+
+        _quartzScheduler.init();
     }
 
     /**
@@ -1054,5 +1074,88 @@ public class UniversalSpringCell
         }
 
         _context = context;
+    }
+
+    @Command(name = "qsched class",
+            description = "add scheduled job.")
+    public class AddJobCommand implements Callable<String> {
+
+        @Argument(index = 2, metaVar = "time")
+        String time;
+
+        @Argument(index = 1, metaVar = "class")
+        String className;
+
+        @Argument(index = 0, metaVar = "jobName")
+        String name;
+
+        @Override
+        public String call() throws ClassNotFoundException, SchedulerException {
+
+            Class<? extends Job> clazz = (Class<? extends Job>) Class.forName(className);
+            JobDetail job = newJob(clazz)
+                    .withIdentity(name)
+                    .build();
+
+            Trigger trigger = newTrigger()
+                    .withSchedule(cronSchedule(time))
+                    .build();
+
+            job.getJobDataMap().put("springContext", _context);
+            _quartzScheduler.add(job, trigger);
+            return String.format("Job %s created.", name);
+        }
+    }
+
+    @Command(name = "qsched script",
+            description = "add scheduled job.")
+    public class AddScriptCommand implements Callable<String> {
+
+        @Argument(index = 1, metaVar = "time")
+        String time;
+
+        @Argument(index = 0, metaVar = "script")
+        String scriptName;
+
+        @Override
+        public String call() throws ClassNotFoundException, SchedulerException {
+
+            JobDetail job = newJob(GroovyExecutionJob.class)
+                    .withIdentity(scriptName)
+                    .usingJobData(GroovyExecutionJob.SCRIPT_PROP, scriptName)
+                    .build();
+
+            Trigger trigger = newTrigger()
+                    .withSchedule(cronSchedule(time))
+                    .build();
+
+             job.getJobDataMap().put("springContext", _context);
+            _quartzScheduler.add(job, trigger);
+            return String.format("Job for %s script created.", scriptName);
+        }
+    }
+
+    @Command(name = "qsched list",
+            description = "list all jobs.")
+    public class ListJobsCommand implements Callable<String> {
+
+        @Override
+        public String call() throws ClassNotFoundException, SchedulerException {
+            return Joiner.on('\n').join(_quartzScheduler.list());
+        }
+    }
+
+    @Command(name = "qsched del",
+            description = "delete a jobs.")
+    public class DeleteJobsCommand implements Callable<String> {
+
+        @Argument(index = 0, metaVar = "jobName")
+        String jobName;
+
+        @Override
+        public String call() throws ClassNotFoundException, SchedulerException {
+            boolean deleted = _quartzScheduler.delete(jobName);
+            return deleted ? "Done" : "Not found";
+        }
     }
 }
