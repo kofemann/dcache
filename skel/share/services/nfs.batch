@@ -50,5 +50,6 @@ check nfs.mover.queue
 create org.dcache.cells.UniversalSpringCell ${nfs.cell.name} \
         "classpath:org/dcache/chimera/nfsv41/door/nfsv41-common.xml \
             -export=${nfs.cell.export} \
+            -messageExecutor=messageThreadPool \
             -profiles=portmap-${nfs.enable.portmap}"
 
