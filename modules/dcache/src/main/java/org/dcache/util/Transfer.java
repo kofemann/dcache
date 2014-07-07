@@ -680,7 +680,7 @@ public class Transfer implements Comparable<Transfer>
      * @throws InterruptedException           if the thread is interrupted
      * @oaram allowWrite whether the file may be opened for writing
      */
-    public final void readNameSpaceEntry(boolean allowWrite)
+    public void readNameSpaceEntry(boolean allowWrite)
             throws CacheException, InterruptedException
     {
         getCancellable(readNameSpaceEntryAsync(allowWrite));

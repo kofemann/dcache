@@ -4,6 +4,10 @@
 package org.dcache.chimera.nfsv41.door;
 
 import com.google.common.base.Joiner;
+import com.google.common.base.Throwables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
 import org.glassfish.grizzly.Buffer;
@@ -49,10 +53,13 @@ import dmg.util.command.Argument;
 import dmg.util.command.Command;
 import dmg.util.command.Option;
 import java.io.Serializable;
+import java.util.EnumSet;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
 
 import org.dcache.auth.Subjects;
 import org.dcache.cells.CellStub;
+import org.dcache.chimera.ChimeraFsException;
 import org.dcache.chimera.FsInode;
 import org.dcache.chimera.FsInodeType;
 import org.dcache.chimera.JdbcFs;
@@ -63,6 +70,15 @@ import org.dcache.chimera.nfsv41.door.proxy.ProxyIoMdsOpFactory;
 import org.dcache.chimera.nfsv41.mover.NFS4ProtocolInfo;
 import org.dcache.commons.stats.RequestExecutionTimeGauges;
 import org.dcache.commons.util.NDC;
+import org.dcache.namespace.FileAttribute;
+
+import static org.dcache.namespace.FileAttribute.ACCESS_LATENCY;
+import static org.dcache.namespace.FileAttribute.PNFSID;
+import static org.dcache.namespace.FileAttribute.RETENTION_POLICY;
+import static org.dcache.namespace.FileAttribute.SIZE;
+import static org.dcache.namespace.FileAttribute.STORAGEINFO;
+import static org.dcache.namespace.FileAttribute.TYPE;
+import org.dcache.namespace.FileType;
 import org.dcache.nfs.ChimeraNFSException;
 import org.dcache.nfs.ExportFile;
 import org.dcache.nfs.status.DelayException;
@@ -106,6 +122,7 @@ import org.dcache.util.Transfer;
 import org.dcache.util.TransferRetryPolicy;
 import org.dcache.utils.Bytes;
 import org.dcache.vehicles.DoorValidateMoverMessage;
+import org.dcache.vehicles.FileAttributes;
 import org.dcache.xdr.OncRpcException;
 import org.dcache.xdr.OncRpcProgram;
 import org.dcache.xdr.OncRpcSvc;
@@ -146,6 +163,12 @@ public class NFSv41Door extends AbstractCellComponent implements
      */
     private final static long NFS_RETRY_PERIOD = 500; // In millis
 
+    /**
+     * Cached values for storageInfos to reduce namespace (DB) lookups.
+     */
+    private LoadingCache<PnfsId, FileAttributes> _attrCache;
+    private final static EnumSet<FileAttribute> SI_ATTRS
+            = EnumSet.of(PNFSID, TYPE, STORAGEINFO, SIZE, RETENTION_POLICY, ACCESS_LATENCY);
     /**
      * Cell communication helper.
      */
@@ -274,6 +297,11 @@ public class NFSv41Door extends AbstractCellComponent implements
         _rpcService = oncRpcSvcBuilder.build();
 
         _vfs = new VfsCache(new ChimeraVfs(_fileFileSystemProvider, _idMapper), _vfsCacheConfig);
+        _attrCache = CacheBuilder.newBuilder()
+                .maximumSize(_vfsCacheConfig.getMaxEntries())
+                .expireAfterWrite(_vfsCacheConfig.getLifeTime(), _vfsCacheConfig.getTimeUnit())
+                .softValues()
+                .build(new FileAttributesLoader());
 
         MountServer ms = new MountServer(_exportFile, _vfs);
         _rpcService.register(new OncRpcProgram(mount_prot.MOUNT_PROGRAM, mount_prot.MOUNT_V3), ms);
@@ -496,7 +524,7 @@ public class NFSv41Door extends AbstractCellComponent implements
                     _log.debug("mover ready: pool={} moverid={}", transfer.getPool(), transfer.getMoverId());
                 }
 
-                PoolDS ds = transfer.waitForRedirect(NFS_REPLY_TIMEOUT);
+                PoolDS ds = transfer.waitForRedirect(NFS_RETRY_PERIOD);
                 deviceid = ds.getDeviceId();
             }
 
@@ -780,7 +808,7 @@ public class NFSv41Door extends AbstractCellComponent implements
         }
     }
 
-    private static class NfsTransfer extends RedirectedTransfer<PoolDS> {
+    private class NfsTransfer extends RedirectedTransfer<PoolDS> {
 
         private final Inode _nfsInode;
 
@@ -801,6 +829,55 @@ public class NFSv41Door extends AbstractCellComponent implements
 
         Inode getInode() {
             return _nfsInode;
+        }
+
+        @Override
+        public void readNameSpaceEntry(boolean isWrite) throws CacheException {
+
+            try {
+                if (isWrite) {
+                    setWrite(true);
+                    Inode parent = _vfs.parentOf(_nfsInode);
+                    PnfsId parentPnfsId = new PnfsId(_fileFileSystemProvider.inodeFromBytes(parent.getFileId()).toString());
+                    FileAttributes parentAttributes = getFromCacheOrLoad(parentPnfsId);
+
+                    FileAttributes expectedAttributes = new FileAttributes();
+                    expectedAttributes.setSize(0);
+                    expectedAttributes.setStorageInfo(parentAttributes.getStorageInfo());
+                    expectedAttributes.setPnfsId(getPnfsId());
+                    expectedAttributes.setFileType(FileType.REGULAR);
+                    expectedAttributes.setAccessLatency(parentAttributes.getAccessLatency());
+                    expectedAttributes.setRetentionPolicy(parentAttributes.getRetentionPolicy());
+                    expectedAttributes.setHsm(parentAttributes.getHsm());
+                    expectedAttributes.setStorageClass(parentAttributes.getStorageClass());
+                    expectedAttributes.setCacheClass(parentAttributes.getCacheClass());
+
+                    this.setFileAttributes(expectedAttributes);
+                } else {
+                    super.readNameSpaceEntry(false);
+                }
+            } catch (IOException | InterruptedException e) {
+                throw new CacheException("Failed to rean namespace entry", e);
+            }
+        }
+
+        private FileAttributes getFromCacheOrLoad(final PnfsId pnfsId) throws CacheException, ChimeraFsException {
+            try {
+                return _attrCache.get(pnfsId);
+            } catch (ExecutionException e) {
+                Throwable t = e.getCause();
+                Throwables.propagateIfInstanceOf(t, CacheException.class);
+                Throwables.propagateIfInstanceOf(t, ChimeraFsException.class);
+                throw new CacheException(e.getMessage(), t);
+            }
+        }
+    }
+
+    private class FileAttributesLoader extends CacheLoader<PnfsId, FileAttributes> {
+
+        @Override
+        public FileAttributes load(PnfsId pnfsId) throws Exception {
+            return _pnfsHandler.getFileAttributes(pnfsId, SI_ATTRS);
         }
     }
 
