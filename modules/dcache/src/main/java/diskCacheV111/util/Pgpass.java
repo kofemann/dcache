@@ -5,12 +5,14 @@
 package diskCacheV111.util;
 
 import java.io.BufferedReader;
-import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
+import java.nio.file.FileSystem;
+import java.nio.file.Path;
+import java.nio.file.attribute.PosixFileAttributeView;
+import java.nio.file.attribute.PosixFileAttributes;
+import java.nio.file.attribute.PosixFilePermission;
 
 /**
  *
@@ -75,49 +77,37 @@ public class Pgpass {
     }
 
     public String getPgpass(String hostname, String port, String database, String username) {
-        //
-        try {
-            Process p1 = Runtime.getRuntime().exec("stat -c '%a' "+_pwdfile);
-            BufferedReader stdInput = new BufferedReader(new InputStreamReader(p1.getInputStream()));
-            BufferedReader stdError = new BufferedReader(new InputStreamReader(p1.getErrorStream()));
-            PrintWriter stdOutput = new PrintWriter(new BufferedWriter(new OutputStreamWriter(p1.getOutputStream())));
-            String reply = stdInput.readLine();
-            try {
-                p1.waitFor();
-            }
-            catch (InterruptedException x) {
-                System.out.println("stat for '"+_pwdfile+"' was interrupted");
-                stdInput.close(); stdError.close(); stdOutput.close();
-                return null;
-            }
-            stdInput.close(); stdError.close(); stdOutput.close();
 
-            if (reply==null) {
-                System.out.println("Cannot stat '"+_pwdfile+"'");
-                return null;
-            } else if (!reply.equals("'600'")) {
-                System.out.println("Protection for '"+_pwdfile+"' must be '600'");
-                return null;
+        Path path = new File(_pwdfile).toPath();
+        FileSystem fs = path.getFileSystem();
+        PosixFileAttributeView posixFileAttributeView = fs.provider().getFileAttributeView(path, PosixFileAttributeView.class);
+
+        try {
+            PosixFileAttributes posixFileAttributes = posixFileAttributeView.readAttributes();
+
+            for(PosixFilePermission perrmission: posixFileAttributes.permissions()) {
+                if (perrmission != PosixFilePermission.OWNER_READ || perrmission != PosixFilePermission.OWNER_WRITE) {
+                    System.out.println("Protection for '" + _pwdfile + "' must be '600'");
+                    return null;
+                }
             }
+
             /*
              * Here we can read and parse the password file
              */
-            try {
-                BufferedReader in = new BufferedReader(new FileReader(_pwdfile));
-                String line, r = null;
-                while ((line = in.readLine()) != null && r == null) {
+            String r = null;
+            try (BufferedReader in = new BufferedReader(new FileReader(_pwdfile));) {
+                do {
+                    String line = in.readLine();
+                    if (line == null) {
+                        break;
+                    }
                     r = process(line, hostname, port, database, username);
-                }
-                in.close();
-                return r;
-            } catch (IOException e) {
-                System.out.println("'"+_pwdfile+"': I/O error");
-                return null;
+                } while (r != null);
             }
-
-        }
-        catch (IOException ex) {
-            System.out.println("Cannot stat "+_pwdfile);
+            return r;
+        } catch (IOException ex) {
+            System.out.println("Cannot read pgpwd file "+_pwdfile + " : " + ex.getMessage());
         }
         return null;
     }
