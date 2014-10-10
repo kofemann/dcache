@@ -43,8 +43,9 @@ public class MetaDataRepositoryDatabase
         envConfig.setTransactional(true);
         envConfig.setAllowCreate(true);
         envConfig.setReadOnly(readonly);
-        envConfig.setConfigParam(EnvironmentConfig.MAX_MEMORY_PERCENT, "20");
+        envConfig.setConfigParam(EnvironmentConfig.MAX_MEMORY_PERCENT, "40");
         envConfig.setConfigParam(EnvironmentConfig.STATS_COLLECT, "false");
+        envConfig.setConfigParam(EnvironmentConfig.LOG_FILE_MAX, "250000000");
         envConfig.setExceptionListener(event -> {
             if (event.getException() instanceof RunRecoveryException) {
                 setFailed();
