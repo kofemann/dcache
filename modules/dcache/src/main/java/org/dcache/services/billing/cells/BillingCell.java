@@ -1,15 +1,11 @@
 package org.dcache.services.billing.cells;
 
-import com.google.common.base.CaseFormat;
 import com.google.common.base.Function;
 import com.google.common.collect.Maps;
 import com.google.common.io.Files;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
-import org.stringtemplate.v4.ST;
-import org.stringtemplate.v4.STGroup;
-import org.stringtemplate.v4.compiler.STException;
 
 import java.io.File;
 import java.io.IOException;
@@ -18,16 +14,13 @@ import java.nio.charset.Charset;
 import java.text.SimpleDateFormat;
 import java.util.Arrays;
 import java.util.Date;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import diskCacheV111.cells.DateRenderer;
 import diskCacheV111.vehicles.InfoMessage;
 import diskCacheV111.vehicles.MoverInfoMessage;
 import diskCacheV111.vehicles.PnfsFileInfoMessage;
 import diskCacheV111.vehicles.StorageInfo;
-import diskCacheV111.vehicles.StringTemplateInfoMessageVisitor;
 import diskCacheV111.vehicles.WarningPnfsFileInfoMessage;
 
 import dmg.cells.nucleus.CellCommandListener;
@@ -35,15 +28,24 @@ import dmg.cells.nucleus.CellInfo;
 import dmg.cells.nucleus.CellInfoProvider;
 import dmg.cells.nucleus.CellMessageReceiver;
 import dmg.cells.nucleus.EnvironmentAware;
-import dmg.util.Formats;
-import dmg.util.Replaceable;
 
 import org.dcache.cells.CellStub;
 import org.dcache.util.Args;
-import org.dcache.util.Slf4jSTErrorListener;
 
 import static com.google.common.collect.Iterables.toArray;
 import static com.google.common.collect.Iterables.transform;
+import diskCacheV111.vehicles.DoorRequestInfoMessage;
+import diskCacheV111.vehicles.PoolHitInfoMessage;
+import diskCacheV111.vehicles.StorageInfoMessage;
+import dmg.cells.nucleus.Environments;
+import dmg.util.Formats;
+import dmg.util.Replaceable;
+import java.nio.charset.StandardCharsets;
+import java.util.HashSet;
+import java.util.Properties;
+import java.util.ServiceLoader;
+import org.dcache.services.billing.spi.BillingRecorder;
+import org.dcache.services.billing.spi.BillingRecorderProvider;
 
 /**
  * This class is responsible for the processing of messages from other
@@ -57,18 +59,14 @@ public final class BillingCell
 {
     private static final Logger _log =
         LoggerFactory.getLogger(BillingCell.class);
-    private static final Charset UTF8 = Charset.forName("UTF-8");
-    public static final String FORMAT_PREFIX = "billing.text.format.";
+    private static final Charset UTF8 = StandardCharsets.UTF_8;
 
-    private final SimpleDateFormat _formatter =
-        new SimpleDateFormat ("MM.dd HH:mm:ss");
-    private final SimpleDateFormat _fileNameFormat =
-        new SimpleDateFormat("yyyy.MM.dd");
-    private final SimpleDateFormat _directoryNameFormat =
-        new SimpleDateFormat("yyyy" + File.separator + "MM");
-
-    private final STGroup _templateGroup = new STGroup('$', '$');
-    private final Map<String,String> _formats = new HashMap<>();
+    private static final ServiceLoader<BillingRecorderProvider> ALL_PROVIDERS
+            = ServiceLoader.load(BillingRecorderProvider.class);
+    private final SimpleDateFormat _formatter
+            = new SimpleDateFormat("MM.dd HH:mm:ss");
+    private final SimpleDateFormat _fileNameFormat
+            = new SimpleDateFormat("yyyy.MM.dd");
 
     private final Map<String,int[]> _map = Maps.newHashMap();
     private final Map<String,long[]> _poolStatistics = Maps.newHashMap();
@@ -76,40 +74,34 @@ public final class BillingCell
 
     private int _requests;
     private int _failed;
-    private File _currentDbFile;
 
     /*
      * Injected
      */
     private CellStub _poolManagerStub;
     private File _logsDir;
-    private boolean _enableText;
-    private boolean _flatTextDir;
 
-    public BillingCell()
-    {
-        _templateGroup.registerRenderer(Date.class, new DateRenderer());
-        _templateGroup.setListener(new Slf4jSTErrorListener(_log));
+    private String[] _recorders;
+    private final Set<BillingRecorder> _receivers = new HashSet<>();
+    private Properties _env;
+
+    public void init() {
+        for(BillingRecorderProvider provider: ALL_PROVIDERS) {
+            for(String configuredProvider: _recorders) {
+                if (provider.getName().equals(configuredProvider)) {
+                    _receivers.add(provider.createRecorder(_env));
+                }
+            }
+        }
+    }
+
+    public void setRecorders(String[] recorders) {
+        _recorders = recorders;
     }
 
     @Override
     public void setEnvironment(final Map<String,Object> environment) {
-        Replaceable replaceable = new Replaceable() {
-            @Override
-            public String getReplacement(String name)
-            {
-                Object value =  environment.get(name);
-                return (value == null) ? null : value.toString().trim();
-            }
-        };
-        for (Map.Entry<String,Object> e: environment.entrySet()) {
-            String key = e.getKey();
-            if (key.startsWith(FORMAT_PREFIX)) {
-                String format = Formats.replaceKeywords(String.valueOf(e.getValue()), replaceable);
-                String clazz = CaseFormat.LOWER_HYPHEN.to(CaseFormat.UPPER_CAMEL, key.substring(FORMAT_PREFIX.length()));
-                _formats.put(clazz, format);
-            }
-        }
+        _env = Environments.toProperties(environment);
     }
 
     @Override
@@ -132,12 +124,32 @@ public final class BillingCell
         }
     }
 
+    public void messageArrived(DoorRequestInfoMessage doorRequestInfo) {
+        legacyProcessing(doorRequestInfo);
+        _receivers.stream().forEach(r -> r.record(doorRequestInfo));
+    }
+
+    public void messageArrived(MoverInfoMessage moverInfo) {
+        legacyProcessing(moverInfo);
+        _receivers.stream().forEach(r -> r.record(moverInfo));
+    }
+
+    public void messageArrived(PoolHitInfoMessage poolHitInfo) {
+        legacyProcessing(poolHitInfo);
+        _receivers.stream().forEach(r -> r.record(poolHitInfo));
+    }
+
+    public void messageArrived(StorageInfoMessage storeInfo) {
+        legacyProcessing(storeInfo);
+        _receivers.stream().forEach(r -> r.record(storeInfo));
+    }
+
     /**
      * The main cell routine. Depending on the type of cell message and the
      * option sets, it either processes the message for persistent storage or
      * logs the message to a text file (or both).
      */
-    public void messageArrived(InfoMessage info) {
+    private void legacyProcessing(InfoMessage info) {
         /*
          * currently we have to ignore 'check'
          */
@@ -149,20 +161,6 @@ public final class BillingCell
 
         if (info.getCellType().equals("pool")) {
             doStatistics(info);
-        }
-
-        if (_enableText) {
-
-            String output = getFormattedMessage(info);
-            if (output.isEmpty()) {
-                return;
-            }
-
-            String ext = getFilenameExtension(new Date(info.getTimestamp()));
-            logInfo(output, ext);
-            if (info.getResultCode() != 0) {
-                logError(output, ext);
-            }
         }
     }
 
@@ -176,22 +174,6 @@ public final class BillingCell
          * Removed writing these to the billing log.  We only
          * want InfoMessages written there
          */
-    }
-
-    private String getFormattedMessage(InfoMessage msg) {
-        String format = _formats.get(msg.getClass().getSimpleName());
-        if (format == null) {
-            return msg.toString();
-        } else {
-            try {
-                ST template = new ST(_templateGroup, format);
-                msg.accept(new StringTemplateInfoMessageVisitor(template));
-                return template.render();
-            } catch (STException e) {
-                _log.error("Unable to render format '{}'. Falling back to internal default.", format);
-                return msg.toString();
-            }
-        }
     }
 
     private static final Function<Map.Entry<String,int[]>,Object[]> toPair =
@@ -306,43 +288,6 @@ public final class BillingCell
         }
     }
 
-    private String getFilenameExtension(Date dateOfEvent)
-    {
-        if (_flatTextDir) {
-            _currentDbFile = _logsDir;
-            return _fileNameFormat.format(dateOfEvent);
-        } else {
-            Date now = new Date();
-            _currentDbFile =
-                new File(_logsDir, _directoryNameFormat.format(now));
-            if (!_currentDbFile.exists() && !_currentDbFile.mkdirs()) {
-                _log.error("Failed to create directory {}", _currentDbFile);
-            }
-            return _fileNameFormat.format(now);
-        }
-    }
-
-    private void logInfo(String output, String ext)
-    {
-        File outputFile = new File(_currentDbFile, "billing-" + ext);
-        try {
-            Files.append(output + "\n", outputFile, UTF8);
-        } catch (IOException e) {
-            _log.warn("Can't write billing [{}] : {}", outputFile,
-                      e.toString());
-        }
-    }
-
-    private void logError(String output, String ext)
-    {
-        File errorFile = new File(_currentDbFile, "billing-error-" + ext);
-        try {
-            Files.append(output + "\n", errorFile, UTF8);
-        } catch (IOException e) {
-            _log.warn("Can't write billing-error : {}", e.toString());
-        }
-    }
-
     private void doStatistics(InfoMessage info) {
         if (info instanceof WarningPnfsFileInfoMessage) {
             return;
@@ -418,14 +363,4 @@ public final class BillingCell
         }
         _logsDir = dir;
     }
-
-    public void setFlatTextDir(boolean flatTextDir) {
-        _flatTextDir = flatTextDir;
-    }
-
-    @Required
-    public void setEnableTxt(boolean enableText) {
-        _enableText = enableText;
-    }
-
 }

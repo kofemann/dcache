@@ -30,11 +30,10 @@
   </bean>
 
   <bean id="billingcell"
-    class="org.dcache.services.billing.cells.BillingCell">
+    class="org.dcache.services.billing.cells.BillingCell" init-method="init">
     <property name="logsDir" value="${billing.text.dir}"/>
-    <property name="enableTxt" value="${billing.enable.text}"/>
-    <property name="flatTextDir" value="${billing.text.flat-dir}"/>
     <property name="poolManagerStub" ref="poolmanager-stub"/>
+    <property name="recorders" value="${billing.service.recorders}" />
   </bean>
 
   <beans profile="db-false">

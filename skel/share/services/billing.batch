@@ -5,7 +5,7 @@ onerror shutdown
 check -strong billing.cell.name
 check -strong billing.cell.export
 check -strong billing.text.dir
-check -strong billing.enable.text
+check -strong billing.service.recorders
 check -strong billing.enable.db
 check -strong billing.service.poolmanager
 check -strong billing.service.poolmanager.timeout
