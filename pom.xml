@@ -834,6 +834,11 @@
                 </exclusion>
             </exclusions>
         </dependency>
+	<dependency>
+	   <groupId>org.elasticsearch</groupId>
+           <artifactId>elasticsearch</artifactId>
+           <version>1.4.0</version>
+        </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -1275,6 +1280,7 @@
         <module>modules/acl</module>
         <module>modules/chimera</module>
         <module>modules/missingfiles-semsg</module>
+        <module>modules/dcache-es4billing</module>
         <module>plugins</module>
         <module>packages</module>
     </modules>

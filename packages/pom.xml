@@ -157,6 +157,11 @@
         <artifactId>dcache-nfs</artifactId>
         <version>${project.version}</version>
     </dependency>
+    <dependency>
+        <groupId>org.dcache</groupId>
+        <artifactId>dcache-es4billing</artifactId>
+        <version>${project.version}</version>
+    </dependency>
 
     <dependency>
         <groupId>saxon</groupId>
