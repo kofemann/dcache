@@ -1,0 +1,53 @@
+#
+# ldapmodify -D 'cn=admin,cn=config' -W -f $THIS_FILE
+#
+
+# dn: cn={4}jade,cn=schema,cn=config
+# changetype: add
+# objectclass: olcSchemaConfig
+# cn: {4}jade
+
+# cannot delete entire schema configuration
+# server does not allow dynamic deletions of schema, but modifications
+# are possible
+# procedure: purge all attribute and objectclass definitions, then
+# upload new definitions
+dn: cn={4}jade,cn=schema,cn=config
+changetype: modify
+delete: olcAttributeTypes
+-
+delete: olcObjectClasses
+-
+add: olcAttributeTypes
+olcAttributeTypes: {0}( 1.3.6.1.4.1.32470.2.1.2.1
+ NAME 'x-jade-homeDirectory'
+ EQUALITY caseExactIA5Match
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
+ SINGLE-VALUE )
+olcAttributeTypes: {1}( 1.3.6.1.4.1.32470.2.1.2.2
+ NAME 'x-jade-rootDirectory'
+ EQUALITY caseExactIA5Match
+ SUBSTR caseExactSubstringsMatch
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
+ SINGLE-VALUE )
+olcAttributeTypes: {2}( 1.3.6.1.4.1.32470.2.1.2.3
+ NAME 'x-jade-readOnly'
+ EQUALITY caseExactIA5Match
+ SUBSTR caseExactSubstringsMatch
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
+ SINGLE-VALUE )
+olcAttributeTypes: {3}( 1.3.6.1.4.1.32470.2.1.2.4
+ NAME 'x-jade-banned'
+ EQUALITY caseExactIA5Match
+ SUBSTR caseExactSubstringsMatch
+ SYNTAX 1.3.6.1.4.1.1466.115.121.1.26
+ SINGLE-VALUE )
+-
+add: olcObjectClasses
+olcObjectClasses: {0}( 1.3.6.1.4.1.32470.2.1.1.1
+ NAME 'x-jade-account'
+ SUP posixAccount
+ AUXILIARY
+ MUST ( mail )
+ MAY ( x-jade-homeDirectory $ x-jade-rootDirectory $ x-jade-readOnly
+ $ x-jade-banned $ title $ o $ ou $ telephoneNumber ) )

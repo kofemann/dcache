@@ -1229,6 +1229,7 @@
         <module>modules/gplazma2-kpwd</module>
         <module>modules/gplazma2-xacml</module>
         <module>modules/gplazma2-ldap</module>
+        <module>modules/gplazma2-ldap2</module>
         <module>modules/gplazma2-htpasswd</module>
         <module>modules/gplazma2-oidc</module>
         <module>modules/gplazma2-multimap</module>
