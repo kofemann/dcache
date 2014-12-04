@@ -30,6 +30,7 @@ import diskCacheV111.vehicles.StorageInfo;
 import dmg.cells.nucleus.CellEndpoint;
 import dmg.cells.nucleus.CellMessage;
 import dmg.cells.nucleus.CellPath;
+import java.nio.BufferOverflowException;
 
 import org.dcache.net.ProtocolConnectionPool;
 import org.dcache.net.ProtocolConnectionPoolFactory;
@@ -198,15 +199,29 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover {
                         CacheException(44, "Protocol Violation (cl<4)");
             }
 
-            try {
-        	_buffer.clear().limit(_commandSize);
-            }catch(IllegalArgumentException iae) {
-        	_log.error("Command size excided command block size : " + _commandSize + "/" + _buffer.capacity());
-        	throw iae;
+            if (_commandSize > _buffer.capacity() || _commandSize < 0) {
+                _log.warn("Command size excided command block size : {}/{}", _commandSize, _buffer.capacity());
+                clearPendingData(channel, _commandSize);
+                throw new BufferOverflowException();
             }
+
+            _buffer.clear().limit(_commandSize);
+
             fillBuffer(channel);
             _buffer.rewind();
             _commandCode = _buffer.getInt();
+        }
+        private  void clearPendingData(SocketChannel channel, int len) throws IOException {
+            int dataToRead = len;
+            ByteBuffer tempBuf = ByteBuffer.allocate(8192);
+             while (dataToRead > 0) {
+                 tempBuf.clear();
+                int n = channel.read(tempBuf);
+                if (n < 0) {
+                    break;
+                }
+                dataToRead -= n;
+            }
         }
         private int remaining(){ return _buffer.remaining(); }
         private int getCommandCode(){ return _commandCode; }
@@ -434,9 +449,10 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover {
                 }catch(EOFException eofe){
                     _log.debug("Dataconnection closed by peer : {}", eofe.toString());
                     throw eofe;
-                }catch(BufferUnderflowException bue){
-                    throw new
-                        CacheException(43,"Protocol Violation (csl<4)");
+                }catch(BufferUnderflowException | BufferOverflowException e){
+                    cntOut.writeACK(666, 9,"Invalid request size");
+                    socketChannel.write(cntOut.buffer());
+                    continue;
                 }
 
                 _lastTransferred    = System.currentTimeMillis();
@@ -722,8 +738,6 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover {
                 default :
                     cntOut.writeACK(666, 9,"Invalid mover command : "+requestBlock);
                     socketChannel.write(cntOut.buffer());
-
-
                 }
 
             }
