@@ -182,7 +182,7 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover {
         private int _commandCode;
 
         private RequestBlock(){
-            _buffer = ByteBuffer.allocate(16384);
+            _buffer = ByteBuffer.allocate(1<<21); // 2MB
         }
         private void read(SocketChannel channel) throws Exception {
 
