@@ -188,13 +188,8 @@ public class ChainedPermissionHandler implements PermissionHandler
                                                       parentAttrs,
                                                       attrs,
                                                       set);
-            switch (res) {
-            case ACCESS_DENIED:
-                return ACCESS_DENIED;
-            case ACCESS_ALLOWED:
-                return ACCESS_ALLOWED;
-            case ACCESS_UNDEFINED:
-                break;
+            if (res != AccessType.ACCESS_UNDEFINED) {
+                return res;
             }
         }
         return ACCESS_UNDEFINED;
@@ -211,13 +206,8 @@ public class ChainedPermissionHandler implements PermissionHandler
                                                       parentAttrs,
                                                       attrs,
                                                       set);
-            switch (res) {
-            case ACCESS_DENIED:
-                return ACCESS_DENIED;
-            case ACCESS_ALLOWED:
-                return ACCESS_ALLOWED;
-            case ACCESS_UNDEFINED:
-                break;
+            if (res != AccessType.ACCESS_UNDEFINED) {
+                return res;
             }
         }
         return ACCESS_UNDEFINED;
@@ -229,21 +219,14 @@ public class ChainedPermissionHandler implements PermissionHandler
                                        FileAttributes attrs,
                                        Set<FileAttribute> attributes)
     {
-        boolean allAllowed = true;
         for (FileAttribute attribute: attributes) {
             AccessType res =
                 canSetAttribute(subject, parentAttrs, attrs, attribute);
-            switch (res) {
-            case ACCESS_DENIED:
-                return ACCESS_DENIED;
-            case ACCESS_UNDEFINED:
-                allAllowed = false;
-                break;
-            case ACCESS_ALLOWED:
-                break;
+            if (res != AccessType.ACCESS_UNDEFINED) {
+                return res;
             }
         }
-        return allAllowed ? ACCESS_ALLOWED : ACCESS_UNDEFINED;
+        return ACCESS_UNDEFINED;
     }
 
     @Override
@@ -252,20 +235,13 @@ public class ChainedPermissionHandler implements PermissionHandler
                                        FileAttributes attrs,
                                        Set<FileAttribute> attributes)
     {
-        boolean allAllowed = true;
         for (FileAttribute attribute: attributes) {
             AccessType res =
                 canGetAttribute(subject, parentAttrs, attrs, attribute);
-            switch (res) {
-            case ACCESS_DENIED:
-                return ACCESS_DENIED;
-            case ACCESS_UNDEFINED:
-                allAllowed = false;
-                break;
-            case ACCESS_ALLOWED:
-                break;
+            if (res != AccessType.ACCESS_UNDEFINED) {
+                return res;
             }
         }
-        return allAllowed ? ACCESS_ALLOWED : ACCESS_UNDEFINED;
+        return ACCESS_UNDEFINED;
     }
 }
