@@ -781,7 +781,7 @@ abstract public class DCacheCoreControllerV2 extends CellAdapter {
    protected TaskObserver removeCopy(PnfsId pnfsId, Set<String> writablePools )
        throws Exception {
 
-     List<String> sourcePoolList = getCacheLocationList(pnfsId, false);
+     List<String> sourcePoolList = getCacheLocationList(pnfsId, true);
 
      /** @todo
       *  synchronize on writable pools; currently the copy is used.
@@ -789,28 +789,13 @@ abstract public class DCacheCoreControllerV2 extends CellAdapter {
 
      sourcePoolList.retainAll( writablePools );
 
-     if ( sourcePoolList.size() == 0 ) {
+     if ( sourcePoolList.size() < 2 ) {
          throw new
-                 IllegalStateException("no deletable replica found for pnfsId=" + pnfsId);
+                 IllegalArgumentException("Unsufficient number of ('online') copies, pnfsId=" +
+                 pnfsId + " confirmed pool=" + sourcePoolList);
      }
 
-     List<String> confirmedSourcePoolList = confirmCacheLocationList(pnfsId, sourcePoolList);
-
-     //
-     if (confirmedSourcePoolList.size() <= 0) {
-         _log.debug("pnfsid = " +pnfsId+", writable pools=" + writablePools);
-         _log.debug("pnfsid = " +pnfsId+", confirmed pools=" + confirmedSourcePoolList );
-         throw new
-                 IllegalArgumentException("no deletable 'online' replica found for pnfsId=" + pnfsId );
-     }
-     if ( confirmedSourcePoolList.size() == 1 ) {
-         throw new
-                 IllegalArgumentException("Can't reduce to 0 writable ('online') copies, pnfsId=" +
-                 pnfsId + " confirmed pool=" + confirmedSourcePoolList);
-     }
-
-     String source = confirmedSourcePoolList.get(
-        _random.nextInt(confirmedSourcePoolList.size()) );
+     String source = sourcePoolList.get( _random.nextInt(sourcePoolList.size()));
 
      return new ReductionObserver(pnfsId, source);
    }
