@@ -55,6 +55,7 @@ import dmg.cells.nucleus.CellPath;
 import dmg.cells.nucleus.NoRouteToCellException;
 import dmg.cells.nucleus.UOID;
 import dmg.util.CommandSyntaxException;
+import java.util.Collections;
 
 import org.dcache.cells.CellStub;
 import org.dcache.util.Args;
@@ -1502,48 +1503,10 @@ abstract public class DCacheCoreControllerV2 extends CellAdapter {
                    "PnfsGetCacheLocation");
        }
 
-       if( ! checked ) {
-           return new ArrayList<>(msg.getCacheLocations());
-       }
-
-       Collection<String> assumed   = new HashSet<>( msg.getCacheLocations() ) ;
-       HashSet<String> confirmed = new HashSet<>( );
-
-       if ( assumed.size() <= 0 )            // nothing to do
-       {
-           return new ArrayList<>(confirmed); // return empty List
-       }
-
-       SpreadAndWait<PoolCheckFileMessage> controller = new SpreadAndWait<>(new CellStub(this, null, _TO_GetCacheLocationList));
-
-//       _log.debug("getCacheLocationList: SpreadAndWait to " + assumed.size() +" pools");
-
-       for (Object pool : assumed) {
-           String poolName = pool.toString();
-           PoolCheckFileMessage query = new PoolCheckFileMessage(poolName, pnfsId);
-           try {
-               controller.send(new CellPath(poolName), PoolCheckFileMessage.class, query);
-           } catch (Exception eeee) {
-               _log.warn("Problem sending query to " + query
-                       .getPoolName() + " " + eeee);
-           }
-       }
-       controller.waitForReplies() ;
-
-       // We may had have problem sending messge to some pools
-       // and getting reply from the other,
-       // in addition have/'do not have' reply
-       // Copy certanly 'confirmed' pools to another map
-       // instead of dropping 'not have' pools from the original map
-
-       for (PoolCheckFileMessage reply: controller.getReplies().values()) {
-	  _log.trace("getCacheLocationList : PoolCheckFileMessage={}", reply);
-          if (reply.getHave()) {
-              confirmed.add(reply.getPoolName());
-          }
-       }
-
-       return new ArrayList<>( confirmed ) ;
+       List<String> locations = msg.getCacheLocations();
+       return checked ?
+               confirmCacheLocationList(pnfsId, locations)
+               : new ArrayList<>(locations);
    }
 
    /**
@@ -1554,16 +1517,15 @@ abstract public class DCacheCoreControllerV2 extends CellAdapter {
     *
     */
    protected List<String> confirmCacheLocationList(PnfsId pnfsId,
-                                                   List<String> poolList)
+                                                   List<String> assumed)
            throws InterruptedException
    {
-       Collection<String> assumed   = new HashSet<>(poolList);
-       HashSet<String> confirmed = new HashSet<>();
 
-       if (assumed.size() <= 0)             // nothing to do
-       {
-           return new ArrayList<>(confirmed); // return empty List
+       if (assumed.isEmpty()) {
+           return Collections.emptyList();
        }
+
+       HashSet<String> confirmed = new HashSet<>();
 
        SpreadAndWait<PoolCheckFileMessage> controller = new SpreadAndWait<>(new CellStub(this, null, _TO_GetCacheLocationList));
 
