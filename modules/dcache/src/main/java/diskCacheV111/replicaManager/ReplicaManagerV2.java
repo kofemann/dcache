@@ -1637,49 +1637,6 @@ public class ReplicaManagerV2 extends DCacheCoreControllerV2
 
   } //-- end class Adjuster
 
-  private int poolDisable( String poolName ) {
-    int modeBits = PoolV2Mode.DISABLED_STRICT;
-    return setPoolMode( poolName, modeBits );
-  }
-
-  private int poolEnable( String poolName ) {
-    int modeBits = PoolV2Mode.ENABLED;
-    return setPoolMode( poolName, modeBits );
-  }
-
-  private int poolRdOnly( String poolName ) {
-    int modeBits = PoolV2Mode.DISABLED_RDONLY;
-    return setPoolMode( poolName, modeBits );
-  }
-
-  private int setPoolMode( String poolName, int modeBits ) {
-    int    rc = 1 ;
-    String rm = "Replica Manager Command";
-
-    PoolV2Mode mode = new PoolV2Mode( modeBits ) ;
-    PoolModifyModeMessage msg, reply;
-
-    msg = new PoolModifyModeMessage(poolName,mode);
-    msg.setStatusInfo( rc, rm );
-
-    try{
-       reply = (PoolModifyModeMessage) sendObject( poolName, msg ) ;
-    }catch(Exception ee ){
-       _log.warn( "setPoolMode pool=" + poolName
-            + ", mode=" + new PoolV2Mode(modeBits).toString()
-            +" - got exception '"+ ee.getMessage() +"'" );
-       return -1;
-    }
-
-    if( reply.getReturnCode() != 0 ){
-       _log.warn( "setPoolMode pool=" + poolName
-            + ", mode=" + new PoolV2Mode(modeBits).toString()
-            +" - error '" +reply.getErrorObject().toString() +"'" );
-       return -1;
-    }
-    return 0;
-  }
-
   /////////////////////////////////////////////////////////////////////////////
   // CLI
   //
