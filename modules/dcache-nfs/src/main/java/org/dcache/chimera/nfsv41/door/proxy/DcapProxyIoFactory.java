@@ -33,6 +33,7 @@ import org.dcache.nfs.v4.NFS4State;
 import org.dcache.nfs.v4.StateDisposeListener;
 import org.dcache.nfs.v4.xdr.stateid4;
 import org.dcache.nfs.vfs.Inode;
+import org.dcache.nfs.vfs.VfsCache;
 import org.dcache.util.RedirectedTransfer;
 import org.dcache.util.Transfer;
 import org.dcache.util.TransferRetryPolicy;
@@ -64,6 +65,7 @@ public class DcapProxyIoFactory extends AbstractCell {
     private TransferRetryPolicy _retryPolicy;
 
     private JdbcFs _fileFileSystemProvider;
+    private VfsCache _vfsCache;
 
     private final Cache<stateid4, ProxyIoAdapter> _proxyIO
             = CacheBuilder.newBuilder()
@@ -71,6 +73,10 @@ public class DcapProxyIoFactory extends AbstractCell {
 
     public void setFileSystemProvider(JdbcFs fs) {
         _fileFileSystemProvider = fs;
+    }
+
+    public void setVfs(VfsCache vfs) {
+        _vfsCache = vfs;
     }
 
     public void setPnfsHandler(PnfsHandler pnfs) {
@@ -172,6 +178,9 @@ public class DcapProxyIoFactory extends AbstractCell {
                                         transfer.killMover(0);
                                     }
                                     _proxyIO.invalidate(state.stateid());
+                                    if (isWrite) {
+                                        _vfsCache.invalidateStatCache(inode);
+                                    }
                                 }
                             });
 

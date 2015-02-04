@@ -292,6 +292,7 @@ public class NFSv41Door extends AbstractCellComponent implements
                      _proxyIoFactory.setPoolManager(_poolManagerStub.getDestinationPath());
                      _proxyIoFactory.setIoQueue(_ioQueue);
                      _proxyIoFactory.setRetryPolicy(RETRY_POLICY);
+                     _proxyIoFactory.setVfs(_vfs);
                      _proxyIoFactory.startAdapter();
                     _nfs4 = new NFSServerV41(new ProxyIoMdsOpFactory(_proxyIoFactory, new MDSOperationFactory()),
                             _dm, _vfs, _exportFile);
