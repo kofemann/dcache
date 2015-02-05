@@ -6,6 +6,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.channels.SocketChannel;
+import org.dcache.nfs.vfs.VirtualFileSystem;
 
 /**
  * DCAP based implementation of {@link ProxyIoAdapter}.
@@ -53,7 +54,7 @@ public class DcapChannelImpl implements ProxyIoAdapter {
     }
 
     @Override
-    public synchronized int read(ByteBuffer dst, long position) throws IOException {
+    public synchronized ReadResult read(ByteBuffer dst, long position) throws IOException {
 
         ByteBuffer command = new DcapCommandBuilder()
                 .withSeekAndRead(position, dst.remaining())
@@ -61,23 +62,20 @@ public class DcapChannelImpl implements ProxyIoAdapter {
 
         writeFully(_channel, command);
         getAck();
-        return getData(dst);
+        int n = getData(dst);
+        return new ReadResult(n < 0 ? 0 : 1, n > 0 && position + n >= _size);
     }
 
     @Override
-    public synchronized int write(ByteBuffer src, long position) throws IOException {
+    public synchronized VirtualFileSystem.WriteResult write(ByteBuffer src, long position) throws IOException {
         ByteBuffer command = new DcapCommandBuilder()
                 .withSeekAndWrite(position, src.remaining())
                 .build();
 
         writeFully(_channel, command);
         getAck();
-        return sendData(src);
-    }
-
-    @Override
-    public long size() {
-        return _size;
+        int n = sendData(src);
+        return new VirtualFileSystem.WriteResult(VirtualFileSystem.StabilityLevel.FILE_SYNC, n);
     }
 
     @Override
