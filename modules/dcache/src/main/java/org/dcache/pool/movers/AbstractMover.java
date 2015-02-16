@@ -17,6 +17,7 @@
  */
 package org.dcache.pool.movers;
 
+import com.google.common.base.Optional;
 import com.google.common.base.Strings;
 import com.google.common.reflect.TypeToken;
 import org.slf4j.Logger;
@@ -26,11 +27,18 @@ import javax.security.auth.Subject;
 
 import java.io.FileNotFoundException;
 import java.io.InterruptedIOException;
+import java.io.IOException;
 import java.nio.channels.CompletionHandler;
+import java.security.NoSuchAlgorithmException;
+import java.util.Collections;
+import java.util.Set;
+
+import com.google.common.base.Throwables;
 
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.DiskErrorCacheException;
 import diskCacheV111.util.FsPath;
+import diskCacheV111.util.ChecksumFactory;
 import diskCacheV111.vehicles.PoolAcceptFileMessage;
 import diskCacheV111.vehicles.PoolIoFileMessage;
 import diskCacheV111.vehicles.ProtocolInfo;
@@ -38,10 +46,12 @@ import diskCacheV111.vehicles.ProtocolInfo;
 import dmg.cells.nucleus.CellPath;
 
 import org.dcache.pool.classic.Cancellable;
+import org.dcache.pool.classic.ChecksumModule;
 import org.dcache.pool.classic.TransferService;
 import org.dcache.pool.repository.FileRepositoryChannel;
 import org.dcache.pool.repository.ReplicaDescriptor;
 import org.dcache.pool.repository.RepositoryChannel;
+import org.dcache.util.Checksum;
 import org.dcache.util.TryCatchTemplate;
 import org.dcache.vehicles.FileAttributes;
 
@@ -68,9 +78,12 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends AbstractMo
     protected final String _transferPath;
     protected volatile int _errorCode;
     protected volatile String _errorMessage = "";
+    private final ChecksumFactory _checksumFactory;
+    private volatile ChecksumChannel _checksumChannel;
 
     public AbstractMover(ReplicaDescriptor handle, PoolIoFileMessage message, CellPath pathToDoor,
-                         TransferService<M> transferService)
+                         TransferService<M> transferService,
+                         ChecksumModule checksumModule)
     {
         TypeToken<M> type = new TypeToken<M>(getClass()) {};
         checkArgument(type.isAssignableFrom(getClass()));
@@ -87,6 +100,7 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends AbstractMo
         _pathToDoor = pathToDoor;
         _handle = handle;
         _transferService = transferService;
+        _checksumFactory = getChecksumFactoryFor(checksumModule, handle);
     }
 
     @Override
@@ -246,6 +260,19 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends AbstractMo
         case WRITE:
             try {
                 channel = new FileRepositoryChannel(_handle.getFile(), "rw");
+                try {
+                    channel = _checksumChannel = new ChecksumChannel(channel, _checksumFactory);
+                } catch (Throwable t) {
+                    /* This should only happen in case of JVM Errors or if the checksum digest cannot be
+                     * instantiated (which, barring bugs, should never happen).
+                     */
+                    try {
+                        channel.close();
+                    } catch (IOException e) {
+                        t.addSuppressed(e);
+                    }
+                    Throwables.propagate(t);
+                }
             } catch (FileNotFoundException e) {
                 throw new DiskErrorCacheException(
                         "File could not be created; please check the file system", e);
@@ -266,6 +293,18 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends AbstractMo
     }
 
     @Override
+    public Set<Checksum> getActualChecksums() {
+        return (_checksumChannel == null)
+                ? Collections.<Checksum>emptySet()
+                : Optional.fromNullable(_checksumChannel.getChecksum()).asSet();
+    }
+
+    @Override
+    public Set<Checksum> getExpectedChecksums() {
+        return Collections.emptySet();
+    }
+
+    @Override
     public String toString()
     {
         StringBuilder sb = new StringBuilder();
@@ -280,6 +319,18 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends AbstractMo
             sb.append((System.currentTimeMillis() - lastTransferTime) / 1000L);
         }
         return sb.toString();
+    }
+
+    private static ChecksumFactory getChecksumFactoryFor(ChecksumModule checksumModule, ReplicaDescriptor handle)
+    {
+        if (checksumModule.hasPolicy(ChecksumModule.PolicyFlag.ON_TRANSFER)) {
+            try {
+                return checksumModule.getPreferredChecksumFactory(handle);
+            } catch (NoSuchAlgorithmException | CacheException e) {
+                LOGGER.error("Failed to instantiate mover due to unsupported checksum type: " + e.getMessage(), e);
+            }
+        }
+        return null;
     }
 
     protected abstract String getStatus();

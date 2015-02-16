@@ -29,6 +29,7 @@ import org.dcache.pool.classic.TransferService;
 import org.dcache.pool.repository.ReplicaDescriptor;
 
 import static com.google.common.base.Preconditions.checkState;
+import org.dcache.pool.classic.ChecksumModule;
 
 /**
  * A Mover implementation based on the MoverChannel class.
@@ -41,9 +42,10 @@ public abstract class MoverChannelMover<P extends ProtocolInfo, M extends MoverC
     public MoverChannelMover(ReplicaDescriptor handle, PoolIoFileMessage message,
                              CellPath pathToDoor,
                              TransferService<M> transferService,
-                             MoverChannel.AllocatorMode allocatorMode)
+                             MoverChannel.AllocatorMode allocatorMode,
+                             ChecksumModule checksumModule)
     {
-        super(handle, message, pathToDoor, transferService);
+        super(handle, message, pathToDoor, transferService, checksumModule);
         _allocatorMode = allocatorMode;
     }
 
