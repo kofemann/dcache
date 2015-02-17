@@ -102,7 +102,6 @@ public class PnfsManagerTest
         chimera.setInheritFileOwnership(true);
         chimera.setVerifyAllLookups(true);
         chimera.setPermissionHandler(new PosixPermissionHandler());
-        chimera.setAclEnabled(false);
         chimera.setFileSystem(_fs);
 
 

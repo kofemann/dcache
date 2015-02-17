@@ -85,7 +85,6 @@
       <property name="verifyAllLookups" value="${pnfsmanager.enable.full-path-permission-check}"/>
       <property name="fileSystem" ref="file-system"/>
       <property name="extractor" ref="extractor"/>
-      <property name="aclEnabled" value="${pnfsmanager.enable.acl}"/>
       <property name="atimeGap" value="${pnfsmanager.atime-gap}" />
       <property name="uploadDirectory" value="${pnfsmanager.upload-directory}"/>
   </bean>
