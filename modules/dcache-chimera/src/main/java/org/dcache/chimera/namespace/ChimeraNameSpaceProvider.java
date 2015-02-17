@@ -86,7 +86,6 @@ public class ChimeraNameSpaceProvider
 
     private boolean _inheritFileOwnership;
     private boolean _verifyAllLookups;
-    private boolean _aclEnabled;
     private PermissionHandler _permissionHandler;
     private String _uploadDirectory;
 
@@ -118,12 +117,6 @@ public class ChimeraNameSpaceProvider
     public void setFileSystem(JdbcFs fs)
     {
         _fs = fs;
-    }
-
-    @Required
-    public void setAclEnabled(boolean isEnabled)
-    {
-        _aclEnabled = isEnabled;
     }
 
     @Required
@@ -626,7 +619,6 @@ public class ChimeraNameSpaceProvider
        StringBuilder sb = new StringBuilder();
 
        sb.append("$Id: ChimeraNameSpaceProvider.java,v 1.7 2007-10-01 12:28:03 tigran Exp $ \n");
-       sb.append("Acl Enabled: ").append(_aclEnabled).append("\n");
        sb.append(_fs.getInfo() );
         return sb.toString();
 
@@ -678,11 +670,7 @@ public class ChimeraNameSpaceProvider
         for (FileAttribute attribute: attr) {
             switch (attribute) {
             case ACL:
-                if(_aclEnabled) {
-                    attributes.setAcl(inode.getAcl());
-                } else {
-                    attributes.setAcl(null);
-                }
+                attributes.setAcl(inode.getAcl());
                 break;
             case ACCESS_LATENCY:
                 AccessLatency accessLatency = _extractor.getAccessLatency(inode);
