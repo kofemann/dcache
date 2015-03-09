@@ -1640,8 +1640,15 @@ public class DCapDoorInterpreterV3 implements KeepAliveListener,
         public boolean fileAttributesNotAvailable() throws CacheException
         {
             String path = _message.getPnfsPath();
-            _pnfs.createPnfsDirectory(path, getUid(), getGid(),
+           PnfsCreateEntryMessage  pnfsEntry = _pnfs.createPnfsDirectory(path, getUid(), getGid(),
                                       getMode(NameSpaceProvider.DEFAULT));
+            if (_vargs.hasOption("acl")) {
+                String aclString = _vargs.getOption("acl");
+                ACL acl = ACLParser.parseLinuxAcl(RsType.FILE, aclString);
+                FileAttributes aclAttributes = new FileAttributes();
+                aclAttributes.setAcl(acl);
+                _pnfs.setFileAttributes(pnfsEntry.getPnfsId(), aclAttributes);
+            }
             sendReply("fileAttributesNotAvailable", 0, "");
             return false;
         }
