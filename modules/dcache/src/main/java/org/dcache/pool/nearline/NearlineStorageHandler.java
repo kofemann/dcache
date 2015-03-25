@@ -708,7 +708,8 @@ public class NearlineStorageHandler extends AbstractCellComponent implements Cel
         @Override
         public File getFile()
         {
-            return descriptor.getFile();
+            // FIXME: XXX
+            return null;//descriptor.getFile();
         }
 
         @Override
@@ -746,7 +747,11 @@ public class NearlineStorageHandler extends AbstractCellComponent implements Cel
         @Override
         public void failed(Exception cause)
         {
-            descriptor.close();
+            try {
+                descriptor.close();
+            } catch (IOException e) {
+                LOGGER.error("Failed to close file handle {} : {}.", getFileAttributes().getPnfsId(), e.getMessage());
+            }
             /* ListenableFuture#get throws ExecutionException */
             if (cause instanceof ExecutionException) {
                 done(cause.getCause());
@@ -977,7 +982,8 @@ public class NearlineStorageHandler extends AbstractCellComponent implements Cel
         @Override
         public File getFile()
         {
-            return descriptor.getFile();
+            // FIXME: XXX
+            return null;//descriptor.getFile();
         }
 
         @Override
@@ -1036,7 +1042,11 @@ public class NearlineStorageHandler extends AbstractCellComponent implements Cel
                 LOGGER.warn("Stage of {} failed with {}.",
                             pnfsId, cause);
             }
-            descriptor.close();
+            try {
+                descriptor.close();
+            } catch (IOException e) {
+                LOGGER.error("Failed to close file handle {} : {}.", getFileAttributes().getPnfsId(), e.getMessage());
+            }
             if (cause instanceof CacheException) {
                 infoMsg.setResult(((CacheException) cause).getRc(), cause.getMessage());
             } else if (cause != null) {

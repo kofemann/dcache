@@ -20,7 +20,6 @@ package org.dcache.pool.classic;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.security.NoSuchAlgorithmException;
@@ -386,7 +385,7 @@ public class ChecksumModuleV1
                         concat(expectedChecksums, actualChecksums), getDefaultChecksumType());
                 actualChecksums =
                         concat(actualChecksums,
-                                Collections.singleton(factory.computeChecksum(handle.getFile())));
+                                Collections.singleton(factory.computeChecksum(handle)));
             }
             compareChecksums(expectedChecksums, actualChecksums);
             handle.addChecksums(actualChecksums);
@@ -415,27 +414,27 @@ public class ChecksumModuleV1
     public Iterable<Checksum> verifyChecksum(ReplicaDescriptor handle)
             throws NoSuchAlgorithmException, IOException, InterruptedException, CacheException
     {
-        return verifyChecksum(handle.getFile(), handle.getChecksums());
+        return verifyChecksum(handle, handle.getChecksums());
     }
 
     @Override
-    public Iterable<Checksum> verifyChecksum(File file, Iterable<Checksum> expectedChecksums)
+    public Iterable<Checksum> verifyChecksum(ReplicaDescriptor handle, Iterable<Checksum> expectedChecksums)
             throws NoSuchAlgorithmException, IOException, InterruptedException, CacheException
     {
-        return verifyChecksum(file, expectedChecksums, Double.POSITIVE_INFINITY);
+        return verifyChecksum(handle, expectedChecksums, Double.POSITIVE_INFINITY);
     }
 
     public Iterable<Checksum> verifyChecksumWithThroughputLimit(ReplicaDescriptor handle)
             throws IOException, InterruptedException, NoSuchAlgorithmException, CacheException
     {
-        return verifyChecksum(handle.getFile(), handle.getChecksums(), getThroughputLimit());
+        return verifyChecksum(handle, handle.getChecksums(), getThroughputLimit());
     }
 
-    private Iterable<Checksum> verifyChecksum(File file, Iterable<Checksum> expectedChecksums, double throughputLimit)
+    private Iterable<Checksum> verifyChecksum(ReplicaDescriptor handle, Iterable<Checksum> expectedChecksums, double throughputLimit)
             throws NoSuchAlgorithmException, IOException, InterruptedException, CacheException
     {
         ChecksumFactory factory = ChecksumFactory.getFactory(expectedChecksums, getDefaultChecksumType());
-        Iterable<Checksum> actualChecksums = Collections.singleton(factory.computeChecksum(file, throughputLimit));
+        Iterable<Checksum> actualChecksums = Collections.singleton(factory.computeChecksum(handle, throughputLimit));
         compareChecksums(expectedChecksums, actualChecksums);
         return actualChecksums;
     }

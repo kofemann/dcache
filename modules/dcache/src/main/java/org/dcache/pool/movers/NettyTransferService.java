@@ -367,7 +367,7 @@ public abstract class NettyTransferService<P extends ProtocolInfo>
                     throws Exception
             {
                 NettyMoverChannel channel =
-                        autoclose(new NettyMoverChannel(mover.open(), connectTimeoutUnit.toMillis(connectTimeout), this));
+                        new NettyMoverChannel(mover.open(), connectTimeoutUnit.toMillis(connectTimeout), this);
                 if (uuids.putIfAbsent(mover.getUuid(), channel) != null) {
                     throw new IllegalStateException("UUID conflict");
                 }

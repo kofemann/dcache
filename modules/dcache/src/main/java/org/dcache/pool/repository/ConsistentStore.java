@@ -260,7 +260,9 @@ public class ConsistentStore
                         (_checksumModule.hasPolicy(ChecksumModule.PolicyFlag.ON_WRITE) ||
                                 _checksumModule.hasPolicy(ChecksumModule.PolicyFlag.ON_TRANSFER) ||
                                 _checksumModule.hasPolicy(ChecksumModule.PolicyFlag.ON_RESTORE))) {
-                    actualChecksums = _checksumModule.verifyChecksum(entry.getDataFile(), expectedChecksums);
+                    // FIXME: tigran
+                 //   actualChecksums = _checksumModule.verifyChecksum(entry.getDataFile(), expectedChecksums);
+                    actualChecksums = Collections.emptySet();
                 } else {
                     actualChecksums = Collections.emptySet();
                 }

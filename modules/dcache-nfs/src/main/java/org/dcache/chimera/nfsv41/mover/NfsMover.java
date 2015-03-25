@@ -108,11 +108,6 @@ public class NfsMover extends MoverChannelMover<NFS4ProtocolInfo, NfsMover> {
     void disable(Throwable error) {
         _nfsIO.remove(NfsMover.this);
         detachSession();
-        try {
-            getMoverChannel().close();
-        } catch (IOException e) {
-            _log.error("failed to close RAF {}", e.toString());
-        }
         if(error == null) {
             _completionHandler.completed(null, null);
         } else {

@@ -3,13 +3,14 @@ package diskCacheV111.util;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.Set;
 
+import org.dcache.pool.repository.ReplicaDescriptor;
+import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.util.Checksum;
 import org.dcache.util.ChecksumType;
 
@@ -20,7 +21,7 @@ public abstract class ChecksumFactory
     public abstract Checksum create(byte [] digest);
     public abstract Checksum create(String stringDigest);
     public abstract Checksum find(Set<Checksum> checksums);
-    public abstract Checksum computeChecksum(File file)
+    public abstract Checksum computeChecksum(ReplicaDescriptor handle)
         throws IOException, InterruptedException;
 
     /**
@@ -33,7 +34,7 @@ public abstract class ChecksumFactory
      * @throws IOException
      * @throws InterruptedException
      */
-    public abstract Checksum computeChecksum(File file, double throughputLimit)
+    public abstract Checksum computeChecksum(ReplicaDescriptor handle, double throughputLimit)
         throws IOException, InterruptedException;
 
     public static ChecksumFactory getFactory(ChecksumType type)
@@ -138,10 +139,10 @@ class GenericIdChecksumFactory extends ChecksumFactory
     }
 
     @Override
-    public Checksum computeChecksum(File file) throws IOException,
+    public Checksum computeChecksum(ReplicaDescriptor handle) throws IOException,
         InterruptedException
     {
-        return computeChecksum(file, Double.POSITIVE_INFINITY);
+        return computeChecksum(handle, Double.POSITIVE_INFINITY);
     }
 
     /**
@@ -197,34 +198,37 @@ class GenericIdChecksumFactory extends ChecksumFactory
     }
 
     @Override
-    public Checksum computeChecksum(File file, double throughputLimit)
+    public Checksum computeChecksum(ReplicaDescriptor handle, double throughputLimit)
         throws IOException, InterruptedException
     {
         long start = System.currentTimeMillis();
         MessageDigest digest = create();
-        byte [] buffer = new byte[64 * 1024];
+        ByteBuffer buffer = ByteBuffer.allocate(64 * 1024);
         long sum = 0L;
-        try (FileInputStream in = new FileInputStream(file)) {
-            int rc;
-            while ((rc = in.read(buffer, 0, buffer.length)) > 0) {
-                sum += rc;
-                digest.update(buffer, 0, rc);
-                if (Thread.interrupted()) {
-                    throw new InterruptedException();
-                }
-                long adjust =
-                        throughputAdjustment(throughputLimit,
-                                sum,
-                                System.currentTimeMillis() - start);
-                if (adjust > 0) {
-                    Thread.sleep(adjust);
-                }
+        RepositoryChannel channel = handle.getRepositoryChannel();
+        channel.position(0L);
+
+        int rc;
+        while ((rc = channel.read(buffer)) > 0) {
+            sum += rc;
+            buffer.flip();
+            digest.update(buffer);
+            buffer.clear();
+            if (Thread.interrupted()) {
+                throw new InterruptedException();
+            }
+            long adjust
+                    = throughputAdjustment(throughputLimit,
+                            sum,
+                            System.currentTimeMillis() - start);
+            if (adjust > 0) {
+                Thread.sleep(adjust);
             }
         }
 
         Checksum checksum = create(digest.digest());
 
-        _log.debug("Computed checksum for {}, length {}, checksum {} in {} ms{}", file, sum, checksum,
+        _log.debug("Computed checksum for {}, length {}, checksum {} in {} ms{}", handle, sum, checksum,
                    System.currentTimeMillis() - start, sum == 0 ? ""
                             : ", throughput " +
                               throughputAsString(sum, System.currentTimeMillis() - start) +

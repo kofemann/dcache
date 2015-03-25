@@ -17,9 +17,6 @@
  */
 package org.dcache.util;
 
-import com.google.common.io.Closer;
-
-import java.io.Closeable;
 import java.nio.channels.CompletionHandler;
 
 import org.dcache.pool.classic.Cancellable;
@@ -67,7 +64,6 @@ import static com.google.common.base.Preconditions.checkState;
  * */
 public abstract class TryCatchTemplate<V, A> implements Cancellable, CompletionHandler<V, A>
 {
-    private final Closer _closer = Closer.create();
     private final CompletionHandler<V, A> _completionHandler;
     private volatile Cancellable _cancellable;
 
@@ -93,33 +89,15 @@ public abstract class TryCatchTemplate<V, A> implements Cancellable, CompletionH
     public final void completed(V result, A attachment)
     {
         try {
-            _closer.close();
             onSuccess(result, attachment);
             _completionHandler.completed(result, attachment);
         } catch (Throwable t) {
-            fail(t, attachment);
+            failed(t, attachment);
         }
     }
 
     @Override
-    public final void failed(Throwable exc, A attachment)
-    {
-        /* This weird looking code is to fulfill the contract of Closer.
-         * It ensures that suppressed exceptions from the Closeables are
-         * handled correctly.
-         */
-        try {
-            try {
-                throw _closer.rethrow(exc, Exception.class);
-            } finally {
-                _closer.close();
-            }
-        } catch (Throwable t) {
-            fail(t, attachment);
-        }
-    }
-
-    private void fail(Throwable t, A attachment)
+    public final void failed(Throwable t, A attachment)
     {
         try {
             onFailure(t, attachment);
@@ -133,16 +111,6 @@ public abstract class TryCatchTemplate<V, A> implements Cancellable, CompletionH
             t.addSuppressed(t);
         }
         _completionHandler.failed(t, attachment);
-    }
-
-    /**
-     * Registers the given {@code closeable} to be closed when this {@code TryCatchTemplate} completes.
-     *
-     * @return the given {@code closeable}
-     */
-    protected <C extends Closeable> C autoclose(C closeable)
-    {
-        return _closer.register(closeable);
     }
 
     /**

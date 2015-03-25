@@ -1,15 +1,18 @@
 package org.dcache.pool.repository.v5;
 
-import java.io.File;
+import java.io.IOException;
 import java.util.EnumSet;
 import java.util.Set;
 
 import diskCacheV111.util.CacheException;
+import diskCacheV111.util.DiskErrorCacheException;
 import diskCacheV111.util.PnfsHandler;
 
 import org.dcache.namespace.FileAttribute;
 import org.dcache.pool.repository.MetaDataRecord;
 import org.dcache.pool.repository.ReplicaDescriptor;
+import org.dcache.pool.repository.FileRepositoryChannel;
+import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.util.Checksum;
 import org.dcache.vehicles.FileAttributes;
 
@@ -23,10 +26,11 @@ class ReadHandleImpl implements ReplicaDescriptor
     private final MetaDataRecord _entry;
     private FileAttributes _fileAttributes;
     private boolean _open;
+    private final RepositoryChannel _channel;
 
     ReadHandleImpl(CacheRepositoryV5 repository,
                    PnfsHandler pnfs,
-                   MetaDataRecord entry)
+                   MetaDataRecord entry) throws DiskErrorCacheException
     {
         _repository = checkNotNull(repository);
         _pnfs = checkNotNull(pnfs);
@@ -34,6 +38,11 @@ class ReadHandleImpl implements ReplicaDescriptor
         _fileAttributes = _entry.getFileAttributes();
         _open = true;
         _entry.incrementLinkCount();
+        try {
+            _channel = new FileRepositoryChannel(_entry.getDataFile(), "r");
+        } catch (IOException e) {
+            throw new DiskErrorCacheException("Failed to open file: " + _entry.getDataFile(), e);
+        }
     }
 
     /**
@@ -42,11 +51,12 @@ class ReadHandleImpl implements ReplicaDescriptor
      * @throws IllegalStateException if EntryIODescriptor is closed.
      */
     @Override
-    public synchronized void close() throws IllegalStateException
+    public synchronized void close() throws IllegalStateException, IOException
     {
         if (!_open) {
             throw new IllegalStateException("Handle is closed");
         }
+        _channel.close();
         _entry.decrementLinkCount();
         _open = false;
         _repository.destroyWhenRemovedAndUnused(_entry);
@@ -58,13 +68,13 @@ class ReadHandleImpl implements ReplicaDescriptor
      * @throws IllegalStateException if EntryIODescriptor is closed.
      */
     @Override
-    public synchronized File getFile() throws IllegalStateException
+    public synchronized RepositoryChannel getRepositoryChannel() throws IllegalStateException
     {
         if (!_open) {
             throw new IllegalStateException("Handle is closed");
         }
 
-        return _entry.getDataFile();
+        return _channel;
     }
 
     @Override

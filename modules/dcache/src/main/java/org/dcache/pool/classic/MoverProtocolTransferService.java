@@ -18,7 +18,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import diskCacheV111.util.CacheException;
-import diskCacheV111.util.DiskErrorCacheException;
 import diskCacheV111.vehicles.PoolIoFileMessage;
 import diskCacheV111.vehicles.ProtocolInfo;
 
@@ -30,8 +29,6 @@ import dmg.cells.nucleus.EnvironmentAware;
 import dmg.util.command.Argument;
 import dmg.util.command.Command;
 
-import org.dcache.pool.FaultAction;
-import org.dcache.pool.FaultEvent;
 import org.dcache.pool.FaultListener;
 import org.dcache.pool.movers.Mover;
 import org.dcache.pool.movers.MoverFactory;
@@ -169,8 +166,8 @@ public class MoverProtocolTransferService extends AbstractCellComponent
         public void run() {
             try {
                 setThread();
-                try (RepositoryChannel fileIoChannel = _mover.openChannel()) {
-                    switch (_mover.getIoMode()) {
+                RepositoryChannel fileIoChannel = _mover.openChannel();
+                switch (_mover.getIoMode()) {
                     case WRITE:
                         try {
                             runMover(fileIoChannel);
@@ -186,17 +183,10 @@ public class MoverProtocolTransferService extends AbstractCellComponent
                     case READ:
                         runMover(fileIoChannel);
                         break;
-                    }
-                } catch (DiskErrorCacheException e) {
-                    _faultListener.faultOccurred(new FaultEvent("repository", FaultAction.DISABLED, e.getMessage(), e));
-                    _completionHandler.failed(e, null);
-                    return;
-                } catch (Throwable t) {
-                    _completionHandler.failed(t, null);
-                    return;
                 }
+
                 _completionHandler.completed(null, null);
-            } catch (InterruptedException e) {
+            } catch (Throwable e) {
                 _completionHandler.failed(e, null);
             } finally {
                 cleanThread();

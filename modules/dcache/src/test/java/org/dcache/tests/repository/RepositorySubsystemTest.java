@@ -1,6 +1,5 @@
 package org.dcache.tests.repository;
 
-import com.google.common.io.Files;
 import com.google.common.primitives.Bytes;
 import com.sleepycat.je.DatabaseException;
 import org.junit.After;
@@ -11,6 +10,7 @@ import org.junit.Test;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
@@ -58,6 +58,7 @@ import org.dcache.vehicles.FileAttributes;
 import org.dcache.vehicles.PnfsSetFileAttributes;
 
 import static org.dcache.pool.repository.EntryState.*;
+import org.dcache.pool.repository.RepositoryChannel;
 import static org.junit.Assert.*;
 
 public class RepositorySubsystemTest
@@ -103,10 +104,11 @@ public class RepositorySubsystemTest
 
     private CellEndpointHelper cell;
 
-    private void createFile(File file, long size)
+    private void createFile(RepositoryChannel channel, long size)
         throws IOException
     {
-        Files.write(Bytes.toArray(Collections.nCopies((int) size, (byte) 0)), file);
+        ByteBuffer buffer = ByteBuffer.wrap(Bytes.toArray(Collections.nCopies((int) size, (byte) 0)));
+        channel.write(buffer);
     }
 
     private void createEntry(final FileAttributes attributes,
@@ -134,7 +136,7 @@ public class RepositorySubsystemTest
                                 EnumSet.noneOf(OpenFlags.class));
                 try {
                     handle.allocate(attributes.getSize());
-                    createFile(handle.getFile(), attributes.getSize());
+                    createFile(handle.getRepositoryChannel(), attributes.getSize());
                     handle.commit();
                 } finally {
                     handle.close();
@@ -325,10 +327,13 @@ public class RepositorySubsystemTest
             ReplicaDescriptor handle =
                 repository.openEntry(id, EnumSet.noneOf(OpenFlags.class));
             try {
-                assertEquals(new File(dataDir, id.toString()), handle.getFile());
                 assertCacheEntry(repository.getEntry(id), id, size, state);
             } finally {
-                handle.close();
+                try {
+                    handle.close();
+                } catch (IOException e) {
+                    throw new DiskErrorCacheException("failed co close file handle", e);
+                }
             }
         } catch (FileNotInCacheException e) {
             fail("Expected entry " + id + " not found");
@@ -489,12 +494,16 @@ public class RepositorySubsystemTest
                         EnumSet.noneOf(OpenFlags.class));
                 try {
                     handle.allocate(attributes5.getSize());
-                    createFile(handle.getFile(), attributes5.getSize());
+                    createFile(handle.getRepositoryChannel(), attributes5.getSize());
                     handle.commit();
                 }catch( IOException e) {
                     throw new DiskErrorCacheException(e.getMessage());
                 } finally {
-                    handle.close();
+                    try {
+                        handle.close();
+                    } catch (IOException e) {
+                        throw new DiskErrorCacheException("failed co close file handle", e);
+                    }
                 }
             }
         };
@@ -580,7 +589,7 @@ public class RepositorySubsystemTest
         ReplicaDescriptor handle =
             repository.openEntry(id1, EnumSet.noneOf(OpenFlags.class));
         handle.close();
-        handle.getFile();
+        handle.getRepositoryChannel();
     }
 
     @Test
@@ -680,7 +689,11 @@ public class RepositorySubsystemTest
                 expectStateChangeEvent(id1, PRECIOUS, REMOVED);
                 assertNoStateChangeEvent();
                 assertStep("Cache location cleared", 1);
-                handle1.close();
+                try {
+                    handle1.close();
+                } catch (IOException e) {
+                    throw new DiskErrorCacheException("failed co close file handle", e);
+                }
                 expectStateChangeEvent(id1, REMOVED, DESTROYED);
             }
         };
@@ -812,7 +825,7 @@ public class RepositorySubsystemTest
                 try {
                     handle.allocate(size4 + overallocation);
                     assertStep("No clear after this point", 2);
-                    createFile(handle.getFile(), size4);
+                    createFile(handle.getRepositoryChannel(), size4);
                     if (!cancel) {
                         handle.commit();
                     }

@@ -96,7 +96,7 @@ public class DefaultPostTransferService extends AbstractCellComponent implements
                 try {
                     ReplicaDescriptor handle = mover.getIoHandle();
                     try {
-                        fileSize = handle.getFile().length();
+                        fileSize = handle.getRepositoryChannel().size();
                         if (mover.getIoMode() == IoMode.WRITE) {
                             handle.addChecksums(mover.getExpectedChecksums());
                             _checksumModule.enforcePostTransferPolicy(handle, mover.getActualChecksums());

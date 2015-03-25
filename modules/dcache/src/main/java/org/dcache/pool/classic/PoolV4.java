@@ -768,7 +768,11 @@ public class PoolV4
         try {
             return moverFactory.createMover(handle, message, source);
         } catch (Throwable t) {
+            try {
             handle.close();
+            }catch(IOException e) {
+                _log.error("Failed to close file handle {} : {}", pnfsId, e.getMessage());
+            }
             throw Throwables.propagate(t);
         }
     }

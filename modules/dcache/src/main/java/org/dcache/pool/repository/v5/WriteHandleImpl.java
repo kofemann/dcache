@@ -4,7 +4,6 @@ import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.util.EnumSet;
 import java.util.List;
@@ -22,6 +21,8 @@ import org.dcache.pool.repository.Allocator;
 import org.dcache.pool.repository.EntryState;
 import org.dcache.pool.repository.MetaDataRecord;
 import org.dcache.pool.repository.ReplicaDescriptor;
+import org.dcache.pool.repository.FileRepositoryChannel;
+import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.pool.repository.Repository;
 import org.dcache.pool.repository.StickyRecord;
 import org.dcache.util.Checksum;
@@ -30,7 +31,6 @@ import org.dcache.vehicles.FileAttributes;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Iterables.*;
-import java.util.Collections;
 import static java.util.Collections.singleton;
 import static org.dcache.namespace.FileAttribute.*;
 
@@ -85,6 +85,8 @@ class WriteHandleImpl implements ReplicaDescriptor
     /** Last access time of new replica. */
     private Long _atime;
 
+    private RepositoryChannel _channel;
+
     WriteHandleImpl(CacheRepositoryV5 repository,
                     Allocator allocator,
                     PnfsHandler pnfs,
@@ -109,13 +111,10 @@ class WriteHandleImpl implements ReplicaDescriptor
         checkState(_initialState == EntryState.FROM_CLIENT || _fileAttributes.isDefined(SIZE));
 
         if (flags.contains(Repository.OpenFlags.CREATEFILE)) {
-            File file = _entry.getDataFile();
             try {
-                if (!file.createNewFile()) {
-                    throw new DiskErrorCacheException("File exists when it should not: " + file);
-                }
+                _channel = new FileRepositoryChannel(_entry.getDataFile(), "rw");
             } catch (IOException e) {
-                throw new DiskErrorCacheException("Failed to create file: " + file, e);
+                throw new DiskErrorCacheException("Failed to create file: " + _entry.getDataFile(), e);
             }
         }
     }
@@ -342,7 +341,7 @@ class WriteHandleImpl implements ReplicaDescriptor
                 _entry.setLastAccessTime(_atime);
             }
 
-            long length = getFile().length();
+            long length = _channel.size();
             adjustReservation(length);
             verifyFileSize(length);
             _fileAttributes.setSize(length);
@@ -362,6 +361,8 @@ class WriteHandleImpl implements ReplicaDescriptor
                 _targetState = EntryState.REMOVED;
             }
             throw e;
+        } catch (IOException e) {
+            throw new DiskErrorCacheException("Failed to get file size", e);
         }
     }
 
@@ -372,9 +373,11 @@ class WriteHandleImpl implements ReplicaDescriptor
      */
     private synchronized void fail()
     {
-        long length = getFile().length();
         try {
+            long length = _channel.size();
             adjustReservation(length);
+        } catch (IOException e) {
+            _log.error("Failed to get file size {}: {}", _entry.getPnfsId(),e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }
@@ -426,7 +429,7 @@ class WriteHandleImpl implements ReplicaDescriptor
 
     @Override
     public synchronized void close()
-        throws IllegalStateException
+        throws IllegalStateException, IOException
     {
         switch (_state) {
         case CLOSED:
@@ -441,6 +444,7 @@ class WriteHandleImpl implements ReplicaDescriptor
             setState(HandleState.CLOSED);
             break;
         }
+        _channel.close();
         _repository.destroyWhenRemovedAndUnused(_entry);
     }
 
@@ -449,13 +453,12 @@ class WriteHandleImpl implements ReplicaDescriptor
      * @throws IllegalStateException if EntryIODescriptor is closed.
      */
     @Override
-    public synchronized File getFile() throws IllegalStateException
+    public synchronized RepositoryChannel getRepositoryChannel() throws IllegalStateException
     {
         if (_state == HandleState.CLOSED) {
             throw new IllegalStateException("Handle is closed");
         }
-
-        return _entry.getDataFile();
+        return _channel;
     }
 
     @Override

@@ -25,7 +25,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.security.auth.Subject;
 
-import java.io.FileNotFoundException;
 import java.io.InterruptedIOException;
 import java.io.IOException;
 import java.nio.channels.CompletionHandler;
@@ -48,7 +47,6 @@ import dmg.cells.nucleus.CellPath;
 import org.dcache.pool.classic.Cancellable;
 import org.dcache.pool.classic.ChecksumModule;
 import org.dcache.pool.classic.TransferService;
-import org.dcache.pool.repository.FileRepositoryChannel;
 import org.dcache.pool.repository.ReplicaDescriptor;
 import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.util.Checksum;
@@ -251,40 +249,29 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends AbstractMo
      * TODO: Consider moving this method to RepositoryChannel.
      *
      * @return An open RepositoryChannel to the replica of this mover
-     * @throws DiskErrorCacheException If the file could not be opened
      */
-    public RepositoryChannel openChannel() throws DiskErrorCacheException
+    public RepositoryChannel openChannel()
     {
         RepositoryChannel channel;
         switch (getIoMode()) {
         case WRITE:
+            channel = _handle.getRepositoryChannel();
             try {
-                channel = new FileRepositoryChannel(_handle.getFile(), "rw");
+                channel = _checksumChannel = new ChecksumChannel(channel, _checksumFactory);
+            } catch (Throwable t) {
+                /* This should only happen in case of JVM Errors or if the checksum digest cannot be
+                 * instantiated (which, barring bugs, should never happen).
+                 */
                 try {
-                    channel = _checksumChannel = new ChecksumChannel(channel, _checksumFactory);
-                } catch (Throwable t) {
-                    /* This should only happen in case of JVM Errors or if the checksum digest cannot be
-                     * instantiated (which, barring bugs, should never happen).
-                     */
-                    try {
-                        channel.close();
-                    } catch (IOException e) {
-                        t.addSuppressed(e);
-                    }
-                    Throwables.propagate(t);
+                    channel.close();
+                } catch (IOException e) {
+                    t.addSuppressed(e);
                 }
-            } catch (FileNotFoundException e) {
-                throw new DiskErrorCacheException(
-                        "File could not be created; please check the file system", e);
+                Throwables.propagate(t);
             }
             break;
         case READ:
-            try {
-                channel = new FileRepositoryChannel(_handle.getFile(), "r");
-            } catch (FileNotFoundException e) {
-                throw new DiskErrorCacheException("File could not be opened  [" +
-                        e.getMessage() + "]; please check the file system", e);
-            }
+            channel = _handle.getRepositoryChannel();
             break;
         default:
             throw new RuntimeException("Invalid I/O mode");

@@ -5,16 +5,15 @@ import com.google.common.util.concurrent.Futures;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.RandomAccessFile;
 import java.io.SyncFailedException;
 import java.net.HttpURLConnection;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.ByteBuffer;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +49,7 @@ import org.dcache.pool.classic.ChecksumModule;
 import org.dcache.pool.repository.EntryState;
 import org.dcache.pool.repository.ReplicaDescriptor;
 import org.dcache.pool.repository.Repository;
+import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.pool.repository.StickyRecord;
 import org.dcache.util.Checksum;
 import org.dcache.util.FireAndForgetTask;
@@ -269,7 +269,7 @@ class Companion
         Throwable error = null;
         try {
             try {
-                File file = handle.getFile();
+                RepositoryChannel channel = handle.getRepositoryChannel();
                 long size = handle.getFileAttributes().getSize();
 
                 handle.allocate(size);
@@ -287,7 +287,7 @@ class Companion
                 HttpURLConnection connection = createConnection(uri);
                 try {
                     try (InputStream input = connection.getInputStream()) {
-                        long total = copy(input, file, digest);
+                        long total = copy(input, channel, digest);
                         if (total != size) {
                             throw new IOException("Amount of received data does not match expected file size");
                         }
@@ -312,7 +312,11 @@ class Companion
         } catch (Throwable e) {
             error = e;
         } finally {
-            handle.close();
+            try {
+                handle.close();
+            } catch (IOException e) {
+                _log.error("Failed to close file handle {} : {}.", getPnfsId(), e.getMessage());
+            }
             synchronized (this) {
                 _fsm.transferEnded(error);
             }
@@ -343,16 +347,18 @@ class Companion
         return connection;
     }
 
-    private long copy(InputStream input, File file, MessageDigest digest)
+    private long copy(InputStream input, RepositoryChannel channel, MessageDigest digest)
         throws IOException
     {
         long total = 0L;
-        try (RandomAccessFile dataFile = new RandomAccessFile(file, "rw")) {
+
             try {
                 byte[] buffer = new byte[BUFFER_SIZE];
                 int read;
                 while ((read = input.read(buffer)) > -1) {
-                    dataFile.write(buffer, 0, read);
+                    ByteBuffer bb = ByteBuffer.wrap(buffer);
+                    bb.limit(read);
+                    channel.write(bb);
                     total += read;
                     if (digest != null) {
                         digest.update(buffer, 0, read);
@@ -360,7 +366,7 @@ class Companion
                 }
             } finally {
                 try {
-                    dataFile.getFD().sync();
+                    channel.sync();
                 } catch (SyncFailedException e) {
                     /* Data is not guaranteed to be on disk. Not a fatal
                      * problem, but better generate a warning.
@@ -369,7 +375,7 @@ class Companion
                               e.getMessage());
                 }
             }
-        }
+
         return total;
     }
 
