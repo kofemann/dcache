@@ -67,8 +67,11 @@ import dmg.util.CommandException;
 import dmg.util.CommandExitException;
 import dmg.util.KeepAliveListener;
 
+import org.dcache.acl.ACL;
 import org.dcache.acl.enums.AccessMask;
 import org.dcache.auth.CachingLoginStrategy;
+import org.dcache.acl.enums.RsType;
+import org.dcache.acl.parser.ACLParser;
 import org.dcache.auth.LoginNamePrincipal;
 import org.dcache.auth.LoginReply;
 import org.dcache.auth.LoginStrategy;
@@ -81,6 +84,9 @@ import org.dcache.cells.CellStub;
 import org.dcache.chimera.UnixPermission;
 import org.dcache.namespace.FileAttribute;
 import org.dcache.pinmanager.PinManagerPinMessage;
+import org.dcache.auth.CachingLoginStrategy;
+import org.dcache.auth.GidPrincipal;
+import org.dcache.auth.UidPrincipal;
 import org.dcache.services.login.RemoteLoginStrategy;
 import org.dcache.util.Args;
 import org.dcache.vehicles.FileAttributes;
@@ -1095,7 +1101,7 @@ public class DCapDoorInterpreterV3 implements KeepAliveListener,
             super.doLogin();
             _pnfs = new PnfsHandler(_cell, new CellPath(_pnfsManagerName));
             if (_isUrl || _authorizationRequired) {
-                _pnfs.setSubject(_subject);
+                _pnfs.setSubject(Subjects.isNobody(_subject) ? Subjects.of(getUid(), getGid(), new int[] {}) : _subject);
             }
 
         }
@@ -1180,6 +1186,10 @@ public class DCapDoorInterpreterV3 implements KeepAliveListener,
                 StorageInfo storageInfo = _fileAttributes.getStorageInfo();
                 for (int i = 0; i < _vargs.optc(); i++) {
                     String key = _vargs.optv(i);
+                    // do not send ACL to pools
+                    if (key.equals("acl")) {
+                        continue;
+                    }
                     String value = _vargs.getOpt(key);
                     storageInfo.setKey(key, value == null ? "" : value);
                 }
@@ -1640,8 +1650,15 @@ public class DCapDoorInterpreterV3 implements KeepAliveListener,
         public boolean fileAttributesNotAvailable() throws CacheException
         {
             String path = _message.getPnfsPath();
-            _pnfs.createPnfsDirectory(path, getUid(), getGid(),
+           PnfsCreateEntryMessage  pnfsEntry = _pnfs.createPnfsDirectory(path, getUid(), getGid(),
                                       getMode(NameSpaceProvider.DEFAULT));
+            if (_vargs.hasOption("acl")) {
+                String aclString = _vargs.getOption("acl");
+                ACL acl = ACLParser.parseLinuxAcl(RsType.FILE, aclString);
+                FileAttributes aclAttributes = new FileAttributes();
+                aclAttributes.setAcl(acl);
+                _pnfs.setFileAttributes(pnfsEntry.getPnfsId(), aclAttributes);
+            }
             sendReply("fileAttributesNotAvailable", 0, "");
             return false;
         }
@@ -1777,8 +1794,8 @@ public class DCapDoorInterpreterV3 implements KeepAliveListener,
                                 }else{
                                     _log.debug("pool {}: File not found",
                                                reply.getPoolName());
-                                }
                             }
+                        }
                             if( found == 0 ) {
                                 throw new
                                         CacheException(4, "File not cached");
@@ -1952,7 +1969,13 @@ public class DCapDoorInterpreterV3 implements KeepAliveListener,
                 _pnfs.createPnfsEntry(_message.getPnfsPath(),
                                       getUid(), getGid(),
                                       getMode(NameSpaceProvider.DEFAULT));
-
+            if (_vargs.hasOption("acl")) {
+                String aclString = _vargs.getOption("acl");
+                ACL acl = ACLParser.parseLinuxAcl(RsType.FILE, aclString);
+                FileAttributes aclAttributes = new FileAttributes();
+                aclAttributes.setAcl(acl);
+                _pnfs.setFileAttributes(pnfsEntry.getPnfsId(), aclAttributes);
+            }
             _log.debug("storageInfoNotAvailable : created pnfsid: {} path: {}",
                        pnfsEntry.getPnfsId(), pnfsEntry.getPnfsPath());
             _message = pnfsEntry;
