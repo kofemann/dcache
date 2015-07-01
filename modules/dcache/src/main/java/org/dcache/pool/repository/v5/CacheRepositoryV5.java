@@ -747,7 +747,7 @@ public class CacheRepositoryV5
     public void getInfo(PrintWriter pw)
     {
         pw.println("State : " + _state);
-        pw.println("Files : " + _store.list().size());
+        pw.println("Files : " + (_state == State.OPEN ?_store.list().size() : ""));
 
         SpaceRecord space = getSpaceRecord();
         long total = space.getTotalSpace();
