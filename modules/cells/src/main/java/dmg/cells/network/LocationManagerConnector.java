@@ -1,5 +1,6 @@
 package dmg.cells.network;
 
+import com.google.common.net.HostAndPort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -12,18 +13,18 @@ import java.nio.channels.SocketChannel;
 import java.nio.channels.UnresolvedAddressException;
 import java.nio.channels.UnsupportedAddressTypeException;
 import java.util.Random;
-import java.util.concurrent.ExecutionException;
 
 import dmg.cells.nucleus.CellAdapter;
-import dmg.cells.nucleus.CellMessage;
-import dmg.cells.nucleus.CellPath;
-import dmg.cells.nucleus.NoRouteToCellException;
+import dmg.cells.services.ZooKeeperPaths;
 import dmg.util.DummyStreamEngine;
 import dmg.util.StreamEngine;
 
 import org.dcache.alarms.AlarmMarkerFactory;
 import org.dcache.alarms.PredefinedAlarm;
 import org.dcache.util.Args;
+
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.curator.utils.ZKPaths.makePath;
 
 public class LocationManagerConnector
     extends CellAdapter
@@ -33,7 +34,6 @@ public class LocationManagerConnector
         LoggerFactory.getLogger("org.dcache.cells.network");
 
     private final String _domain;
-    private final String _lm;
     private final Thread _thread;
     private String _status = "disconnected";
     private int _retries;
@@ -44,8 +44,6 @@ public class LocationManagerConnector
 
         Args a = getArgs();
         _domain = a.getOpt("domain");
-        _lm = a.getOpt("lm");
-
         start();
 
         _thread = getNucleus().newThread(this, "TunnelConnector");
@@ -66,23 +64,8 @@ public class LocationManagerConnector
         throws IOException, InterruptedException
     {
         try {
-            String      query = "where is " + domain;
-            CellPath    path  = new CellPath(_lm);
-            CellMessage reply = getNucleus().sendAndWait(new CellMessage(path, query), 5000);
-
-            if (reply == null) {
-                throw new IOException("Timeout querying location manager");
-            }
-
-            Object obj = reply.getMessageObject();
-            if (obj == null || !(obj instanceof String)) {
-                throw new IOException("Invalid reply from location manager");
-            }
-
-            return obj.toString();
-        } catch (NoRouteToCellException e) {
-            throw new IOException("No route to location manager", e);
-        } catch (ExecutionException e) {
+            return new String(getZkClient().getData().forPath(makePath(ZooKeeperPaths.zkLmLocations, domain)), UTF_8);
+        } catch (Exception e) {
             throw new IOException(e.getCause().getMessage(), e);
         }
     }
@@ -91,21 +74,10 @@ public class LocationManagerConnector
         throws IOException, InterruptedException
     {
         setStatus("Locating " + domain);
-        Args reply = new Args(whereIs(domain));
+        HostAndPort location = HostAndPort.fromString(whereIs(domain));
 
-        if (reply.argc() < 3 ||
-            !reply.argv(0).equals("location") ||
-            !reply.argv(1).equals(domain)) {
-            throw new IOException("Invalid reply from location manager: " + reply);
-        }
-
-        String[] s = reply.argv(2).split(":");
-        if (s.length != 2) {
-            throw new IOException("Invalid address: " + reply.argv(2));
-        }
         InetSocketAddress address =
-            new InetSocketAddress(s[0], Integer.parseInt(s[1]));
-
+            new InetSocketAddress(location.getHostText(), location.getPort());
 
         setStatus("Connecting to " + address);
         Socket socket;
@@ -120,28 +92,8 @@ public class LocationManagerConnector
         }
         socket.setKeepAlive(true);
 
-        String security = reply.getOpt("security");
-        if (security == null) {
-            _log.info("Using clear text channel");
-            return new DummyStreamEngine(socket);
-        } else {
-            /* Currently unused, but somewhere around here we would need to hook SSL support in
-             * if we wanted to do that.
-             */
-            Args x = new Args(security);
-            String prot = x.getOpt("prot");
-            if (prot == null) {
-                if (x.argc() == 0) {
-                    socket.close();
-                    throw new
-                        IOException("Not a proper security context \""+security+"\"");
-                }
-                prot = x.argv(0);
-            }
-
-            socket.close();
-            throw new IOException("Security mode not supported : " + security);
-        }
+        _log.info("Using clear text channel");
+        return new DummyStreamEngine(socket);
     }
 
     @Override

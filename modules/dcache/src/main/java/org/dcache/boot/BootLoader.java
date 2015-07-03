@@ -139,7 +139,7 @@ public class BootLoader
             handleFatalError(e.getMessage(), args);
         } catch (IOException e) {
             handleFatalError(e.toString(), args);
-        } catch (RuntimeException e) {
+        } catch (Exception e) {
             handleFatalError(e, args);
         }
     }

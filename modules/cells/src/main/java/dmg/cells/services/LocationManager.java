@@ -1,5 +1,6 @@
 package dmg.cells.services ;
 
+import org.apache.zookeeper.CreateMode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -37,6 +38,9 @@ import dmg.cells.nucleus.Reply;
 
 import org.dcache.util.Args;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.apache.curator.utils.ZKPaths.makePath;
+
 public class LocationManager extends CellAdapter {
 
    private final static Logger _log =
@@ -56,6 +60,7 @@ public class LocationManager extends CellAdapter {
    //
    //   Client Options : -noboot
    //
+
    public class Server implements Runnable {
       private class NodeInfo {
           private String   _domainName;
@@ -987,7 +992,7 @@ public class LocationManager extends CellAdapter {
       //  create dmg.cells.services.login.LoginManager listen
       //                    "0 dmg.cells.network.LocationMgrTunnel -prot=raw -lm=lm"
       //
-      public Reply ac_listening_on_$_2(Args args)
+      public Reply ac_listening_on_$_2(Args args) throws Exception
       {
           String portString = args.argv(1);
 
@@ -1002,6 +1007,13 @@ public class LocationManager extends CellAdapter {
           BackgroundServerRequest request = new BackgroundServerRequest(
                   "listeningOn " + getCellDomainName() + " " + _registered);
           _nucleus.newThread(request).start();
+
+          byte[] bytes = _registered.getBytes(UTF_8);
+          getZkClient().create()
+                  .creatingParentsIfNeeded()
+                  .withMode(CreateMode.EPHEMERAL)
+                  .forPath(makePath(ZooKeeperPaths.zkLmLocations, getCellDomainName()), bytes);
+
           return request;
       }
 

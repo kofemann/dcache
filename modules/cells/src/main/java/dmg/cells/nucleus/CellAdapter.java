@@ -1,5 +1,6 @@
 package dmg.cells.nucleus;
 
+import org.apache.curator.framework.CuratorFramework;
 import com.google.common.base.Ascii;
 import com.google.common.base.Splitter;
 import org.slf4j.Logger;
@@ -325,7 +326,7 @@ public class CellAdapter
      *  The cell kernel will start the kill sequence as soon as
      *  possible.
      */
-    protected void kill() { _nucleus.kill(); }
+    protected void kill() { _nucleus.kill(); getZkClient().close();}
     /**
      *  returns the name of this cell.
      * @return the name of this cell.
@@ -1029,5 +1030,11 @@ public class CellAdapter
                 callback.answerTimedOut(msg);
             }
         }
+    }
+
+    protected CuratorFramework getZkClient() {
+        CuratorFramework zk =  (CuratorFramework)getNucleus().getDomainContext("zk");
+        System.out.println("zk = " + zk);
+        return zk;
     }
 }

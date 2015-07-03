@@ -4,6 +4,10 @@ import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
 import ch.qos.logback.core.util.StatusPrinter;
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
 import com.google.common.base.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -26,7 +30,10 @@ import java.util.Map;
 import dmg.cells.nucleus.CDC;
 import dmg.cells.nucleus.CellShell;
 import dmg.cells.nucleus.SystemCell;
+import dmg.cells.services.ZooKeeperPaths;
 import dmg.util.CommandException;
+import static org.apache.curator.utils.ZKPaths.makePath;
+import org.apache.zookeeper.CreateMode;
 
 import org.dcache.util.Args;
 import org.dcache.util.ConfigurationProperties;
@@ -47,6 +54,9 @@ public class Domain
     private final ConfigurationProperties _properties;
     private final List<ConfigurationProperties> _services;
     private final ResourceLoader _resourceLoader = new FileSystemResourceLoader();
+
+    // FIXME:
+    private static final String _zkLocation = "131.169.191.144";
 
     public Domain(String name, ConfigurationProperties defaults)
     {
@@ -116,7 +126,7 @@ public class Domain
     }
 
     public void start()
-        throws URISyntaxException, CommandException, IOException
+        throws Exception
     {
         initializeLogging();
 
@@ -124,6 +134,18 @@ public class Domain
         CDC.reset(SYSTEM_CELL_NAME, domainName);
         SystemCell systemCell = new SystemCell(domainName);
         _log.info("Starting " + domainName);
+
+        CuratorFramework zkClient;
+        RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+        zkClient = CuratorFrameworkFactory.newClient(_zkLocation, retryPolicy);
+        zkClient.start();
+        zkClient.blockUntilConnected();
+        systemCell.getNucleus().setDomainContext("zk", zkClient);
+
+        zkClient.create()
+                .creatingParentsIfNeeded()
+                .withMode(CreateMode.EPHEMERAL)
+                .forPath(makePath(ZooKeeperPaths.zkDomains, domainName));
 
         executePreload(systemCell);
         for (ConfigurationProperties serviceConfig: _services) {

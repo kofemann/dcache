@@ -1,5 +1,10 @@
 package  dmg.cells.services ;
 
+import org.apache.curator.RetryPolicy;
+import org.apache.curator.framework.CuratorFramework;
+import org.apache.curator.framework.CuratorFrameworkFactory;
+import org.apache.curator.retry.ExponentialBackoffRetry;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,6 +69,9 @@ public class Domain {
 
   private static final int IDLE      = 0 ;
   private static final int ASSEMBLE  = 1 ;
+
+  // FIXME:
+  private static final String _zkLocation = "131.169.191.144";
 
   public static void main( String [] args ){
 
@@ -179,6 +187,13 @@ public class Domain {
              }
 
          }
+
+          CuratorFramework zkClient;
+          RetryPolicy retryPolicy = new ExponentialBackoffRetry(1000, 3);
+          zkClient = CuratorFrameworkFactory.newClient(_zkLocation, retryPolicy);
+          zkClient.start();
+          zkClient.blockUntilConnected();
+          systemCell.getNucleus().setDomainContext("zk", zkClient);
 
          if( ( tmp = argHash.get( "-debug" )) != null ){
 
