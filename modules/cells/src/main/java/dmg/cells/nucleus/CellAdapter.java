@@ -1033,8 +1033,6 @@ public class CellAdapter
     }
 
     protected CuratorFramework getZkClient() {
-        CuratorFramework zk =  (CuratorFramework)getNucleus().getDomainContext("zk");
-        System.out.println("zk = " + zk);
-        return zk;
+        return (CuratorFramework)getNucleus().getDomainContext("zk");
     }
 }

@@ -19,6 +19,8 @@ import dmg.cells.network.TopoCell;
 import dmg.cells.nucleus.SystemCell;
 import dmg.cells.services.login.LoginManager;
 import dmg.cells.services.login.UserMgrCell;
+import static org.apache.curator.utils.ZKPaths.makePath;
+import org.apache.zookeeper.CreateMode;
 
 /**
   *  dmg.cells.services.Domain creates a hightly configurable domain.
@@ -194,6 +196,11 @@ public class Domain {
           zkClient.start();
           zkClient.blockUntilConnected();
           systemCell.getNucleus().setDomainContext("zk", zkClient);
+
+          zkClient.create()
+                  .creatingParentsIfNeeded()
+                  .withMode(CreateMode.EPHEMERAL)
+                  .forPath(makePath(ZooKeeperPaths.zkDomains, args[0]));
 
          if( ( tmp = argHash.get( "-debug" )) != null ){
 
