@@ -889,8 +889,6 @@ public class CacheRepositoryV5
                     return;
                 }
 
-                CacheEntry oldEntry = new CacheEntryImpl(entry);
-
                 try {
                     entry.setState(state);
                 } catch (CacheException e) {
@@ -901,7 +899,11 @@ public class CacheRepositoryV5
                 CacheEntryImpl newEntry = new CacheEntryImpl(entry);
 
                 if (!(oldState == NEW && state == REMOVED)) {
-                    stateChanged(oldEntry, newEntry, oldState, state);
+                    /*
+                     * the difference between NEW and OLD entry only the state.
+                     * It's safe to pass in both cases the same entry.
+                     */
+                    stateChanged(newEntry, newEntry, oldState, state);
                 }
 
                 if (state == REMOVED) {
