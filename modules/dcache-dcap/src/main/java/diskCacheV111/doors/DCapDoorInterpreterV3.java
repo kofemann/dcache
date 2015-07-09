@@ -1184,6 +1184,9 @@ public class DCapDoorInterpreterV3 implements KeepAliveListener,
                 StorageInfo storageInfo = _fileAttributes.getStorageInfo();
                 for (int i = 0; i < _vargs.optc(); i++) {
                     String key = _vargs.optv(i);
+                    if (key.equals("acl")) {
+                        continue;
+                    }
                     String value = _vargs.getOpt(key);
                     storageInfo.setKey(key, value == null ? "" : value);
                 }
