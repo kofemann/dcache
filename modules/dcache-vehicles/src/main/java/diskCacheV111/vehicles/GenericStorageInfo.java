@@ -442,7 +442,7 @@ public class GenericStorageInfo
     {
         stream.defaultReadObject();
         if (_keyHash != null) {
-            _keyHash = _keyHash.entrySet().stream().collect(toMap(e -> e.getKey().intern(), e -> e.getValue()));
+            _keyHash = _keyHash.entrySet().stream().collect(toMap(e -> e.getKey().intern(), e -> e.getValue().intern()));
         }
         if (_storageClass != null) {
             _storageClass = _storageClass.intern();
