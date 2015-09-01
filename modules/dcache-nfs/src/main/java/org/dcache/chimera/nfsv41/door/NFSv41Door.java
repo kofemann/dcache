@@ -73,7 +73,6 @@ import org.dcache.nfs.v3.xdr.mount_prot;
 import org.dcache.nfs.v3.xdr.nfs3_prot;
 import org.dcache.nfs.v4.CompoundContext;
 import org.dcache.nfs.v4.Layout;
-import org.dcache.nfs.v4.MDSOperationFactory;
 import org.dcache.nfs.v4.NFS4Client;
 import org.dcache.nfs.v4.NFS4State;
 import org.dcache.nfs.v4.NFSServerV41;
@@ -149,6 +148,11 @@ public class NFSv41Door extends AbstractCellComponent implements
      * be rather small too.
      */
     private static final long NFS_RETRY_PERIOD = 500; // In millis
+
+    /**
+     * Amount of information logged by access logger.
+     */
+    private AccessLogMode _accessLogMode;
 
     /**
      * Cell communication helper.
@@ -257,6 +261,11 @@ public class NFSv41Door extends AbstractCellComponent implements
         _vfsCacheConfig = vfsCacheConfig;
     }
 
+    @Required
+    public void setAccessLogMode(AccessLogMode accessLogMode) {
+        _accessLogMode = accessLogMode;
+    }
+
     public void init() throws Exception {
 
         _isWellKnown = getArgs().getBooleanOption("export");
@@ -286,7 +295,8 @@ public class NFSv41Door extends AbstractCellComponent implements
                 case V41:
                     final NFSv41DeviceManager _dm = this;
                     _proxyIoFactory = new NfsProxyIoFactory(_dm);
-                    _nfs4 = new NFSServerV41(new ProxyIoMdsOpFactory(_proxyIoFactory, new MDSOperationFactory()),
+                    _nfs4 = new NFSServerV41(new ProxyIoMdsOpFactory(_proxyIoFactory,
+                            new AccessLogAwareOperationFactory(_fileFileSystemProvider, _accessLogMode)),
                             _dm, _vfs, _exportFile);
                     _rpcService.register(new OncRpcProgram(nfs4_prot.NFS4_PROGRAM, nfs4_prot.NFS_V4), _nfs4);
                     updateLbPaths();
