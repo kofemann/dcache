@@ -112,6 +112,7 @@ import static java.util.stream.Collectors.toList;
 import java.util.stream.Stream;
 
 import static org.dcache.chimera.nfsv41.door.ExceptionUtils.asNfsException;
+import static org.dcache.chimera.nfsv41.door.ExceptionUtils.asNfsException;
 
 public class NFSv41Door extends AbstractCellComponent implements
         NFSv41DeviceManager, CellCommandListener,
@@ -193,6 +194,8 @@ public class NFSv41Door extends AbstractCellComponent implements
 
     private ProxyIoFactory _proxyIoFactory;
 
+    private boolean _enableAccessLog;
+
     private static final TransferRetryPolicy RETRY_POLICY =
         new TransferRetryPolicy(Integer.MAX_VALUE, NFS_RETRY_PERIOD, NFS_REPLY_TIMEOUT);
 
@@ -257,6 +260,11 @@ public class NFSv41Door extends AbstractCellComponent implements
         _vfsCacheConfig = vfsCacheConfig;
     }
 
+    @Required
+    public void setEnableAccessLog(boolean enable) {
+        _enableAccessLog = enable;
+    }
+
     public void init() throws Exception {
 
         _isWellKnown = getArgs().getBooleanOption("export");
@@ -286,7 +294,9 @@ public class NFSv41Door extends AbstractCellComponent implements
                 case V41:
                     final NFSv41DeviceManager _dm = this;
                     _proxyIoFactory = new NfsProxyIoFactory(_dm);
-                    _nfs4 = new NFSServerV41(new ProxyIoMdsOpFactory(_proxyIoFactory, new MDSOperationFactory()),
+                    _nfs4 = new NFSServerV41(new ProxyIoMdsOpFactory(_proxyIoFactory,
+                            _enableAccessLog ? new AccessLogAwareOperationFactory(_fileFileSystemProvider) :
+                                    new MDSOperationFactory()),
                             _dm, _vfs, _exportFile);
                     _rpcService.register(new OncRpcProgram(nfs4_prot.NFS4_PROGRAM, nfs4_prot.NFS_V4), _nfs4);
                     updateLbPaths();
