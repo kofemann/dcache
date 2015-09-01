@@ -102,6 +102,7 @@ import org.dcache.vehicles.FileAttributes;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.collect.Iterables.transform;
+import static com.google.common.collect.Sets.newHashSet;
 import static org.dcache.namespace.FileAttribute.*;
 
 /**
@@ -129,6 +130,7 @@ public class NearlineStorageHandler extends AbstractCellComponent implements Cel
     private long removeTimeout = TimeUnit.HOURS.toMillis(4);
     private ScheduledFuture<?> timeoutFuture;
 
+    private Set<Integer> maskedRcs = newHashSet();
     @Required
     public void setScheduledExecutor(ScheduledExecutorService executor)
     {
@@ -885,7 +887,10 @@ public class NearlineStorageHandler extends AbstractCellComponent implements Cel
                 infoMsg.setResult(CacheException.DEFAULT_ERROR_CODE, cause.getMessage());
             }
 
-            billingStub.notify(infoMsg);
+            if (!maskedRcs.contains(infoMsg.getResultCode())) {
+                billingStub.notify(infoMsg);
+            }
+
             flushRequests.removeAndCallback(pnfsId, cause);
         }
 
@@ -1296,6 +1301,36 @@ public class NearlineStorageHandler extends AbstractCellComponent implements Cel
                 }
             });
             return block ? this : "Fetch request queued.";
+        }
+    }
+
+    @Command(name = "billing mask rc",
+             hint = "mask hsm rc from billing",
+             description = "Mask HSM return codes (rc) from being send to billing")
+    class BillingMaskRc implements Callable<String> {
+
+        @Argument
+        int rc;
+
+        @Override
+        public String call() throws Exception {
+            maskedRcs.add(rc);
+            return "masked rcs: " + maskedRcs;
+        }
+    }
+
+    @Command(name = "billing unmask rc",
+             hint = "unmask hsm rc from billing",
+             description = "Unmask HSM return codes (rc) from being send to billing")
+    class BillingUnmaskRc implements Callable<String> {
+
+        @Argument
+        int rc;
+
+        @Override
+        public String call() throws Exception {
+            maskedRcs.remove(rc);
+            return "masked rcs: " + maskedRcs;
         }
     }
 
