@@ -419,57 +419,93 @@ public class NFSv41Door extends AbstractCellComponent implements
         NDC.push(inode.toString());
         NDC.push(context.getRpcCall().getTransport().getRemoteSocketAddress().toString());
         try {
-            deviceid4 deviceid;
 
             if (layoutType != layouttype4.LAYOUT4_NFSV4_1_FILES) {
                 _log.warn("unsupported layout type ({}) requests from");
                 throw new LayoutUnavailableException("Unsuported layout type: " + layoutType);
             }
 
-            if (inode.type() != FsInodeType.INODE || inode.getLevel() != 0) {
-                /*
-                 * all non regular files ( AKA pnfs dot files ) provided by door itself.
-                 */
-                deviceid = MDS_ID;
+            deviceid4 deviceid;
+
+            final NFS4Client client;
+            if (context.getMinorversion() == 0) {
+                /* if we need to run proxy-io with NFSv4.0 */
+                client = context.getStateHandler().getClientIdByStateId(stateid);
             } else {
+                client = context.getSession().getClient();
+            }
 
-                final InetSocketAddress remote = context.getRpcCall().getTransport().getRemoteSocketAddress();
-                final PnfsId pnfsId = new PnfsId(inode.toString());
-                final NFS4ProtocolInfo protocolInfo = new NFS4ProtocolInfo(remote,
-                            new org.dcache.chimera.nfs.v4.xdr.stateid4(stateid),
-                            nfsInode.toNfsHandle()
-                        );
+            final NFS4State nfsState = client.state(stateid);
+            // serialize all requests by the same stateid
+            synchronized(nfsState) {
 
-                NfsTransfer transfer = _ioMessages.get(stateid);
-                if (transfer == null) {
-                    transfer = new NfsTransfer(_pnfsHandler, nfsInode,
-                            context.getRpcCall().getCredential().getSubject());
+                if (inode.type() != FsInodeType.INODE || inode.getLevel() != 0) {
+                    /*
+                     * all non regular files ( AKA pnfs dot files ) provided by door itself.
+                     */
+                    deviceid = MDS_ID;
+                } else {
 
-                    transfer.setProtocolInfo(protocolInfo);
-                    transfer.setCellName(this.getCellName());
-                    transfer.setDomainName(this.getCellDomainName());
-                    transfer.setBillingStub(_billingStub);
-                    transfer.setPoolStub(_poolManagerStub);
-                    transfer.setPoolManagerStub(_poolManagerStub);
-                    transfer.setPnfsId(pnfsId);
-                    transfer.setClientAddress(remote);
-                    transfer.readNameSpaceEntry(ioMode != layoutiomode4.LAYOUTIOMODE4_READ);
+                    final InetSocketAddress remote = context.getRpcCall().getTransport().getRemoteSocketAddress();
+                    final PnfsId pnfsId = new PnfsId(inode.toString());
+                    final NFS4ProtocolInfo protocolInfo = new NFS4ProtocolInfo(remote,
+                                new org.dcache.chimera.nfs.v4.xdr.stateid4(stateid),
+                                nfsInode.toNfsHandle()
+                            );
 
-                    if (transfer.isWrite()) {
-                        _log.debug("looking for write pool for {}", transfer.getPnfsId());
+                    NfsTransfer transfer = _ioMessages.get(stateid);
+                    if (transfer == null) {
+                        transfer = new NfsTransfer(_pnfsHandler, nfsInode,
+                                context.getRpcCall().getCredential().getSubject());
+
+                        transfer.setProtocolInfo(protocolInfo);
+                        transfer.setCellName(this.getCellName());
+                        transfer.setDomainName(this.getCellDomainName());
+                        transfer.setBillingStub(_billingStub);
+                        transfer.setPoolStub(_poolManagerStub);
+                        transfer.setPoolManagerStub(_poolManagerStub);
+                        transfer.setPnfsId(pnfsId);
+                        transfer.setClientAddress(remote);
+                        transfer.readNameSpaceEntry(ioMode != layoutiomode4.LAYOUTIOMODE4_READ);
+
+                        if (transfer.isWrite()) {
+                            _log.debug("looking for write pool for {}", transfer.getPnfsId());
+                        } else {
+                            _log.debug("looking for read pool for {}", transfer.getPnfsId());
+                        }
+
+                        /*
+                         * Bind transfer to open-state.
+                         * Cleanup transfer when state invalidated
+                         */
+                        nfsState.addDisposeListener((NFS4State state) -> {
+                            Transfer t = _ioMessages.remove(stateid);
+                            if (t != null) {
+                                t.killMover(0);
+                            }
+                        });
+
+                        _ioMessages.put(stateid, transfer);
+
+                        transfer.selectPoolAndStartMover(_ioQueue, RETRY_POLICY);
+
+                        _log.debug("mover ready: pool={} moverid={}", transfer.getPool(), transfer.getMoverId());
                     } else {
-                        _log.debug("looking for read pool for {}", transfer.getPnfsId());
+                        /*
+                         * try to recover partially used transfer:
+                         *  - do a fresh pool selection if we did not select a pool yet.
+                         *  - start a mover, if pool selection is already complete.
+                         */
+                        if (transfer.getPool() == null) {
+                            transfer.selectPoolAndStartMover(_ioQueue, RETRY_POLICY);
+                        } else if (!transfer.hasMover()) {
+                            transfer.startMover(_ioQueue, NFS_REPLY_TIMEOUT);
+                        }
                     }
 
-                    _ioMessages.put(stateid, transfer);
-
-                    transfer.selectPoolAndStartMover(_ioQueue, RETRY_POLICY);
-
-                    _log.debug("mover ready: pool={} moverid={}", transfer.getPool(), transfer.getMoverId());
+                    PoolDS ds = transfer.waitForRedirect(NFS_REPLY_TIMEOUT);
+                    deviceid = ds.getDeviceId();
                 }
-
-                PoolDS ds = transfer.waitForRedirect(NFS_REPLY_TIMEOUT);
-                deviceid = ds.getDeviceId();
             }
 
             nfs_fh4 fh = new nfs_fh4(nfsInode.toNfsHandle());
@@ -478,15 +514,6 @@ public class NFSv41Door extends AbstractCellComponent implements
             layout4 layout = Layout.getLayoutSegment(deviceid, NFSv4Defaults.NFS4_STRIPE_SIZE, fh, ioMode,
                     0, nfs4_prot.NFS4_UINT64_MAX);
 
-            /*
-               if we need to run proxy-io with NFSv4.0
-            */
-            final NFS4Client client;
-            if (context.getMinorversion() == 0) {
-                client = context.getStateHandler().getClientIdByStateId(stateid);
-            } else {
-                client = context.getSession().getClient();
-            }
             /*
              * on on error client will issue layout return.
              * return we need a different stateid for layout to keep
@@ -501,7 +528,7 @@ public class NFSv41Door extends AbstractCellComponent implements
              * as  we will never see layout return with this stateid clean it
              * when open state id is disposed
              */
-            client.state(stateid).addDisposeListener(
+            nfsState.addDisposeListener(
                     // use java7 for 2.10 backport
                     new StateDisposeListener() {
 
@@ -518,10 +545,8 @@ public class NFSv41Door extends AbstractCellComponent implements
             return new Layout(true, layoutStateId.stateid(), new layout4[]{layout});
 
         } catch (CacheException e) {
-	    cleanStateAndKillMover(stateid);
             throw asNfsException(e, LayoutTryLaterException.class);
         } catch (InterruptedException e) {
-            cleanStateAndKillMover(stateid);
             throw new LayoutTryLaterException(e.getMessage(), e);
         } finally {
             CDC.clearMessageContext();
@@ -529,13 +554,6 @@ public class NFSv41Door extends AbstractCellComponent implements
             NDC.pop();
         }
 
-    }
-
-    private void cleanStateAndKillMover(stateid4 stateid) {
-        Transfer t = _ioMessages.remove(stateid);
-        if (t != null) {
-            t.killMover(0);
-        }
     }
 
     @Override
