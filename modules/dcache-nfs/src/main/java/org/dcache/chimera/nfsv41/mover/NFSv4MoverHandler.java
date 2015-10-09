@@ -17,8 +17,13 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import diskCacheV111.util.PnfsId;
 import java.util.Arrays;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.LinkedTransferQueue;
 import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.dcache.auth.Subjects;
@@ -54,6 +59,7 @@ import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.dcache.nfs.vfs.AclCheckable;
 import org.dcache.pool.movers.IoMode;
 import org.dcache.util.PortRange;
+import org.dcache.util.MonitoringExecutorService;
 import org.dcache.utils.Bytes;
 import org.dcache.vehicles.DoorValidateMoverMessage;
 import org.dcache.xdr.IpProtocolType;
@@ -221,8 +227,19 @@ public class NFSv4MoverHandler {
     private final ScheduledExecutorService _cleanerExecutor;
     private final long _bootVerifier;
 
-    public NFSv4MoverHandler(PortRange portRange, boolean withGss, String serverId, CellStub door, long bootVerifier)
+    public NFSv4MoverHandler(PortRange portRange, boolean withGss, String serverId, CellStub door, long bootVerifier, float cpuFactor)
             throws IOException , GSSException, OncRpcException {
+
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setNameFormat("Nfs Mover Worker (%d)")
+                .build();
+
+        int nThreads = (int) (Runtime.getRuntime().availableProcessors() * cpuFactor) + 1;
+        BlockingQueue<Runnable> queue = new LinkedTransferQueue<>();
+        ExecutorService workerPool = new ThreadPoolExecutor(nThreads, nThreads,
+                0L, TimeUnit.MILLISECONDS,
+                queue,
+                threadFactory);
 
         _embededDS = new NFSServerV41(_operationFactory, null, _fs, null);
         OncRpcSvcBuilder oncRpcSvcBuilder = new OncRpcSvcBuilder()
@@ -230,7 +247,9 @@ public class NFSv4MoverHandler {
                 .withMaxPort(portRange.getUpper())
                 .withTCP()
                 .withoutAutoPublish()
-                .withWorkerThreadIoStrategy();
+                .withWorkerThreadIoStrategy()
+                .withWorkerThreadExecutionService(new MonitoringExecutorService(workerPool, 500,
+                        queue,nThreads));
 
         if (withGss) {
             RpcLoginService rpcLoginService = new RpcLoginService() {

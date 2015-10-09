@@ -77,6 +77,7 @@ public class NfsTransferService extends AbstractCellComponent
     private ChecksumModule _checksumModule;
     private int _minTcpPort;
     private int _maxTcpPort;
+    private float _cpuFactor;
 
     /**
      * file to store TCP port number used by pool.
@@ -113,7 +114,7 @@ public class NfsTransferService extends AbstractCellComponent
             retry--;
             portRange = new PortRange(minTcpPort, maxTcpPort);
             try {
-                _nfsIO = new NFSv4MoverHandler(portRange, _withGss, getCellName(), _door, _bootVerifier);
+                _nfsIO = new NFSv4MoverHandler(portRange, _withGss, getCellName(), _door, _bootVerifier, _cpuFactor);
                 bound = true;
             } catch (BindException e) {
                 bindException = e;
@@ -183,6 +184,11 @@ public class NfsTransferService extends AbstractCellComponent
 
     public void setTcpPortFile(File path) {
         _tcpPortFile = path;
+    }
+
+    @Required
+    public void setThreadFactor(float factor) {
+        _cpuFactor = factor;
     }
 
     public void shutdown() throws IOException {
