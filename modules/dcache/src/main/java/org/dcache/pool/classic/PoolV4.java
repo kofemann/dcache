@@ -739,8 +739,9 @@ public class PoolV4
         return false;
     }
 
-    private Mover<?> createMover(CellPath source, PoolIoFileMessage message) throws CacheException
+    public Mover<?> createMover(CellMessage envelop, PoolIoFileMessage message) throws CacheException
     {
+        CellPath source = envelop.getSourcePath().revert();
         FileAttributes attributes = message.getFileAttributes();
         PnfsId pnfsId = attributes.getPnfsId();
         ProtocolInfo pi = message.getProtocolInfo();
@@ -780,32 +781,24 @@ public class PoolV4
         }
     }
 
-    private int queueIoRequest(PoolIoFileMessage message, Mover<?> mover)
+    private int queueIoRequest(CellMessage envelope, PoolIoFileMessage message) throws CacheException
     {
         String queueName = message.getIoQueueName();
+        String doorUniqueueRequest = envelope.getSourceAddress().toString() + message.getId();
 
         if (message instanceof PoolAcceptFileMessage) {
-            return _ioQueue.add(queueName, mover, IoPriority.HIGH);
+            return _ioQueue.getOrCreateMover(queueName, doorUniqueueRequest, () -> { return this.createMover(envelope, message); }, IoPriority.HIGH);
         } else if (message.isPool2Pool()) {
-            return _ioQueue.add(P2P_QUEUE_NAME, mover, IoPriority.HIGH);
+            return _ioQueue.getOrCreateMover(P2P_QUEUE_NAME, doorUniqueueRequest, () -> { return this.createMover(envelope, message); }, IoPriority.HIGH);
         } else {
-            return _ioQueue.add(queueName, mover, IoPriority.REGULAR);
+            return _ioQueue.getOrCreateMover(queueName, doorUniqueueRequest, () -> { return this.createMover(envelope, message); }, IoPriority.REGULAR);
         }
     }
 
     private void ioFile(CellMessage envelope, PoolIoFileMessage message)
     {
         try {
-            if (isDuplicateIoRequest(envelope.getSourcePath(), message)) {
-                return;
-            }
-            Mover<?> mover = createMover(envelope.getSourcePath().revert(), message);
-            try {
-                message.setMoverId(queueIoRequest(message, mover));
-            } catch (Throwable t) {
-                mover.close(new NopCompletionHandler<>());
-                throw Throwables.propagate(t);
-            }
+            message.setMoverId(queueIoRequest(envelope, message));
             message.setSucceeded();
         } catch (CacheException e) {
             _log.error(e.getMessage());
