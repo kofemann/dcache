@@ -229,11 +229,7 @@ public class RequestContainerV5
                 synchronized (_handlerHash) {
                     list = new ArrayList<>(_handlerHash.values());
                 }
-                for (PoolRequestHandler handler: list) {
-                    if (handler != null) {
-                        handler.alive();
-                    }
-                }
+                list.forEach(PoolRequestHandler::alive);
             } catch (InterruptedException e) {
                 break;
             } catch (Throwable t) {
@@ -932,6 +928,11 @@ public class RequestContainerV5
            _currentRm = errorMessage ;
         }
 
+        private void clearError() {
+            _currentRc = 0;
+            _currentRm = "";
+        }
+
 	private boolean sendFetchRequest(PoolInfo pool)
         {
 	    CellMessage cellMessage = new CellMessage(
@@ -1110,11 +1111,11 @@ public class RequestContainerV5
               if( ! _forceContinue ){
 
                  synchronized( _fifo ){
-                    if( _fifo.size() == 0 ){
+                    inputObject = _fifo.pollLast();
+                    if(inputObject == null){
                        _stateEngineActive = false ;
                        return ;
                     }
-                    inputObject = _fifo.removeLast() ;
                  }
               }else{
                  inputObject = null ;
@@ -1204,8 +1205,7 @@ public class RequestContainerV5
                     _state = state;
                     _forceContinue = shouldContinue == CONTINUE ;
                     if( _state != RequestState.ST_DONE ){
-                        _currentRc = 0 ;
-                        _currentRm = "" ;
+                        clearError();
                     }
                 }
             }
@@ -1343,21 +1343,21 @@ public class RequestContainerV5
 
                     if( _suspendIncoming ){
                         setError(1005, "Suspend enforced");
-                        suspend("Suspended (forced)");
+                        suspend();
                         return ;
                     }
 
                     //
                     //
                     if( _enforceP2P ){
-                        setError(0,"");
+                        clearError();
                         nextStep(RequestState.ST_POOL_2_POOL , CONTINUE) ;
                         return ;
                     }
 
                     if( ( rc = askIfAvailable() ) == RT_FOUND ){
 
-                       setError(0,"");
+                       clearError();
                        nextStep(RequestState.ST_DONE , CONTINUE ) ;
                        _log.info("AskIfAvailable found the object");
                        if (_sendHitInfo ) {
@@ -1376,7 +1376,7 @@ public class RequestContainerV5
                           _log.debug(" stateEngine: case 1: parameter has NO HSM backend or case 2: the HSM backend exists but the file isn't stored on it.");
                           _poolCandidate = null ;
                           setError(1010, "Pool unavailable");
-                          suspendIfEnabled("Suspended (pool unavailable)");
+                          suspendIfEnabled();
                        }
                        if (_sendHitInfo && _poolCandidate == null) {
                            sendHitMsg((_bestPool!=null)?_bestPool.getName():"<UNKNOWN>",
@@ -1454,13 +1454,13 @@ public class RequestContainerV5
                                nextStep(RequestState.ST_STAGE , CONTINUE ) ;
                             }else{
                                setError(265, "Pool to pool not permitted");
-                               suspendIfEnabled("Suspended");
+                               suspendIfEnabled();
                             }
                         }else{
                             _poolCandidate = _bestPool;
                             _log.info("ST_POOL_2_POOL : Choosing high cost pool "+_poolCandidate);
 
-                          setError(0,"");
+                          clearError();
                           nextStep(RequestState.ST_DONE , CONTINUE ) ;
                         }
 
@@ -1483,7 +1483,7 @@ public class RequestContainerV5
                               _poolCandidate = _bestPool;
                               _log.info("ST_POOL_2_POOL : Choosing high cost pool "+_poolCandidate);
 
-                             setError(0,"");
+                             clearError();
                              nextStep(RequestState.ST_DONE , CONTINUE ) ;
                           }else{
                              //
@@ -1514,7 +1514,7 @@ public class RequestContainerV5
 
                           _log.info(" found high cost object");
 
-                          setError(0,"");
+                          clearError();
                           nextStep(RequestState.ST_DONE , CONTINUE ) ;
 
                        }
@@ -1527,7 +1527,8 @@ public class RequestContainerV5
                        }else if( _parameter._hasHsmBackend && _storageInfo.isStored() ){
                           nextStep(RequestState.ST_STAGE , CONTINUE ) ;
                        }else{
-                          suspendIfEnabled("Suspended");
+                           setError(CacheException.DEFAULT_ERROR_CODE, "XXX");
+                          suspendIfEnabled();
                        }
                     }
                  }
@@ -1542,7 +1543,7 @@ public class RequestContainerV5
 
                     if( _suspendStaging ){
                          setError(1005, "Suspend enforced");
-                         suspend("Suspended Stage (forced)");
+                         suspend();
                          return ;
                     }
 
@@ -1616,7 +1617,8 @@ public class RequestContainerV5
                             nextStep(RequestState.ST_DONE, CONTINUE);
                         }
                     }else if( rc == RT_DELAY ){
-                        suspend("Suspended By HSM request");
+                        setError(CacheException.HSM_DELAY_ERROR, "HSM by requested");
+                        suspend();
                     }else{
 
                        errorHandler() ;
@@ -1712,19 +1714,19 @@ public class RequestContainerV5
             nextStep(RequestState.ST_DONE, CONTINUE);
         }
 
-        private void suspend(String status)
+        private void suspend()
         {
             _log.debug(" stateEngine: SUSPENDED/WAIT ");
-            _status = status + " " + LocalDateTime.now().format(DATE_TIME_FORMAT);
+            _status = "Suspended (" + _currentRm + ") " + LocalDateTime.now().format(DATE_TIME_FORMAT);
             nextStep(RequestState.ST_SUSPENDED, WAIT);
             sendInfoMessage(
                     _currentRc, "Suspended (" + _currentRm + ")");
         }
 
-        private void suspendIfEnabled(String status)
+        private void suspendIfEnabled()
         {
             if (_onError.equals("suspend")) {
-                suspend(status);
+                suspend();
             } else {
                 fail();
             }
@@ -1733,7 +1735,8 @@ public class RequestContainerV5
         private void errorHandler()
         {
             if (_retryCounter >= _maxRetries) {
-                suspendIfEnabled("Suspended");
+                setError(CacheException.DEFAULT_ERROR_CODE, "Retry max count reached");
+                suspendIfEnabled();
             } else {
                 fail();
             }
@@ -1910,7 +1913,7 @@ public class RequestContainerV5
            }
 
            _poolCandidate = _bestPool;
-           setError(0,"");
+           clearError();
            return RT_FOUND;
         }
         //
@@ -1996,7 +1999,7 @@ public class RequestContainerV5
                     return RT_OUT_OF_RESOURCES;
                 }
 
-                setError(0,"");
+                clearError();
 
                 return RT_FOUND;
             } catch (CostException e) {
