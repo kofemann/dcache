@@ -290,6 +290,11 @@
           <groupId>org.jdom</groupId>
           <artifactId>jdom</artifactId>
       </dependency>
+      <dependency>
+         <groupId>com.ceph</groupId>
+         <artifactId>rados</artifactId>
+      </dependency>
+
   </dependencies>
 
   <build>
