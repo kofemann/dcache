@@ -230,26 +230,13 @@ public class NFSv4MoverHandler {
     public NFSv4MoverHandler(PortRange portRange, boolean withGss, String serverId, CellStub door, long bootVerifier, float cpuFactor)
             throws IOException , GSSException, OncRpcException {
 
-        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("Nfs Mover Worker (%d)")
-                .build();
-
-        int nThreads = (int) (Runtime.getRuntime().availableProcessors() * cpuFactor) + 1;
-        BlockingQueue<Runnable> queue = new LinkedTransferQueue<>();
-        ExecutorService workerPool = new ThreadPoolExecutor(nThreads, nThreads,
-                0L, TimeUnit.MILLISECONDS,
-                queue,
-                threadFactory);
-
         _embededDS = new NFSServerV41(_operationFactory, null, _fs, null);
         OncRpcSvcBuilder oncRpcSvcBuilder = new OncRpcSvcBuilder()
                 .withMinPort(portRange.getLower())
                 .withMaxPort(portRange.getUpper())
                 .withTCP()
                 .withoutAutoPublish()
-                .withWorkerThreadIoStrategy()
-                .withWorkerThreadExecutionService(new MonitoringExecutorService(workerPool, 500,
-                        queue,nThreads));
+                .withSameThreadIoStrategy();
 
         if (withGss) {
             RpcLoginService rpcLoginService = new RpcLoginService() {
