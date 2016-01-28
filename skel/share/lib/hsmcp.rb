@@ -2,11 +2,13 @@
 
 require 'fileutils'
 require 'uri'
+require 'zlib'
 
 def usage 
-  STDERR.puts "Usage : put <pnfsId> <filePath> -hsmBase=<path> -hsmInstace=<name> -si=<storageInfo> [-key[=value] ...]" 
-  STDERR.puts "        get <pnfsId> <filePath> -hsmBase=<path> -uri=<uri> [-key[=value] ...]" 
-  STDERR.puts "        remove -uri=<uri> -hsmBase=<path> [-key[=value] ...]" 
+  STDERR.puts "Usage : put <pnfsId> <file-uri> -hsmBase=<path> -hsmInstace=<name> -si=<storageInfo> [-key[=value] ...]"
+  STDERR.puts "        get <pnfsId> <file-uri> -hsmBase=<path> -uri=<uri> [-key[=value] ...]"
+  STDERR.puts "        remove -uri=<uri> -hsmBase=<path> [-key[=value] ...]"
+  STDERR.puts "        checksum <pnfsId> <file-uri> -hsmBase=<path> [-key[=value] ...]"
   exit 4
 end
 
@@ -33,12 +35,12 @@ if args.length < 1
 end
 command=args[0]
 case command
-when "get","put","next"
+when "get","put","checksum","next"
   if args.length != 3
     usage
   end
   pnfsid=args[1]
-  file=args[2]
+  file=URI(args[2]).path
 end
 
 # 
@@ -171,7 +173,10 @@ when "remove"
     STDERR.puts "Failed to delete " + hsmFile
     exot 4
   end
-  
+
+when "checksum"
+  STDERR.puts "1:#{Zlib.adler32(File.read(file)).to_s(16)}"
+
 when "next"
   
 

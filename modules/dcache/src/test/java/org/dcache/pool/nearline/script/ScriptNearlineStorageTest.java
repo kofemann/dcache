@@ -40,7 +40,7 @@ public class ScriptNearlineStorageTest {
     @Test
     public void testGetFlushCommand() {
         FileAttributes fileAttributes = createFileAttributes();
-        File someFile = new File("/some/file/path");
+        URI someFile = new File("/some/file/path").toURI();
 
         assertThat(storage.getFlushCommand(someFile, fileAttributes), hasItemInArray("put"));
         assertThat(storage.getFlushCommand(someFile, fileAttributes), hasItemInArray("-si=size=0;new=true;stored=true;sClass=testStorageClass;cClass=-;hsm=testHsm;accessLatency=NEARLINE;retentionPolicy=CUSTODIAL;dcache://dcache/?store=ttf&group=ard_sinbad&bfid=000084C5FEC6E440422EBB1E0558EB7CF0CC:000019E436CD246146C1A47305309A50DC6E;"));
@@ -49,7 +49,7 @@ public class ScriptNearlineStorageTest {
     @Test
     public void testGetFetchCommand() {
         FileAttributes fileAttributes = createFileAttributes();
-        File someFile = new File("/some/file/path");
+        URI someFile = new File("/some/file/path").toURI();
 
         assertThat(storage.getFetchCommand(someFile, fileAttributes), hasItemInArray("get"));
         assertThat(storage.getFetchCommand(someFile, fileAttributes), hasItemInArray("-si=size=0;new=true;stored=true;sClass=testStorageClass;cClass=-;hsm=testHsm;accessLatency=NEARLINE;retentionPolicy=CUSTODIAL;dcache://dcache/?store=ttf&group=ard_sinbad&bfid=000084C5FEC6E440422EBB1E0558EB7CF0CC:000019E436CD246146C1A47305309A50DC6E;"));
@@ -60,6 +60,14 @@ public class ScriptNearlineStorageTest {
     public void testRemoveFetchCommand() {
         assertThat(storage.getRemoveCommand(URI.create("proto://some/sub/dir")), hasItemInArray("remove"));
         assertThat(storage.getRemoveCommand(URI.create("proto://some/sub/dir")), hasItemInArray("-uri=proto://some/sub/dir"));
+    }
+
+    @Test
+    public void testGetChecksumCommand() {
+        FileAttributes fileAttributes = createFileAttributes();
+        URI someFile = new File("/some/file/path").toURI();
+
+        assertThat(storage.getChecksumCommand(someFile, fileAttributes), hasItemInArray("checksum"));
     }
 
     private FileAttributes createFileAttributes() {

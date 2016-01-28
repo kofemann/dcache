@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014 - 2016 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,22 +18,17 @@
 package org.dcache.pool.nearline.script;
 
 import com.google.common.annotations.VisibleForTesting;
-import com.google.common.base.Charsets;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.base.Throwables;
-import com.google.common.io.Files;
+import com.google.common.collect.ImmutableSet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -56,6 +52,7 @@ import org.dcache.pool.nearline.spi.StageRequest;
 import org.dcache.util.BoundedExecutor;
 import org.dcache.util.CDCExecutorServiceDecorator;
 import org.dcache.util.Checksum;
+import org.dcache.util.ChecksumType;
 import org.dcache.vehicles.FileAttributes;
 
 import static java.util.Arrays.asList;
@@ -120,7 +117,7 @@ public class ScriptNearlineStorage extends AbstractBlockingNearlineStorage
     {
         try {
             Set<URI> locations = new HashSet<>();
-            String[] storeCommand = getFlushCommand(request.getFile(), request.getFileAttributes());
+            String[] storeCommand = getFlushCommand(request.getReplicaUri(), request.getFileAttributes());
             String output = new HsmRunSystem(name, MAX_LINES, request.getDeadline() - System.currentTimeMillis(), storeCommand).execute();
             for (String uri : Splitter.on("\n").trimResults().omitEmptyStrings().split(output)) {
                 try {
@@ -140,9 +137,9 @@ public class ScriptNearlineStorage extends AbstractBlockingNearlineStorage
     {
         try {
             FileAttributes attributes = request.getFileAttributes();
-            String[] fetchCommand = getFetchCommand(request.getFile(), attributes);
+            String[] fetchCommand = getFetchCommand(request.getReplicaUri(), attributes);
             new HsmRunSystem(name, MAX_LINES, request.getDeadline() - System.currentTimeMillis(), fetchCommand).execute();
-            return readChecksumFromHsm(request.getFile());
+            return readChecksumFromHsm(request.getReplicaUri(), attributes);
         } catch (IllegalThreadStateException  e) {
             throw new CacheException(3, e.getMessage(), e);
         }
@@ -179,14 +176,14 @@ public class ScriptNearlineStorage extends AbstractBlockingNearlineStorage
     }
 
     @VisibleForTesting
-    String[] getFlushCommand(File file, FileAttributes fileAttributes)
+    String[] getFlushCommand(URI uri, FileAttributes fileAttributes)
     {
         StorageInfo storageInfo = StorageInfos.extractFrom(fileAttributes);
         String[] argsArray = Stream.concat(Stream.of(
                 command,
                 "put",
                 fileAttributes.getPnfsId().toString(),
-                file.getPath(),
+                uri.toString(),
                 "-si=" + storageInfo.toString()),
                 options.stream()).toArray(String[]::new);
         LOGGER.debug("COMMAND: {}", Arrays.deepToString(argsArray));
@@ -194,12 +191,12 @@ public class ScriptNearlineStorage extends AbstractBlockingNearlineStorage
     }
 
     @VisibleForTesting
-    String[] getFetchCommand(File file, FileAttributes fileAttributes)
+    String[] getFetchCommand(URI uri, FileAttributes fileAttributes)
     {
         StorageInfo storageInfo = StorageInfos.extractFrom(fileAttributes);
         String[] argsArray = Stream.of(
-                Stream.of(command, "get", fileAttributes.getPnfsId().toString(), file.getPath(), "-si=" + storageInfo.toString()),
-                getLocations(fileAttributes).stream().map(uri -> "-uri="+uri),
+                Stream.of(command, "get", fileAttributes.getPnfsId().toString(), uri.toString(), "-si=" + storageInfo.toString()),
+                getLocations(fileAttributes).stream().map(u -> "-uri="+u),
                 options.stream()
         ).flatMap(s -> s).toArray(String[]::new);
         LOGGER.debug("COMMAND: {}", Arrays.deepToString(argsArray));
@@ -218,29 +215,34 @@ public class ScriptNearlineStorage extends AbstractBlockingNearlineStorage
         return argsArray;
     }
 
-    private Set<Checksum> readChecksumFromHsm(File file)
-            throws IOException
+    @VisibleForTesting
+    String[] getChecksumCommand(URI uri, FileAttributes fileAttributes) {
+        String[] argsArray = Stream.concat(Stream.of(
+                command,
+                "checksum",
+                fileAttributes.getPnfsId().toString(),
+                uri.toString()),
+                options.stream()).toArray(String[]::new);
+        LOGGER.debug("COMMAND: {}", Arrays.deepToString(argsArray));
+        return argsArray;
+    }
+
+    private Set<Checksum> readChecksumFromHsm(URI uri, FileAttributes fileAttributes)
+            throws IOException, CacheException
     {
-        File checksumFile = new File(file.getCanonicalPath() + ".crcval");
-        try {
-            if (checksumFile.exists()) {
-                try {
-                    String firstLine = Files.readFirstLine(checksumFile, Charsets.US_ASCII);
-                    if (firstLine != null) {
-                        Checksum checksum = Checksum.parseChecksum("1:" + firstLine);
-                        return Collections.singleton(checksum);
-                    }
-                } finally {
-                    checksumFile.delete();
-                }
+        String[] checksumCommand = getChecksumCommand(uri, fileAttributes);
+        String output = new HsmRunSystem(name, MAX_LINES, TimeUnit.SECONDS.toMillis(20), checksumCommand).execute();
+
+        ImmutableSet.Builder<Checksum> checksumSetBuilder = ImmutableSet.builder();
+        for (String checksum : Splitter.on("\n").trimResults().omitEmptyStrings().split(output)) {
+            if (checksum.indexOf(':') == -1) {
+                // backward compatibility
+                checksumSetBuilder.add(new Checksum(ChecksumType.ADLER32, checksum));
+            } else {
+                checksumSetBuilder.add(Checksum.parseChecksum(checksum));
             }
-        } catch (FileNotFoundException e) {
-                /* Should not happen unless somebody else is removing
-                 * the file before we got a chance to read it.
-                 */
-            throw Throwables.propagate(e);
         }
-        return Collections.emptySet();
+        return checksumSetBuilder.build();
     }
 
     private void configureThreadPoolSize(BoundedExecutor executor, String configuration, int defaultValue)

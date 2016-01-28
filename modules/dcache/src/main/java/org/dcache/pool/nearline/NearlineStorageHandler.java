@@ -731,9 +731,9 @@ public class NearlineStorageHandler extends AbstractCellComponent implements Cel
         }
 
         @Override
-        public File getFile()
+        public URI getReplicaUri()
         {
-            return descriptor.getFile();
+            return descriptor.getFile().toURI();
         }
 
         @Override
@@ -1005,9 +1005,9 @@ public class NearlineStorageHandler extends AbstractCellComponent implements Cel
         }
 
         @Override
-        public File getFile()
+        public URI getReplicaUri()
         {
-            return descriptor.getFile();
+            return descriptor.getFile().toURI();
         }
 
         @Override

@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014 - 2016 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -34,11 +34,26 @@ import org.dcache.vehicles.FileAttributes;
 public interface FlushRequest extends NearlineRequest<Set<URI>>
 {
     /**
-     * A local file system path to the replica to flush.
+     * A {@link URI} to replica to be flushed flush.
      *
-     * @return A file system path
+     * @return A uri to file.
+     * @since 2.16
      */
-    File getFile();
+    default URI getReplicaUri() {
+        // keep binary compatibility with 3-rd tarty plugins
+        return getFile().toURI();
+    }
+
+    /**
+     * A local file system path to the replica to flush.
+     * @return a file system path.
+     * @deprecated Use {@link #getReplicaUri()}.
+     */
+    @Deprecated
+    default File getFile() {
+        // protect new code from using depricated interface
+        throw new UnsupportedOperationException("muse use FlushRequest#getReplicaUri() instead");
+    }
 
     /**
      * Attributes of the file to which this request applies.

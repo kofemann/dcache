@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014 - 2016 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -83,7 +83,8 @@ public abstract class FileSystemNearlineStorage extends AbstractBlockingNearline
     @Override
     protected Set<URI> flush(FlushRequest request) throws IOException, URISyntaxException
     {
-        File file = request.getFile();
+        URI uriToReplica = request.getReplicaUri();
+        File file = new File(uriToReplica.getPath());
         flush(file.toPath(), getExternalPath(file.getName()));
         URI uri = new URI(type, name, '/' + request.getFileAttributes().getPnfsId().getId(), null, null);
         return Collections.singleton(uri);
@@ -101,7 +102,7 @@ public abstract class FileSystemNearlineStorage extends AbstractBlockingNearline
         if (path == null) {
             throw new InvalidMessageCacheException("Invalid nearline storage URI: " + location);
         }
-        stage(getExternalPath(path.substring(1)), request.getFile().toPath());
+        stage(getExternalPath(path.substring(1)), new File(request.getReplicaUri().getPath()).toPath());
         return Collections.emptySet();
     }
 

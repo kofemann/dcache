@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014 - 2016 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -155,21 +155,21 @@ public class TarNearlineStorage implements NearlineStorage
             List<FlushRequest> requests = new ArrayList<>();
             flushQueue.drainTo(requests);
             if (!requests.isEmpty()) {
-                Map<File, URI> uris = new HashMap<>();
+                Map<URI, URI> uris = new HashMap<>();
                 String tarName = UUID.randomUUID().toString();
                 File tarFile = new File(directory, tarName + ".tar");
                 try (FileOutputStream out = new FileOutputStream(tarFile)) {
                     try (TarArchiveOutputStream tarStream = new TarArchiveOutputStream(out)) {
                         for (FlushRequest request : requests) {
                             request.activate().get();
-                            File file = request.getFile();
+                            File file = new File(request.getReplicaUri().getPath());
                             PnfsId pnfsId = request.getFileAttributes().getPnfsId();
                             TarArchiveEntry entry = new TarArchiveEntry(pnfsId.getId());
-                            entry.setSize(request.getFile().length());
+                            entry.setSize(file.length());
                             tarStream.putArchiveEntry(entry);
                             Files.copy(file.toPath(), tarStream);
                             tarStream.closeArchiveEntry();
-                            uris.put(file, new URI(type, name, '/' + tarName + '/' + pnfsId.getId(), null, null));
+                            uris.put(request.getReplicaUri(), new URI(type, name, '/' + tarName + '/' + pnfsId.getId(), null, null));
                         }
                         tarStream.finish();
                     }
@@ -185,7 +185,7 @@ public class TarNearlineStorage implements NearlineStorage
                     return;
                 }
                 for (FlushRequest request : requests) {
-                    request.completed(Collections.singleton(uris.get(request.getFile())));
+                    request.completed(Collections.singleton(uris.get(request.getReplicaUri())));
                 }
             }
         }
@@ -220,7 +220,7 @@ public class TarNearlineStorage implements NearlineStorage
                             if (request != null) {
                                 try {
                                     request.allocate().get();
-                                    Files.copy(tarStream, request.getFile().toPath());
+                                    Files.copy(tarStream, new File(request.getReplicaUri().getPath()).toPath());
                                     request.completed(Collections.<Checksum>emptySet());
                                 } catch (Exception e) {
                                     request.failed(e);

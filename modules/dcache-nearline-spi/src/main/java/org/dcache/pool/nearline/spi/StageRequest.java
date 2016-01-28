@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014 - 2016 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,6 +20,7 @@ package org.dcache.pool.nearline.spi;
 import com.google.common.util.concurrent.ListenableFuture;
 
 import java.io.File;
+import java.net.URI;
 import java.util.Set;
 
 import org.dcache.util.Checksum;
@@ -35,11 +36,24 @@ import org.dcache.vehicles.FileAttributes;
 public interface StageRequest extends NearlineRequest<Set<Checksum>>
 {
     /**
-     * A local file system path to which to stage the replica.
+     * A {@link URI} to which to stage the replica.
      *
-     * @return A file system path
+     * @return replica's uri
      */
-    File getFile();
+    default URI getReplicaUri() {
+        return this.getFile().toURI();
+    }
+
+    /**
+     * A local file system path to which to stage the replica.
+     * @return A file system path;
+     * @deprecated Use {@link #getReplicaUri()}.
+     */
+    @Deprecated
+    default File getFile() {
+        // protect new code from using depricated interface
+        throw new UnsupportedOperationException("muse use StageRequest#getReplicaUri() instead");
+    }
 
     /**
      * Attributes of the file to stage.
