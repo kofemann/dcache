@@ -116,6 +116,7 @@ import static java.util.stream.Collectors.toList;
 import java.util.stream.Stream;
 
 import static org.dcache.chimera.nfsv41.door.ExceptionUtils.asNfsException;
+import org.dcache.nfs.status.PermException;
 
 public class NFSv41Door extends AbstractCellComponent implements
         NFSv41DeviceManager, CellCommandListener,
@@ -474,6 +475,10 @@ public class NFSv41Door extends AbstractCellComponent implements
                         transfer.setPnfsId(pnfsId);
                         transfer.setClientAddress(remote);
                         transfer.readNameSpaceEntry(ioMode != layoutiomode4.LAYOUTIOMODE4_READ);
+
+                        if (transfer.getFileAttributes().getStorageInfo().isCreatedOnly() && !transfer.isWrite()) {
+                            throw new PermException("Can't read file which is not written yet.");
+                        }
 
                         if (transfer.isWrite()) {
                             _log.debug("looking for write pool for {}", transfer.getPnfsId());

@@ -285,13 +285,10 @@ public class ChecksumChannel implements RepositoryChannel
             _isWritable = false;
 
             if (_dataRangeSet.asRanges().size() != 1 || _fileStartRange.isEmpty()) {
-                feedZerosToDigesterForRangeGaps();
+                return null;
             }
 
             return _checksumFactory.create(_digest.digest());
-        } catch (IOException e) {
-            _log.info("Unable to generate checksum of sparse file: {}", e.toString());
-            return null;
         } finally {
             lock.unlock();
         }
