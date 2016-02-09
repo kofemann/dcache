@@ -238,7 +238,17 @@ public class NfsProxyIo implements ProxyIoAdapter {
     public void processSequence(COMPOUND4res compound4res) {
 
         nfs_resop4 res = compound4res.resarray.get(0);
-        if (res.resop == nfs_opnum4.OP_SEQUENCE && res.opsequence.sr_status == nfsstat.NFS_OK) {
+
+        if (res.resop != nfs_opnum4.OP_SEQUENCE) {
+            return;
+        }
+
+        /**
+         * bump sequence on successful reply.
+         * FIXME: current nfs4j will bump sequence before reply delivered to the client. If we run into
+         * timeout, then we will re-use same sequence. Bump sequence, if mover complains about uncached reply.
+         */
+        if (res.opsequence.sr_status == nfsstat.NFSERR_RETRY_UNCACHED_REP || res.opsequence.sr_status == nfsstat.NFS_OK) {
             ++_sequenceID.value;
         }
     }
