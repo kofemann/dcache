@@ -296,7 +296,8 @@ public class NFSv41Door extends AbstractCellComponent implements
                     final NFSv41DeviceManager _dm = this;
                     _proxyIoFactory = new NfsProxyIoFactory(_dm);
                     _nfs4 = new NFSServerV41(new ProxyIoMdsOpFactory(_proxyIoFactory,
-                            new AccessLogAwareOperationFactory(_fileFileSystemProvider, _accessLogMode)),
+                            new BillingAwareOperationFactory(_fileFileSystemProvider, _billingStub, getCellName() + "@" + getCellDomainName(), 
+                                    new AccessLogAwareOperationFactory(_fileFileSystemProvider, _accessLogMode))),
                             _dm, _vfs, _exportFile);
                     _rpcService.register(new OncRpcProgram(nfs4_prot.NFS4_PROGRAM, nfs4_prot.NFS_V4), _nfs4);
                     updateLbPaths();
