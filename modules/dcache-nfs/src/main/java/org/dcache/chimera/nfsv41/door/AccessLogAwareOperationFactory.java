@@ -10,6 +10,7 @@ import com.google.common.cache.LoadingCache;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import org.dcache.chimera.FileSystemProvider;
 import org.dcache.chimera.FsInode;
 import org.dcache.chimera.JdbcFs;
 import org.dcache.nfs.ChimeraNFSException;
@@ -226,7 +227,7 @@ public class AccessLogAwareOperationFactory extends MDSOperationFactory {
             FsInode cParentInode = _jdbcFs.inodeFromBytes(parent.getFileId());
 
             String name = new String(_args.opremove.target.value, UTF_8);
-            FsInode cInode = _jdbcFs.inodeOf(cParentInode, name);
+            FsInode cInode = _jdbcFs.inodeOf(cParentInode, name, FileSystemProvider.StatCacheOption.NO_STAT);
 
             super.process(context, result);
 
