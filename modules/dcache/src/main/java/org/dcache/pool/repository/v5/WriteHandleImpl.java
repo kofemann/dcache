@@ -1,5 +1,7 @@
 package org.dcache.pool.repository.v5;
 
+import org.dcache.rados4j.Rbd;
+
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,9 @@ import org.dcache.pool.repository.FileRepositoryChannel;
 import org.dcache.pool.repository.MetaDataRecord;
 import org.dcache.pool.repository.ReplicaDescriptor;
 import org.dcache.pool.repository.Repository;
+import org.dcache.pool.repository.StickyRecord;
+import org.dcache.pool.repository.FileRepositoryChannel;
+import org.dcache.pool.classic.CephRepositoryChannel;
 import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.pool.repository.StickyRecord;
 import org.dcache.util.Checksum;
@@ -91,7 +96,11 @@ class WriteHandleImpl implements ReplicaDescriptor
     /** Last access time of new replica. */
     private Long _atime;
 
+    private final Rbd _rbd;
+
+    private volatile RepositoryChannel _channel;
     WriteHandleImpl(CacheRepositoryV5 repository,
+                    Rbd rbd,
                     Allocator allocator,
                     PnfsHandler pnfs,
                     MetaDataRecord entry,
@@ -101,6 +110,7 @@ class WriteHandleImpl implements ReplicaDescriptor
                     Set<Repository.OpenFlags> flags) throws IOException
     {
         _repository = checkNotNull(repository);
+        _rbd = checkNotNull(rbd);
         _allocator = checkNotNull(allocator);
         _pnfs = checkNotNull(pnfs);
         _entry = checkNotNull(entry);
@@ -137,7 +147,8 @@ class WriteHandleImpl implements ReplicaDescriptor
 
     @Override
     public RepositoryChannel createChannel() throws IOException {
-        return new FileRepositoryChannel(getFile(), IoMode.WRITE.toOpenString());
+        _channel = new CephRepositoryChannel(_rbd, _entry.getPnfsId().toString(), "rw");
+	return _channel;
     }
 
     /**
@@ -349,7 +360,7 @@ class WriteHandleImpl implements ReplicaDescriptor
                 _entry.setLastAccessTime(_atime);
             }
 
-            long length = getFile().length();
+            long length = _channel.size();
             adjustReservation(length);
             verifyFileSize(length);
             _fileAttributes.setSize(length);
@@ -360,6 +371,8 @@ class WriteHandleImpl implements ReplicaDescriptor
             setToTargetState();
 
             setState(HandleState.COMMITTED);
+        } catch (IOException e) {
+            throw new CacheException(e.getMessage(), e);
         } catch (CacheException e) {
             /* If any of the PNFS operations return FILE_NOT_FOUND,
              * then we change the target state and the close method
@@ -379,9 +392,11 @@ class WriteHandleImpl implements ReplicaDescriptor
      */
     private synchronized void fail()
     {
-        long length = getFile().length();
         try {
+            long length = _channel.size();
             adjustReservation(length);
+	} catch (IOException e) {
+            _log.warn("Failed to get file size: {}", e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
         }

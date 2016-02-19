@@ -253,7 +253,7 @@ public abstract class AbstractMover<P extends ProtocolInfo, M extends AbstractMo
         RepositoryChannel channel;
         try {
             channel = _handle.createChannel();
-            if (getIoMode() == IoMode.WRITE) {
+            if (getIoMode() == IoMode.WRITE && 2>3) {
                 try {
                     channel = _checksumChannel = new ChecksumChannel(channel, _checksumFactory);
                 } catch (Throwable t) {
