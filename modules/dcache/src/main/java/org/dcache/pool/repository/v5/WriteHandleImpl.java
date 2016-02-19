@@ -1,5 +1,7 @@
 package org.dcache.pool.repository.v5;
 
+import org.dcache.rados4j.Rbd;
+
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,6 +25,9 @@ import org.dcache.pool.repository.FileRepositoryChannel;
 import org.dcache.pool.repository.MetaDataRecord;
 import org.dcache.pool.repository.ReplicaDescriptor;
 import org.dcache.pool.repository.Repository;
+import org.dcache.pool.repository.StickyRecord;
+import org.dcache.pool.repository.FileRepositoryChannel;
+import org.dcache.pool.classic.CephRepositoryChannel;
 import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.pool.repository.StickyRecord;
 import org.dcache.util.Checksum;
@@ -91,7 +96,9 @@ class WriteHandleImpl implements ReplicaDescriptor
     /** Last access time of new replica. */
     private Long _atime;
 
+    private final Rbd _rbd;
     WriteHandleImpl(CacheRepositoryV5 repository,
+                    Rbd rbd,
                     Allocator allocator,
                     PnfsHandler pnfs,
                     MetaDataRecord entry,
@@ -101,6 +108,7 @@ class WriteHandleImpl implements ReplicaDescriptor
                     Set<Repository.OpenFlags> flags) throws IOException
     {
         _repository = checkNotNull(repository);
+        _rbd = checkNotNull(rbd);
         _allocator = checkNotNull(allocator);
         _pnfs = checkNotNull(pnfs);
         _entry = checkNotNull(entry);
@@ -137,7 +145,7 @@ class WriteHandleImpl implements ReplicaDescriptor
 
     @Override
     public RepositoryChannel createChannel() throws IOException {
-        return new FileRepositoryChannel(getFile(), IoMode.WRITE.toOpenString());
+        return new CephRepositoryChannel(_rbd, _entry.getPnfsId().toString(), "rw");
     }
 
     /**

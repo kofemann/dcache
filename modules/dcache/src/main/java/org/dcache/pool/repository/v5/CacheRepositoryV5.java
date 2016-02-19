@@ -1,5 +1,9 @@
 package org.dcache.pool.repository.v5;
 
+import org.dcache.rados4j.IoCtx;
+import org.dcache.rados4j.Rados;
+import org.dcache.rados4j.RadosException;
+import org.dcache.rados4j.Rbd;
 import com.google.common.base.Throwables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +67,7 @@ import org.dcache.vehicles.FileAttributes;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkNotNull;
 import static com.google.common.base.Preconditions.checkState;
+import java.io.File;
 import static org.dcache.namespace.FileAttribute.PNFSID;
 import static org.dcache.namespace.FileAttribute.STORAGEINFO;
 import static org.dcache.pool.repository.EntryState.NEW;
@@ -93,6 +98,7 @@ public class CacheRepositoryV5
      *
      */
 
+    private Rbd _rbd;
     private static final Logger LOGGER =
             LoggerFactory.getLogger(CacheRepositoryV5.class);
 
@@ -456,6 +462,16 @@ public class CacheRepositoryV5
         checkState(_account != null, "Account must be set.");
         checkState(_allocator != null, "Allocator must be set.");
 
+        try {
+            Rados cluster = new Rados("admin","/etc/ceph/ceph.conf");
+            cluster.connect();
+
+            IoCtx ctx = cluster.createIoContext(getPoolName());
+            _rbd = ctx.createRbd();
+        } catch (RadosException e) {
+            throw new CacheException(1717, e.getMessage(), e);
+        }
+
         if (!compareAndSetState(State.UNINITIALIZED, State.INITIALIZED)) {
             throw new IllegalStateException("Can only initialize uninitialized repository.");
         }
@@ -585,8 +601,8 @@ public class CacheRepositoryV5
 
                 try {
                     return new WriteHandleImpl(
-                            this, _allocator, _pnfs, entry, fileAttributes,
-                                    targetState, stickyRecords, flags);
+                            this, _rbd, _allocator, _pnfs, entry,
+                                  fileAttributes, targetState, stickyRecords, flags);
                 } catch (IOException e) {
                     throw new DiskErrorCacheException("Failed to create file: " + entry.getDataFile(), e);
                 }
@@ -628,7 +644,7 @@ public class CacheRepositoryV5
                 case CACHED:
                     break;
                 }
-                handle = new ReadHandleImpl(_pnfs, entry);
+                handle = new ReadHandleImpl(_rbd, _pnfs, entry);
             }
 
             if (!flags.contains(OpenFlags.NOATIME)) {

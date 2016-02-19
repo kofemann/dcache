@@ -1,5 +1,6 @@
 package org.dcache.pool.repository.v5;
 
+import org.dcache.rados4j.Rbd;
 import java.io.IOException;
 import java.io.File;
 import java.util.EnumSet;
@@ -14,6 +15,7 @@ import org.dcache.pool.repository.MetaDataRecord;
 import org.dcache.pool.repository.ReplicaDescriptor;
 import org.dcache.pool.repository.FileRepositoryChannel;
 import org.dcache.pool.repository.RepositoryChannel;
+import org.dcache.pool.classic.CephRepositoryChannel;
 import org.dcache.util.Checksum;
 import org.dcache.vehicles.FileAttributes;
 
@@ -26,9 +28,11 @@ class ReadHandleImpl implements ReplicaDescriptor
     private final MetaDataRecord _entry;
     private FileAttributes _fileAttributes;
     private boolean _open;
+    private final Rbd _rbd;
 
-    ReadHandleImpl(PnfsHandler pnfs, MetaDataRecord entry) throws CacheException
+    ReadHandleImpl(Rbd rbd, PnfsHandler pnfs, MetaDataRecord entry) throws CacheException
     {
+        _rbd = checkNotNull(rbd);
         _pnfs = checkNotNull(pnfs);
         _entry = checkNotNull(entry);
         _fileAttributes = _entry.getFileAttributes();
@@ -53,7 +57,7 @@ class ReadHandleImpl implements ReplicaDescriptor
 
     @Override
     public RepositoryChannel createChannel() throws IOException {
-        return new FileRepositoryChannel(getFile(), IoMode.READ.toOpenString());
+        return new CephRepositoryChannel(_rbd, _entry.getPnfsId().toString(), "r");
     }
 
     /**

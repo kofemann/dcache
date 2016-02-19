@@ -797,9 +797,9 @@
                 </exclusions>
             </dependency>
             <dependency>
-                <groupId>com.ceph</groupId>
-                <artifactId>rados</artifactId>
-                <version>0.2.0</version>
+                <groupId>org.dcache</groupId>
+                <artifactId>rados4j</artifactId>
+                <version>0.0.1-SNAPSHOT</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
