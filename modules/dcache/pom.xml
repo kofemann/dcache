@@ -291,8 +291,8 @@
           <artifactId>jdom</artifactId>
       </dependency>
       <dependency>
-         <groupId>org.dcache</groupId>
-         <artifactId>rados4j</artifactId>
+         <groupId>com.ceph</groupId>
+         <artifactId>rados</artifactId>
       </dependency>
 
   </dependencies>

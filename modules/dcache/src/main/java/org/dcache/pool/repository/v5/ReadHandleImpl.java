@@ -1,6 +1,8 @@
 package org.dcache.pool.repository.v5;
 
-import org.dcache.rados4j.Rbd;
+import com.ceph.rados.exceptions.RadosException;
+import com.ceph.rbd.Rbd;
+import com.ceph.rbd.RbdException;
 import java.io.IOException;
 import java.io.File;
 import java.util.EnumSet;
@@ -57,7 +59,11 @@ class ReadHandleImpl implements ReplicaDescriptor
 
     @Override
     public RepositoryChannel createChannel() throws IOException {
-        return new CephRepositoryChannel(_rbd, _entry.getPnfsId().toString(), "r");
+        try {
+            return new CephRepositoryChannel(_rbd, _entry.getPnfsId().toString(), "r");
+        } catch (RadosException | RbdException e) {
+            throw new IOException(e.getMessage(), e);
+        }
     }
 
     /**

@@ -1,9 +1,9 @@
 package org.dcache.pool.repository.v5;
 
-import org.dcache.rados4j.IoCtx;
-import org.dcache.rados4j.Rados;
-import org.dcache.rados4j.RadosException;
-import org.dcache.rados4j.Rbd;
+import com.ceph.rados.IoCTX;
+import com.ceph.rados.Rados;
+import com.ceph.rados.exceptions.RadosException;
+import com.ceph.rbd.Rbd;
 import com.google.common.base.Throwables;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -463,11 +463,12 @@ public class CacheRepositoryV5
         checkState(_allocator != null, "Allocator must be set.");
 
         try {
-            Rados cluster = new Rados("admin","/etc/ceph/ceph.conf");
+            Rados cluster = new Rados("admin");
+            cluster.confReadFile( new File("/etc/ceph/ceph.conf"));
             cluster.connect();
 
-            IoCtx ctx = cluster.createIoContext(getPoolName());
-            _rbd = ctx.createRbd();
+            IoCTX ctx = cluster.ioCtxCreate(getPoolName());
+            _rbd = new Rbd(ctx);
         } catch (RadosException e) {
             throw new CacheException(1717, e.getMessage(), e);
         }

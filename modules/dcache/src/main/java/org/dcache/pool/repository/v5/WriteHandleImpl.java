@@ -1,6 +1,8 @@
 package org.dcache.pool.repository.v5;
 
-import org.dcache.rados4j.Rbd;
+import com.ceph.rados.exceptions.RadosException;
+import com.ceph.rbd.Rbd;
+import com.ceph.rbd.RbdException;
 
 import com.google.common.collect.Sets;
 import org.slf4j.Logger;
@@ -145,7 +147,11 @@ class WriteHandleImpl implements ReplicaDescriptor
 
     @Override
     public RepositoryChannel createChannel() throws IOException {
+        try {
         return new CephRepositoryChannel(_rbd, _entry.getPnfsId().toString(), "rw");
+        } catch (RadosException | RbdException e) {
+            throw new IOException(e.getMessage(), e);
+        }
     }
 
     /**
