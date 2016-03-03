@@ -263,13 +263,10 @@ public class ChecksumChannel implements RepositoryChannel
      */
     public Checksum getChecksum()
     {
-        if (!_isChecksumViable) {
+        if (!_isChecksumViable || _finalChecksum == null) {
             return null;
         }
 
-        if (_finalChecksum == null) {
-            _finalChecksum = finalizeChecksum();
-        }
         return _finalChecksum;
     }
 
