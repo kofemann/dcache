@@ -252,7 +252,7 @@ class FsSqlDriver {
                             Stat stat = toStat(rs);
                             FsInode inode = new FsInode(dir.getFs(), rs.getLong("inumber"), FsInodeType.INODE, 0, stat);
                             inode.setParent(dir);
-                            return new HimeraDirectoryEntry(rs.getString("iname"), inode, stat);
+                            return new HimeraDirectoryEntry(rs.getString("iname"), inode, stat, rs.getLong("icookie"));
                         } catch (SQLException e) {
                             _log.error("failed to fetch next entry: {}", e.getMessage());
                             return null;
@@ -264,6 +264,66 @@ class FsSqlDriver {
             @Override
             public void close() throws IOException
             {
+                stream.close();
+            }
+        };
+    }
+
+    /**
+     * the same as listDir, but array of {
+     *
+     * @HimeraDirectoryEntry} is returned, which contains file attributes as
+     * well.
+     *
+     * @param dir
+     * @param cookie
+     * @param count
+     * @return
+     */
+    DirectoryStreamB<HimeraDirectoryEntry> newDirectoryStream(FsInode dir, long cookie, int count) {
+        return new DirectoryStreamB<HimeraDirectoryEntry>() {
+            final DirectoryStreamImpl stream = new DirectoryStreamImpl(dir, _jdbc, cookie, count);
+
+            @Override
+            public Iterator<HimeraDirectoryEntry> iterator() {
+                return new Iterator<HimeraDirectoryEntry>() {
+                    private HimeraDirectoryEntry current = innerNext();
+
+                    @Override
+                    public boolean hasNext() {
+                        return current != null;
+                    }
+
+                    @Override
+                    public HimeraDirectoryEntry next() {
+                        if (current == null) {
+                            throw new NoSuchElementException("No more entries");
+                        }
+                        HimeraDirectoryEntry entry = current;
+                        current = innerNext();
+                        return entry;
+                    }
+
+                    protected HimeraDirectoryEntry innerNext() {
+                        try {
+                            ResultSet rs = stream.next();
+                            if (rs == null) {
+                                return null;
+                            }
+                            Stat stat = toStat(rs);
+                            FsInode inode = new FsInode(dir.getFs(), rs.getLong("inumber"), FsInodeType.INODE, 0, stat);
+                            inode.setParent(dir);
+                            return new HimeraDirectoryEntry(rs.getString("iname"), inode, stat, rs.getLong("icookie"));
+                        } catch (SQLException e) {
+                            _log.error("failed to fetch next entry: {}", e.getMessage());
+                            return null;
+                        }
+                    }
+                };
+            }
+
+            @Override
+            public void close() throws IOException {
                 stream.close();
             }
         };

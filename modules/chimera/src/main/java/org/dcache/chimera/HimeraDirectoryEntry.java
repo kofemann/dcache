@@ -23,15 +23,17 @@ public class HimeraDirectoryEntry {
     private final String _name;
     private final Stat _stat;
     private final FsInode _inode;
+    private final long _dirCookie;
 
-    public HimeraDirectoryEntry(String name, FsInode inode) throws ChimeraFsException {
-        this(name, inode, inode.statCache());
+    public HimeraDirectoryEntry(String name, FsInode inode, long dirCookie) throws ChimeraFsException {
+        this(name, inode, inode.statCache(), dirCookie);
     }
 
-    public HimeraDirectoryEntry(String name, FsInode inode, Stat stat) {
+    public HimeraDirectoryEntry(String name, FsInode inode, Stat stat, long dirCookie) {
         _inode = inode;
         _name = name;
         _stat = stat;
+        _dirCookie = dirCookie;
     }
 
     public FsInode getInode() {
@@ -44,5 +46,9 @@ public class HimeraDirectoryEntry {
 
     public Stat getStat() {
         return _stat;
+    }
+
+    public long getDirCookie() {
+        return _dirCookie;
     }
 }

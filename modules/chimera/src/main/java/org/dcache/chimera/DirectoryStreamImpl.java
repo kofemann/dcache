@@ -30,11 +30,15 @@ import java.sql.SQLException;
 public class DirectoryStreamImpl
 {
     private static final String QUERY =
-            "SELECT i.*, d.iname FROM t_inodes i JOIN t_dirs d ON i.inumber = d.ichild WHERE d.iparent=? " +
+            "SELECT i.*, d.iname d.icookie FROM t_inodes i JOIN t_dirs d ON i.inumber = d.ichild WHERE d.iparent=? " +
             "UNION ALL " +
             "SELECT i.*, '.' FROM t_inodes i WHERE i.inumber=? " +
             "UNION ALL " +
             "SELECT i.*, '..' FROM t_inodes i JOIN t_dirs d ON i.inumber = d.iparent WHERE d.ichild=?";
+
+    private static final String QUERY2
+            = "SELECT i.*, d.iname, d.icookie FROM t_inodes i JOIN t_dirs d ON i.inumber = d.ichild WHERE d.iparent=? "
+            + "AND icookie > ? ORDER BY icookie LIMIT ?";
 
     private final ResultSet _resultSet;
     private final JdbcTemplate _jdbc;
@@ -55,6 +59,30 @@ public class DirectoryStreamImpl
             ps.setLong(1, dir.ino());
             ps.setLong(2, dir.ino());
             ps.setLong(3, dir.ino());
+            rs = ps.executeQuery();
+        } catch (SQLException ex) {
+            JdbcUtils.closeStatement(ps);
+            DataSourceUtils.releaseConnection(connection, _jdbc.getDataSource());
+            throw _jdbc.getExceptionTranslator().translate("StatementExecution", QUERY, ex);
+        }
+        _connection = connection;
+        _resultSet = rs;
+        _statement = ps;
+    }
+
+    DirectoryStreamImpl(FsInode dir, JdbcTemplate jdbc, long cookie, int count) {
+        _jdbc = jdbc;
+
+        Connection connection = null;
+        PreparedStatement ps = null;
+        ResultSet rs;
+        try {
+            connection = DataSourceUtils.getConnection(_jdbc.getDataSource());
+            ps = connection.prepareStatement(QUERY2);
+            ps.setFetchSize(50);
+            ps.setLong(1, dir.ino());
+            ps.setLong(2, cookie);
+            ps.setInt(3, count);
             rs = ps.executeQuery();
         } catch (SQLException ex) {
             JdbcUtils.closeStatement(ps);
