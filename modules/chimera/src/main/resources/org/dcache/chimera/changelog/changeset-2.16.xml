@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<databaseChangeLog
+        xmlns="http://www.liquibase.org/xml/ns/dbchangelog"
+        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+        xsi:schemaLocation="http://www.liquibase.org/xml/ns/dbchangelog
+     http://www.liquibase.org/xml/ns/dbchangelog/dbchangelog-3.1.xsd">
+
+    <changeSet id="24" author="tigran">
+
+        <comment>Create cookie id field in t_dirs</comment>
+        <addColumn tableName="t_dirs">
+            <column name="icookie" type="bigint" autoIncrement="true" startWith="3"/>
+        </addColumn>
+
+        <createIndex tableName="t_dirs" indexName="i_dirs_cookie">
+            <column name="icookie"/>
+        </createIndex>
+
+        <rollback>
+            <dropColumn tableName="t_dirs" columnName="icookie"/>
+        </rollback>
+    </changeSet>
+</databaseChangeLog>
