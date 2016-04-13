@@ -868,7 +868,7 @@ public class Transfer implements Comparable<Transfer>
     /**
      * Selects a pool suitable for the transfer.
      */
-    private ListenableFuture<Void> selectPoolAsync(long timeout)
+    public ListenableFuture<Void> selectPoolAsync(long timeout)
     {
         FileAttributes fileAttributes = getFileAttributes();
 
