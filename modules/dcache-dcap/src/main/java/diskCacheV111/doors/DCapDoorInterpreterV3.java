@@ -1085,7 +1085,7 @@ public class DCapDoorInterpreterV3 implements KeepAliveListener,
             super.doLogin();
             _pnfs = new PnfsHandler(_cell, new CellPath(_pnfsManagerName));
             if (_isUrl || _authorizationRequired) {
-                _pnfs.setSubject(_subject);
+                _pnfs.setSubject(Subjects.isNobody(_subject) ? Subjects.of(getUid(), getGid(), new int[] {}) : _subject);
                 _pnfs.setRestriction(_authz);
             }
         }
