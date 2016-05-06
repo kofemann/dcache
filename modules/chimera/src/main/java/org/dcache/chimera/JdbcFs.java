@@ -984,6 +984,17 @@ public class JdbcFs implements FileSystemProvider {
         });
     }
 
+    public void truncate(FsInode inode) throws ChimeraFsException {
+        inTransaction(status -> {
+            try {
+                _sqlDriver.truncate(inode);
+                return null;
+            } catch (SQLException e) {
+                throw new ChimeraFsException("Faled to truncate file",  e);
+            }
+        });
+    }
+
     @Override
     public boolean isIoEnabled(FsInode inode) throws ChimeraFsException {
         return _sqlDriver.isIoEnabled(inode);

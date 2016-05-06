@@ -1789,4 +1789,43 @@ public class FsSqlDriver {
         preparedStatement.setLong(idx++, inode.ino());
         return preparedStatement;
     }
+
+    public void truncate(FsInode inode) throws SQLException, ChimeraFsException {
+        long inumber = inode.ino();
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        String id = inode.getId();
+
+        // clean existing location, checksum and levels
+        _jdbc.update(
+                "INSERT INTO t_locationinfo_trash (ipnfsid,itype,ilocation,ipriority,ictime,iatime,istate) VALUES (?,2,'',0,?,?,1)",
+                ps -> {
+                    ps.setString(1, id);
+                    ps.setTimestamp(2, now);
+                    ps.setTimestamp(3, now);
+                });
+
+        _jdbc.update("DELETE from t_locationinfo where inumber=?",
+                ps-> {
+                    ps.setLong(1, inumber);
+                });
+
+        _jdbc.update("DELETE from t_inodes_checksum where inumber=?",
+                ps -> {
+                    ps.setLong(1, inumber);
+                });
+
+        for( int i = 1; i <= JdbcFs.LEVELS_NUMBER; i++) {
+            _jdbc.update("DELETE FROM t_level_" + i + " where inumber=?",
+                ps -> {
+                   ps.setLong(1, inumber);
+                });
+        }
+        // inject new pnfsid
+        _jdbc.update("UPDATE t_inodes SET ipnfsid=? where inumber=?",
+                ps -> {
+                    ps.setString(1, InodeId.newID(0));
+                    ps.setLong(2, inumber);
+                });
+
+    }
 }
