@@ -133,14 +133,15 @@ public class JdbcFs implements FileSystemProvider {
                     }
             , _fsStatUpdateExecutor));
 
-    /* The PNFS ID to inode number mapping will never change while dCache is running.
+    /* The PNFS ID will never point to an other inumber.
      */
     protected final Cache<String, Long> _inoCache =
             CacheBuilder.newBuilder()
                     .maximumSize(100000)
                     .build();
 
-    /* The inode number to PNFS ID mapping will never change while dCache is running.
+    /* The same can point to a single PNFS ID at the time, but it can change,
+     * if file is truncated.
      */
     protected final Cache<Long, String> _idCache =
             CacheBuilder.newBuilder()
@@ -996,6 +997,14 @@ public class JdbcFs implements FileSystemProvider {
                 }
                 break;
             }
+            return null;
+        });
+    }
+
+    public void truncate(FsInode inode) throws ChimeraFsException {
+        inTransaction(status -> {
+            _idCache.invalidate(inode.ino());
+            _sqlDriver.truncate(inode);
             return null;
         });
     }

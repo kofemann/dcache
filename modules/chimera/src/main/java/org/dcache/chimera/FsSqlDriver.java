@@ -1789,4 +1789,57 @@ public class FsSqlDriver {
         preparedStatement.setLong(idx++, inode.ino());
         return preparedStatement;
     }
+
+    public void truncate(FsInode inode) throws ChimeraFsException {
+        long inumber = inode.ino();
+        Timestamp now = new Timestamp(System.currentTimeMillis());
+        String id = inode.getId();
+
+        // set that file is 'new'
+        _jdbc.update("UPDATE t_inodes SET isize=0,imtime=?,iio=? WHERE inumber=?",
+                ps -> {
+                    ps.setTimestamp(1, now);
+                    ps.setInt(2, FileState.CREATED.getValue());
+                    ps.setLong(3, inumber);
+                });
+
+        // clean existing location, checksum and levels
+        _jdbc.update(
+                "INSERT INTO t_locationinfo_trash (ipnfsid,itype,ilocation,ipriority,ictime,iatime,istate) "
+                        + "(SELECT ?,itype,ilocation,ipriority,ictime,iatime,istate FROM t_locationinfo "
+                        + "WHERE inumber=?)",
+                ps -> {
+                    ps.setString(1, id);
+                    ps.setLong(2, inumber);
+                });
+
+        _jdbc.update("DELETE from t_locationinfo where inumber=?",
+                ps-> {
+                    ps.setLong(1, inumber);
+                });
+
+        _jdbc.update("DELETE from t_inodes_checksum where inumber=?",
+                ps -> {
+                    ps.setLong(1, inumber);
+                });
+
+        _jdbc.update("DELETE from t_inodes_data where inumber=?",
+                ps -> {
+                    ps.setLong(1, inumber);
+                });
+
+        for( int i = 1; i <= JdbcFs.LEVELS_NUMBER; i++) {
+            _jdbc.update("DELETE FROM t_level_" + i + " where inumber=?",
+                ps -> {
+                   ps.setLong(1, inumber);
+                });
+        }
+        // inject new pnfsid
+        _jdbc.update("UPDATE t_inodes SET ipnfsid=?, imtime=?, isize=0 where inumber=?",
+                ps -> {
+                    ps.setString(1, InodeId.newID(0));
+                    ps.setTimestamp(2, now);
+                    ps.setLong(3, inumber);
+                });
+    }
 }
