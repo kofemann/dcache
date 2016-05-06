@@ -1004,6 +1004,23 @@ public class JdbcFs implements FileSystemProvider {
         });
     }
 
+    public void truncate(FsInode inode) throws ChimeraFsException {
+        inTransaction(status -> {
+            Long ino = inode.ino();
+            _idCache.lock(ino);
+            try {
+                String pnfsid = _idCache.remove(ino);
+                if (pnfsid != null) {
+                    _inoCache.remove(pnfsid);
+                }
+                _sqlDriver.truncate(inode);
+                return null;
+            } finally {
+                _idCache.unlock(ino);
+            }
+        });
+    }
+
     @Override
     public boolean isIoEnabled(FsInode inode) throws ChimeraFsException {
         return _sqlDriver.isIoEnabled(inode);
