@@ -479,7 +479,7 @@ public class MoverRequestScheduler implements Runnable {
 
         @Override
         public synchronized String toString() {
-            return _state + " : " + _mover.toString();
+            return _state + " : " + _mover.toString() + " si={" + _mover.getFileAttributes().getStorageClass() +"}";
         }
 
         public synchronized JobInfo toJobInfo() {
