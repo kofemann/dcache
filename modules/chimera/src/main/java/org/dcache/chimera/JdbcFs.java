@@ -90,7 +90,7 @@ public class JdbcFs implements FileSystemProvider {
      * the number of pnfs levels. Level zero associated with file real
      * content, which is not our regular case.
      */
-    private static final int LEVELS_NUMBER = 7;
+    public static final int LEVELS_NUMBER = 7;
 
     /**
      * minimal binary handle size which can be processed.
@@ -987,6 +987,17 @@ public class JdbcFs implements FileSystemProvider {
                 break;
             }
             return null;
+        });
+    }
+
+    public void truncate(FsInode inode) throws ChimeraFsException {
+        inTransaction(status -> {
+            try {
+                _sqlDriver.truncate(inode);
+                return null;
+            } catch (SQLException e) {
+                throw new ChimeraFsException("Faled to truncate file",  e);
+            }
         });
     }
 
