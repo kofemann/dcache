@@ -61,7 +61,6 @@ import org.dcache.chimera.IsDirChimeraException;
 import org.dcache.chimera.JdbcFs;
 import org.dcache.chimera.NotDirChimeraException;
 import org.dcache.chimera.PermissionDeniedChimeraFsException;
-import org.dcache.chimera.StorageGenericLocation;
 import org.dcache.nfs.status.BadHandleException;
 import org.dcache.nfs.status.BadOwnerException;
 import org.dcache.nfs.status.ExistException;
@@ -92,8 +91,6 @@ import org.dcache.nfs.vfs.VirtualFileSystem;
 
 import static org.dcache.chimera.FileSystemProvider.StatCacheOption.NO_STAT;
 import static org.dcache.chimera.FileSystemProvider.StatCacheOption.STAT;
-import static org.dcache.nfs.v4.xdr.nfs4_prot.ACCESS4_EXTEND;
-import static org.dcache.nfs.v4.xdr.nfs4_prot.ACCESS4_MODIFY;
 import static org.dcache.nfs.v4.xdr.nfs4_prot.ACE4_INHERIT_ONLY_ACE;
 
 /**
@@ -314,7 +311,25 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     public void setattr(Inode inode, Stat stat) throws IOException {
 	FsInode fsInode = toFsInode(inode);
         try {
-            fsInode.setStat(toChimeraStat(stat));
+            // OperationSETATTR already have checked for a valid open stateid
+            if (stat.isDefined(Stat.StatAttribute.SIZE)) {
+                if (stat.getSize() == 0) {
+                    _fs.truncate(fsInode);
+                    // clean to avoid extra db update
+                    stat.undefine(Stat.StatAttribute.SIZE);
+                } else {
+                    // allow set size only for empty files
+                    if (_fs.stat(fsInode).getSize() != 0) {
+                        throw new PermException("can not extend existing file");
+                    }
+                }
+            }
+
+            org.dcache.chimera.posix.Stat chimeraStat = toChimeraStat(stat);
+            // convert empty setattr to noop
+            if (!chimeraStat.getDefinedAttributeses().isEmpty()) {
+                fsInode.setStat(chimeraStat);
+            }
         } catch (InvalidArgumentChimeraException e) {
             throw new InvalException(e.getMessage());
         } catch (IsDirChimeraException e) {
@@ -431,24 +446,7 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
     @Override
     public int access(Inode inode, int mode) throws IOException {
 
-        int accessmask = mode;
-        if ((mode & (ACCESS4_MODIFY | ACCESS4_EXTEND)) != 0) {
-
-            FsInode fsInode = toFsInode(inode);
-            if (shouldRejectUpdates(fsInode)) {
-                accessmask ^= (ACCESS4_MODIFY | ACCESS4_EXTEND);
-            }
-        }
-
-        return accessmask;
-    }
-
-    private boolean shouldRejectUpdates(FsInode fsInode) throws ChimeraFsException {
-        return fsInode.type() == FsInodeType.INODE
-                && fsInode.getLevel() == 0
-                && !fsInode.isDirectory()
-                && (!_fs.getInodeLocations(fsInode, StorageGenericLocation.TAPE).isEmpty()
-                    || !_fs.getInodeLocations(fsInode, StorageGenericLocation.DISK).isEmpty());
+        return mode;
     }
 
     @Override
@@ -694,7 +692,6 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
 
         return args;
     }
-
 
     /**
      * Generate directory cookie for a given entry.
