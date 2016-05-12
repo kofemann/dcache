@@ -78,6 +78,7 @@ import org.dcache.nfs.status.LayoutUnavailableException;
 import org.dcache.nfs.status.BadLayoutException;
 import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.status.BadStateidException;
+import org.dcache.nfs.status.PermException;
 import org.dcache.nfs.v3.MountServer;
 import org.dcache.nfs.v3.NfsServerV3;
 import org.dcache.nfs.v4.xdr.clientid4;
@@ -518,11 +519,19 @@ public class NFSv41Door extends AbstractCellComponent implements
                         transfer.readNameSpaceEntry(ioMode != layoutiomode4.LAYOUTIOMODE4_READ);
                     }
 
+                    FileAttributes attr = transfer.getFileAttributes();
+
+                    /*
+                     * allow writes only into new files
+                     */
+                    if ((ioMode == layoutiomode4.LAYOUTIOMODE4_RW) && !attr.getStorageInfo().isCreatedOnly()) {
+                        throw new PermException("Can'tmodify existing file");
+                    }
+
                     /*
                      * If file is on a tape only, tell the client right away
                      * that it will take some time.
                      */
-                    FileAttributes attr = transfer.getFileAttributes();
                     if ((ioMode == layoutiomode4.LAYOUTIOMODE4_READ) && attr.getLocations().isEmpty()) {
 
                         if (attr.getStorageInfo().isStored()) {
