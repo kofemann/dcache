@@ -46,7 +46,7 @@ public class PoolIoFileMessage extends PoolMessage {
         _fileAttributes = new FileAttributes();
         _fileAttributes.setPnfsId(pnfsId);
     }
-    public PnfsId       getPnfsId(){ return _fileAttributes.getPnfsId(); }
+    public PnfsId       getPnfsId(){ return _fileAttributes == null ? null : _fileAttributes.getPnfsId(); }
     public ProtocolInfo getProtocolInfo(){ return _protocolInfo ; }
 
     public boolean isPool2Pool(){ return _isPool2Pool ; }
@@ -121,5 +121,11 @@ public class PoolIoFileMessage extends PoolMessage {
     @Override
     public String getDiagnosticContext() {
         return super.getDiagnosticContext() + " " + getPnfsId();
+    }
+
+    @Override
+    public void setReply() {
+        super.setReply();
+        _fileAttributes = null;
     }
 }

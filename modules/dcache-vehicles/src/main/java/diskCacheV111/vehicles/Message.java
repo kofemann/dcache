@@ -53,7 +53,7 @@ public class Message
         _isReply = true ;
     }
     public void setReply(int returnCode, Serializable errorObject){
-	_isReply     = true;
+	setReply();
 	_returnCode  = returnCode;
 	_errorObject = errorObject;
     }

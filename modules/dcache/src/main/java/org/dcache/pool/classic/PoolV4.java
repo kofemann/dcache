@@ -1006,7 +1006,6 @@ public class PoolV4
             }
         }
 
-        msg.setReply();
         ioFile(envelope, msg);
     }
 
