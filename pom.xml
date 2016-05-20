@@ -71,6 +71,7 @@
         <version.wicket>6.19.0</version.wicket>
         <version.xrootd4j>2.1.5</version.xrootd4j>
         <version.jglobus>2.0.6-rc9.d</version.jglobus>
+        <version.jersey>2.22.2</version.jersey>
 
         <!-- BouncyCastle seems to change the naming convention of
              their ArtifactId fairly often.  Here is a summary of
@@ -448,7 +449,21 @@
                 <artifactId>jetty-rewrite</artifactId>
                 <version>${version.jetty}</version>
             </dependency>
-
+            <dependency>
+                <groupId>org.glassfish.jersey.containers</groupId>
+                <artifactId>jersey-container-servlet</artifactId>
+                <version>${version.jersey}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.core</groupId>
+                <artifactId>jersey-client</artifactId>
+                <version>${version.jersey}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.glassfish.jersey.media</groupId>
+                <artifactId>jersey-media-json-jackson</artifactId>
+                <version>${version.jersey}</version>
+            </dependency>
             <dependency>
                 <groupId>org.antlr</groupId>
                 <artifactId>ST4</artifactId>

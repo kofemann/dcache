@@ -14,8 +14,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.slf4j.MDC;
 
-import javax.security.auth.Subject;
-
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
@@ -25,7 +23,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-
+import java.util.stream.Collectors;
+import javax.security.auth.Subject;
 import diskCacheV111.poolManager.RequestContainerV5;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.CheckStagePermission;
@@ -51,12 +50,10 @@ import diskCacheV111.vehicles.PoolMgrSelectReadPoolMsg;
 import diskCacheV111.vehicles.PoolMgrSelectWritePoolMsg;
 import diskCacheV111.vehicles.PoolMoverKillMessage;
 import diskCacheV111.vehicles.ProtocolInfo;
-
 import dmg.cells.nucleus.CDC;
 import dmg.cells.nucleus.CellAddressCore;
 import dmg.cells.nucleus.CellPath;
 import dmg.util.TimebasedCounter;
-
 import org.dcache.acl.enums.AccessMask;
 import org.dcache.cells.CellStub;
 import org.dcache.commons.util.NDC;
@@ -599,6 +596,7 @@ public class Transfer implements Comparable<Transfer>
     {
         return new IoDoorEntry(_id,
                                getPnfsId(),
+                               _subject,
                                _poolName,
                                _status,
                                _startedAt,
