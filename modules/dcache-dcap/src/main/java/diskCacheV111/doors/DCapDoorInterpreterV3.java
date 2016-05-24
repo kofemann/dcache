@@ -3,6 +3,8 @@ package diskCacheV111.doors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import javax.security.auth.Subject;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -22,7 +24,6 @@ import java.util.StringTokenizer;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
-import javax.security.auth.Subject;
 
 import diskCacheV111.namespace.NameSpaceProvider;
 import diskCacheV111.poolManager.PoolSelectionUnit.DirectionType;
@@ -38,7 +39,6 @@ import diskCacheV111.util.PnfsId;
 import diskCacheV111.util.RetentionPolicy;
 import diskCacheV111.util.SpreadAndWait;
 import diskCacheV111.vehicles.DCapProtocolInfo;
-import diskCacheV111.vehicles.DirRequestMessage;
 import diskCacheV111.vehicles.DoorRequestInfoMessage;
 import diskCacheV111.vehicles.DoorTransferFinishedMessage;
 import diskCacheV111.vehicles.IoDoorEntry;
@@ -57,6 +57,7 @@ import diskCacheV111.vehicles.PoolMgrSelectWritePoolMsg;
 import diskCacheV111.vehicles.PoolMoverKillMessage;
 import diskCacheV111.vehicles.PoolPassiveIoFileMessage;
 import diskCacheV111.vehicles.StorageInfo;
+
 import dmg.cells.nucleus.CellAddressCore;
 import dmg.cells.nucleus.CellEndpoint;
 import dmg.cells.nucleus.CellInfo;
@@ -65,10 +66,8 @@ import dmg.cells.nucleus.CellPath;
 import dmg.util.CommandException;
 import dmg.util.CommandExitException;
 import dmg.util.KeepAliveListener;
-import org.dcache.acl.ACL;
+
 import org.dcache.acl.enums.AccessMask;
-import org.dcache.acl.enums.RsType;
-import org.dcache.acl.parser.ACLParser;
 import org.dcache.auth.CachingLoginStrategy;
 import org.dcache.auth.LoginNamePrincipal;
 import org.dcache.auth.LoginReply;
@@ -76,8 +75,8 @@ import org.dcache.auth.LoginStrategy;
 import org.dcache.auth.Origin;
 import org.dcache.auth.Subjects;
 import org.dcache.auth.UnionLoginStrategy;
-import org.dcache.auth.attributes.Restriction;
-import org.dcache.auth.attributes.Restrictions;
+import org.dcache.auth.attributes.LoginAttribute;
+import org.dcache.auth.attributes.ReadOnly;
 import org.dcache.cells.CellStub;
 import org.dcache.chimera.UnixPermission;
 import org.dcache.namespace.FileAttribute;

@@ -42,6 +42,8 @@ import org.dcache.webadmin.view.pages.basepage.BasePage;
 import org.dcache.webadmin.view.util.CheckBoxColumn;
 import org.dcache.webadmin.view.util.Role;
 
+import static java.util.stream.Collectors.toList;
+
 @SuppressWarnings("serial")
 public class ActiveTransfersPage extends BasePage
 {

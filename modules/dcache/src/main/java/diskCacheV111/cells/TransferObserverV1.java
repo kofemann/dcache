@@ -291,14 +291,6 @@ public class TransferObserverV1
                 _log.warn("Illegal value for -update: " + updateString);
             }
 
-            //
-            // if login broker is defined, the
-            // worker will add the 'fixed' door list to the
-            // list provided by the loginBroker.
-            //
-            //
-            _fieldMap = new FieldMap(_args.getOpt("fieldMap"), _args);
-            //
             _workerThread = _nucleus.newThread(this, "worker");
             _workerThread.start();
             //
@@ -582,7 +574,7 @@ public class TransferObserverV1
         page.td("host", transfer.getReplyHost());
         String status = transfer.getSessionStatus();
         page.td("status", status != null ? status.replace(" ", "&nbsp;") : "");
-        page.td("waiting", transfer.waiting);
+        page.td("waiting", transfer.timeWaiting(true));
 
         if (transfer.getMoverStatus() == null) {
             if (poolName.equals("N.N.")) {
