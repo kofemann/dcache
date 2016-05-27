@@ -1,11 +1,17 @@
 package org.dcache.chimera.namespace;
 
+import com.google.common.base.Throwables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.HashMap;
 import java.util.StringTokenizer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import diskCacheV111.util.AccessLatency;
 import diskCacheV111.util.CacheException;
@@ -20,6 +26,18 @@ import org.dcache.chimera.store.InodeStorageInformation;
 
 
 public class ChimeraOsmStorageInfoExtractor extends ChimeraHsmStorageInfoExtractor {
+
+    private final LoadingCache<ExtendedInode, StorageInfo> siCache = CacheBuilder
+            .newBuilder()
+            .expireAfterWrite(3, TimeUnit.MINUTES)
+            .maximumSize(1024)
+            .build(
+                new CacheLoader<ExtendedInode, StorageInfo>() {
+                    @Override
+                    public StorageInfo load(ExtendedInode k) throws Exception {
+                        return getDirStorageInfo(k);
+                    }
+            });
 
     public ChimeraOsmStorageInfoExtractor(AccessLatency defaultAL,
                                           RetentionPolicy defaultRP) {
@@ -41,7 +59,7 @@ public class ChimeraOsmStorageInfoExtractor extends ChimeraHsmStorageInfoExtract
                 ImmutableList<String> locations = inode.getLocations(StorageGenericLocation.TAPE);
 
                 if (locations.isEmpty()) {
-                    info = (OSMStorageInfo) getDirStorageInfo(inode);
+                    info = (OSMStorageInfo) siCache.get(inode);
                 } else {
                     InodeStorageInformation inodeStorageInfo = inode.getStorageInfo();
 
@@ -57,11 +75,14 @@ public class ChimeraOsmStorageInfoExtractor extends ChimeraHsmStorageInfoExtract
                     }
                 }
             } else {
-                info = (OSMStorageInfo) getDirStorageInfo(inode);
+                info = (OSMStorageInfo) siCache.get(inode);
             }
 
             info.setIsNew(isNew);
 
+        } catch (ExecutionException e) {
+            Throwables.propagateIfPossible(e, CacheException.class);
+            throw new CacheException("Failed to fetch strage info", e);
         } catch (ChimeraFsException e) {
             throw new CacheException(e.getMessage());
         }
