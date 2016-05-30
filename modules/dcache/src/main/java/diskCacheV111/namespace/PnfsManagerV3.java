@@ -163,6 +163,20 @@ public class PnfsManagerV3
     private BlockingQueue<CellMessage>[] _fifos;
 
     /**
+     * Tasks queues used for messages that update tape locations.
+     */
+    private BlockingQueue<CellMessage>[] _flushQueue;
+
+    /**
+     * Tasks queues used for messages that update cache locations. Used
+     * by migration task on pools.
+     */
+    private BlockingQueue<CellMessage>[] _locationQueue;
+
+    int maxFlushThreads = 2;
+    int maxLocationThreads = 2;
+
+    /**
      * Executor for ProcessThread instances.
      */
     private ExecutorService executor =
@@ -306,6 +320,18 @@ public class PnfsManagerV3
                 executor.execute(new ProcessThread(_listQueues[i]));
             }
         }
+
+        _flushQueue = new BlockingQueue[maxFlushThreads];
+        for (int i = 0; i < maxFlushThreads; i++) {
+            _flushQueue[i] = new LinkedBlockingQueue<>();
+            executor.execute(new ProcessThread(_flushQueue[i]));
+        }
+
+        _locationQueue = new BlockingQueue[maxLocationThreads];
+        for (int i = 0; i < maxLocationThreads; i++) {
+            _locationQueue[i] = new LinkedBlockingQueue<>();
+            executor.execute(new ProcessThread(_locationQueue[i]));
+        }
     }
 
     public void shutdown() throws InterruptedException
@@ -348,7 +374,17 @@ public class PnfsManagerV3
             pw.println("    [" + i + "] " + _listQueues[i].size());
         }
         pw.println();
-        pw.println("Message queues (" + _fifos.length + ")");
+        pw.println("flush queues (" + _flushQueue.length + ")");
+        for (int i = 0; i < _flushQueue.length; i++) {
+            pw.println("    [" + i + "] " + _flushQueue[i].size());
+        }
+        pw.println();
+        pw.println("CacheLocation queues (" + _locationQueue.length + ")");
+        for (int i = 0; i < _locationQueue.length; i++) {
+            pw.println("    [" + i + "] " + _locationQueue[i].size());
+        }
+        pw.println();
+        pw.println("Threads (" + _fifos.length + ") Queue");
         for (int i = 0; i < _fifos.length; i++) {
             pw.println( "    [" + i + "] " +  _fifos[i].size());
         }
@@ -1596,10 +1632,30 @@ public class PnfsManagerV3
         }
 
         PnfsId pnfsId = message.getPnfsId();
-        int index = pnfsIdToThreadGroup(pnfsId);
-        _log.info("Using thread group [{}] {}", pnfsId, index);
+        int index
+                = pnfsIdToThreadGroup(pnfsId) * _threads
+                + (int) (Math.abs((long) pnfsId.hashCode()) % maxLocationThreads);
 
-        if (!_fifos[index].offer(envelope)) {
+        _log.info("Using location queue [{}] {}", pnfsId, index);
+        if (!_locationQueue[index].offer(envelope)) {
+            throw new MissingResourceCacheException("PnfsManager queue limit exceeded");
+        }
+    }
+
+    public void messageArrived(CellMessage envelope, PoolFileFlushedMessage message)
+            throws CacheException {
+        PnfsId pnfsId = message.getPnfsId();
+
+        if (pnfsId == null) {
+            throw new InvalidMessageCacheException("Missing PNFS id");
+        }
+
+        int index
+                = pnfsIdToThreadGroup(pnfsId) * _threads
+                + (int) (Math.abs((long) pnfsId.hashCode()) % maxFlushThreads);
+
+        _log.info("Using flush queue [{}] {}", pnfsId, index);
+        if (!_flushQueue[index].offer(envelope)) {
             throw new MissingResourceCacheException("PnfsManager queue limit exceeded");
         }
     }
