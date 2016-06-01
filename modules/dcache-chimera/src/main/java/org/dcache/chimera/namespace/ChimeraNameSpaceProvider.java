@@ -2,6 +2,10 @@ package org.dcache.chimera.namespace;
 
 import com.google.common.base.Charsets;
 import com.google.common.base.Optional;
+import com.google.common.base.Throwables;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.CacheLoader;
+import com.google.common.cache.LoadingCache;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.Iterables;
 import com.google.common.collect.Lists;
@@ -50,6 +54,8 @@ import diskCacheV111.vehicles.StorageInfo;
 
 import dmg.cells.nucleus.CellInfo;
 import dmg.cells.nucleus.CellInfoProvider;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import org.dcache.acl.ACE;
 import org.dcache.acl.ACL;
@@ -87,6 +93,19 @@ import static org.dcache.chimera.FileSystemProvider.StatCacheOption.STAT;
 public class ChimeraNameSpaceProvider
     implements NameSpaceProvider, CellInfoProvider
 {
+
+    private final LoadingCache<String, ExtendedInode> path2idCache = CacheBuilder
+            .newBuilder()
+            .expireAfterWrite(3, TimeUnit.MINUTES)
+            .maximumSize(1024)
+            .build(
+                    new CacheLoader<String, ExtendedInode>() {
+                @Override
+                public ExtendedInode load(String path) throws Exception {
+                    return new ExtendedInode(_fs, _fs.path2inode(path));
+                }
+            });
+
     private static final int SYMLINK_MODE = 0777;
 
     public static final String TAG_EXPECTED_SIZE = "ExpectedSize";
@@ -185,7 +204,14 @@ public class ChimeraNameSpaceProvider
         throws ChimeraFsException, CacheException
     {
         if (Subjects.isRoot(subject)) {
-            return new ExtendedInode(_fs, _fs.path2inode(path));
+            try {
+                return path2idCache.get(path);
+            } catch (ExecutionException e) {
+                Throwable t = e.getCause();
+                Throwables.propagateIfInstanceOf(t, FileNotFoundCacheException.class);
+                Throwables.propagateIfInstanceOf(t, CacheException.class);
+                throw new CacheException(t.getMessage(), t);
+            }
         }
 
         List<FsInode> inodes = _fs.path2inodes(path);
