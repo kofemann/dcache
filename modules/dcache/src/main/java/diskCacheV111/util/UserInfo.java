@@ -84,6 +84,21 @@ public final class UserInfo implements Serializable {
     }
 
     public UserInfo(Subject subject) {
+        /*
+         *  FIXME
+         *  Under certain conditions the protocol can neglect to
+         *  provide a subject.  Until this issue is better understood,
+         *  we set the fields to null here to avoid propagation of
+         *  a NullPointerException.
+         */
+        if (subject == null) {
+            username = null;
+            uid = null;
+            gid = null;
+            primaryFqan = null;
+            return;
+        }
+
         username = Subjects.getUserName(subject);
 
         /*
