@@ -4,7 +4,7 @@
     <parent>
         <groupId>org.dcache</groupId>
         <artifactId>packaging</artifactId>
-        <version>2.13.33-SNAPSHOT</version>
+        <version>2.13.33</version>
     </parent>
 
     <artifactId>dcache-fhs</artifactId>
@@ -156,7 +156,7 @@
                                 <configuration>
                                     <name>rpm.version</name>
                                     <value>${project.version}</value>
-                                    <regex>-SNAPSHOT</regex>
+                                    <regex>-33</regex>
                                     <replacement>.\${timestamp}</replacement>
                                     <failIfNoMatch>false</failIfNoMatch>
                                 </configuration>
@@ -263,7 +263,7 @@
                                 <configuration>
                                     <name>deb.version</name>
                                     <value>${project.version}</value>
-                                    <regex>-SNAPSHOT</regex>
+                                    <regex>-33</regex>
                                     <replacement>~\${timestamp}</replacement>
                                     <failIfNoMatch>false</failIfNoMatch>
                                 </configuration>
