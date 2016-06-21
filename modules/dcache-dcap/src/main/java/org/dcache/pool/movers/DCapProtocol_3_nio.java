@@ -52,6 +52,8 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover, CellArg
     private static Logger _logSocketIO = LoggerFactory.getLogger("logger.dev.org.dcache.io.socket");
     private static final Logger _logSpaceAllocation = LoggerFactory.getLogger("logger.dev.org.dcache.poolspacemonitor." + DCapProtocol_3_nio.class.getName());
     private static final int INC_SPACE = MiB.toBytes(50);
+    private static final int MAX_REQUEST_SIZE =- MiB.toBytes(2);
+    private static final int DEFAULT_REQUEST_SIZE =- KiB.toBytes(8);
 
     private final Map<String,Object> _context;
     private final CellEndpoint     _cell;
@@ -192,7 +194,7 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover, CellArg
         private int _commandCode;
 
         private RequestBlock(){
-            _buffer = ByteBuffer.allocate(16384);
+            _buffer = ByteBuffer.allocate(DEFAULT_REQUEST_SIZE);
         }
         private void read(SocketChannel channel) throws Exception {
 
@@ -208,12 +210,16 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover, CellArg
                         CacheException(44, "Protocol Violation (cl<4)");
             }
 
-            try {
-        	_buffer.clear().limit(_commandSize);
-            }catch(IllegalArgumentException iae) {
-        	_log.error("Command size excided command block size : " + _commandSize + "/" + _buffer.capacity());
-        	throw iae;
+            if (_commandSize > MAX_REQUEST_SIZE) {
+                throw new CacheException(44, "Command block too big: " + _commandSize);
             }
+
+            // double buffer size, if required
+            if (_commandSize > _buffer.capacity()) {
+                _buffer = ByteBuffer.allocate(Math.min(MAX_REQUEST_SIZE, _buffer.capacity() * 2));
+            }
+
+            _buffer.clear().limit(_commandSize);
             fillBuffer(channel);
             _buffer.rewind();
             _commandCode = _buffer.getInt();
