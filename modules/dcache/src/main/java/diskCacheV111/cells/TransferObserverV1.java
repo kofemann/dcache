@@ -584,12 +584,18 @@ public class TransferObserverV1
             }
         } else {
             page.td("state", transfer.getMoverStatus());
-            if (transfer.getMoverStart() > 0L) {
-                page.td("transferred", transfer.getBytesTransferred() / 1024);
-            } else {
-                page.td("transferred", "-");
+            try {
+                if (transfer.getMoverStart() > 0L) {
+                    page.td("transferred", transfer.getBytesTransferred() / 1024);
+                } else {
+                    page.td("transferred", "-");
+                }
+                page.td("speed", transfer.getTransferRate());
             }
-            page.td("speed", transfer.getTransferRate());
+            catch (NullPointerException ignore)  {
+                 page.td("transferred", "-");
+                 page.td("speed", 0);
+            }
         }
         page.endRow();
     }
