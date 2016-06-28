@@ -100,6 +100,7 @@ public class ChimeraNameSpaceProvider
     private boolean _inheritFileOwnership;
     private boolean _verifyAllLookups;
     private boolean _aclEnabled;
+    private boolean _allowMoveToDirectoryWithDifferentStorageClass;
     private PermissionHandler _permissionHandler;
     private String _uploadDirectory;
     private String _uploadSubDirectory;
@@ -135,6 +136,13 @@ public class ChimeraNameSpaceProvider
     {
         _verifyAllLookups = verify;
     }
+
+    @Required
+    public void  setAllowMoveToDirectoryWithDifferentStorageClass(boolean allow)
+    {
+        _allowMoveToDirectoryWithDifferentStorageClass = allow;
+    }
+
 
     @Required
     public void setPermissionHandler(PermissionHandler handler)
@@ -457,8 +465,13 @@ public class ChimeraNameSpaceProvider
             }
 
             FsInode sourceDir = _fs.getParentOf(inode);
+            Set<FileAttribute> attributes = EnumSet.noneOf(FileAttribute.class);
+            attributes.addAll(_permissionHandler.getRequiredAttributes());
+            if (!_allowMoveToDirectoryWithDifferentStorageClass) {
+                attributes.add(FileAttribute.STORAGEINFO);
+            }
             FileAttributes sourceDirAttributes =
-                getFileAttributesForPermissionHandler(sourceDir);
+                getFileAttributes(new ExtendedInode(_fs, sourceDir),attributes);
 
             FsPath dest = new FsPath(newName);
             if (dest.isEmpty()) {
@@ -475,7 +488,15 @@ public class ChimeraNameSpaceProvider
                 } else {
                     destDir = pathToInode(subject, dest.getParent().toString());
                     destDirAttributes =
-                        getFileAttributesForPermissionHandler(destDir);
+                        destDirAttributes = getFileAttributes(new ExtendedInode(_fs, destDir),attributes);
+                    if (!_allowMoveToDirectoryWithDifferentStorageClass) {
+                        if (!destDirAttributes.getStorageClass().
+                            equals(sourceDirAttributes.getStorageClass())) {
+                            throw new PermissionDeniedCacheException("Mv denied: " +
+                                                                     dest.getParent() +
+                                                                     " has different storage tags, use cp");
+                        }
+                    }
                 }
             } catch (FileNotFoundHimeraFsException e) {
                 throw new NotDirCacheException("No such directory: " +
