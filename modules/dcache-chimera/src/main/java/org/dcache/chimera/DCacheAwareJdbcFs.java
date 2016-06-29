@@ -61,6 +61,8 @@ package org.dcache.chimera;
 
 import javax.sql.DataSource;
 
+import java.io.File;
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.EnumSet;
 import java.util.Set;
@@ -185,4 +187,21 @@ public class DCacheAwareJdbcFs extends JdbcFs {
 
         return locality.toString();
     }
+
+    @Override
+    public boolean move(FsInode srcDir, String source, FsInode destDir, String dest) throws ChimeraFsException {
+        boolean rc = true;
+        try {
+            String sourceDirectory = inode2path(srcDir);
+            File sourcePath = new File(sourceDirectory,source);
+            String destinationDirectory = inode2path(destDir);
+            File destinationPath = new File(destinationDirectory,dest);
+            pnfsHandler.renameEntry(sourcePath.getCanonicalPath(),destinationPath.getCanonicalPath(),true);
+        }
+        catch (CacheException | IOException e) {
+            throw new ChimeraFsException(e.getMessage(), e);
+        }
+        return rc;
+    }
+
 }

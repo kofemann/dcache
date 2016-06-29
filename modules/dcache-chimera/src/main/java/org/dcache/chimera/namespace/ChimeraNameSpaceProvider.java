@@ -490,8 +490,13 @@ public class ChimeraNameSpaceProvider
                     destDirAttributes =
                         destDirAttributes = getFileAttributes(new ExtendedInode(_fs, destDir),attributes);
                     if (!_allowMoveToDirectoryWithDifferentStorageClass) {
+                        FileAttributes sourceAttributes = sourceDirAttributes;
+                        if (inode.isDirectory()) {
+                            sourceAttributes =
+                                getFileAttributes(new ExtendedInode(_fs, inode),attributes);
+                        }
                         if (!destDirAttributes.getStorageClass().
-                            equals(sourceDirAttributes.getStorageClass())) {
+                            equals(sourceAttributes.getStorageClass())) {
                             throw new PermissionDeniedCacheException("Mv denied: " +
                                                                      dest.getParent() +
                                                                      " has different storage tags, use cp");
