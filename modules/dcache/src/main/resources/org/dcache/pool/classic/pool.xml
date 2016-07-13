@@ -423,6 +423,26 @@
       </property>
   </bean>
 
+  <bean id="dcap-transfer-service" class="org.dcache.pool.movers.DcapTransferService"
+        depends-on="rep">
+      <description>DCAP transfer service</description>
+      <property name="postTransferService" ref="post-transfer-service"/>
+      <property name="checksumModule" ref="csm"/>
+      <property name="faultListener" ref="pool"/>
+      <property name="threads" value="${pool.mover.http.threads}"/>
+      <property name="doorStub" ref="doorStub"/>
+      <property name="clientIdleTimeout" value="365"/>
+      <property name="clientIdleTimeoutUnit" value="DAYS"/>
+      <property name="connectTimeout" value="356"/>
+      <property name="connectTimeoutUnit" value="DAYS"/>
+      <property name="portRange">
+          <bean class="org.dcache.util.NettyPortRange">
+              <constructor-arg value="${pool.mover.dcap.port.min}"/>
+              <constructor-arg value="${pool.mover.dcap.port.max}"/>
+          </bean>
+      </property>
+  </bean>
+
   <bean id="post-transfer-service" class="org.dcache.pool.classic.DefaultPostTransferService"
         init-method="init" destroy-method="shutdown" depends-on="rep">
       <description>Post processing execution service</description>
@@ -443,6 +463,7 @@
             <entry key="RemoteHttpDataTransfer-1" value-ref="remote-http-transfer-service"/>
             <entry key="RemoteHttpsDataTransfer-1" value-ref="remote-http-transfer-service"/>
             <entry key="RemoteGsiftpTransfer-1" value-ref="remote-gsiftp-transfer-service"/>
+            <entry key="DCap-3" value-ref="dcap-transfer-service"/>
         </map>
       </property>
   </bean>
