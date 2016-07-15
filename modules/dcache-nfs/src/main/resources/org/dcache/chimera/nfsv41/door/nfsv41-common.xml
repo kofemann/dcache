@@ -94,6 +94,7 @@
         <property name="pnfsHandler" ref="pnfs"/>
         <property name="poolManagerStub" ref="poolManagerStub"/>
         <property name="pinManagerStub" ref="pinManagerStub"/>
+	<property name="queryPnfsManagerOnRename" value="${nfs.enable.pnfsmanager-query-on-move}"/>
     </bean>
 
     <bean id="export" class="org.dcache.nfs.ExportFile">

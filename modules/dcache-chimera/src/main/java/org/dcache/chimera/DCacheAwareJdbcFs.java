@@ -59,6 +59,9 @@ documents or software obtained from this server.
  */
 package org.dcache.chimera;
 
+import com.google.common.base.Throwables;
+import org.springframework.beans.factory.annotation.Required;
+
 import javax.sql.DataSource;
 
 import java.io.File;
@@ -69,6 +72,7 @@ import java.util.Set;
 
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.FileLocality;
+import diskCacheV111.util.PermissionDeniedCacheException;
 import diskCacheV111.util.PnfsHandler;
 import diskCacheV111.util.PnfsId;
 import diskCacheV111.vehicles.DCapProtocolInfo;
@@ -94,6 +98,13 @@ public class DCacheAwareJdbcFs extends JdbcFs {
     private CellStub poolManagerStub;
     private CellStub pinManagerStub;
     private PnfsHandler pnfsHandler;
+    private boolean queryPnfsManagerOnRename;
+
+    @Required
+    public void setQueryPnfsManagerOnRename(boolean yes)
+    {
+        queryPnfsManagerOnRename = yes;
+    }
 
     public DCacheAwareJdbcFs(DataSource dataSource, String dialect) {
         super(dataSource, dialect);
@@ -190,6 +201,9 @@ public class DCacheAwareJdbcFs extends JdbcFs {
 
     @Override
     public boolean move(FsInode srcDir, String source, FsInode destDir, String dest) throws ChimeraFsException {
+        if (!queryPnfsManagerOnRename) {
+            return super.move(srcDir,source,destDir,dest);
+        }
         boolean rc = true;
         try {
             String sourceDirectory = inode2path(srcDir);
@@ -197,6 +211,9 @@ public class DCacheAwareJdbcFs extends JdbcFs {
             String destinationDirectory = inode2path(destDir);
             File destinationPath = new File(destinationDirectory,dest);
             pnfsHandler.renameEntry(sourcePath.getCanonicalPath(),destinationPath.getCanonicalPath(),true);
+        }
+        catch (PermissionDeniedCacheException e) {
+            throw new PermissionDeniedChimeraFsException(e.getMessage());
         }
         catch (CacheException | IOException e) {
             throw new ChimeraFsException(e.getMessage(), e);

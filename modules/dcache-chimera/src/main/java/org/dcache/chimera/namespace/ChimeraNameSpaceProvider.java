@@ -79,6 +79,7 @@ import org.dcache.util.ChecksumType;
 import org.dcache.util.Glob;
 import org.dcache.vehicles.FileAttributes;
 
+import static com.google.common.base.Strings.nullToEmpty;
 import static org.dcache.acl.enums.AccessType.ACCESS_ALLOWED;
 
 public class ChimeraNameSpaceProvider
@@ -469,6 +470,7 @@ public class ChimeraNameSpaceProvider
             attributes.addAll(_permissionHandler.getRequiredAttributes());
             if (!_allowMoveToDirectoryWithDifferentStorageClass) {
                 attributes.add(FileAttribute.STORAGEINFO);
+                attributes.add(FileAttribute.CACHECLASS);
             }
             FileAttributes sourceDirAttributes =
                 getFileAttributes(new ExtendedInode(_fs, sourceDir),attributes);
@@ -495,11 +497,13 @@ public class ChimeraNameSpaceProvider
                             sourceAttributes =
                                 getFileAttributes(new ExtendedInode(_fs, inode),attributes);
                         }
-                        if (!destDirAttributes.getStorageClass().
-                            equals(sourceAttributes.getStorageClass())) {
+                        if (!(nullToEmpty(destDirAttributes.getStorageClass()).
+                              equals(nullToEmpty(sourceAttributes.getStorageClass())) &&
+                              nullToEmpty(destDirAttributes.getCacheClass()).
+                              equals(nullToEmpty(sourceAttributes.getCacheClass())))) {
                             throw new PermissionDeniedCacheException("Mv denied: " +
                                                                      dest.getParent() +
-                                                                     " has different storage tags, use cp");
+                                                                     " has different storage tags; use cp.");
                         }
                     }
                 }
