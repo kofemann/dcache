@@ -113,6 +113,13 @@ public class RemoteNameSpaceProvider implements NameSpaceProvider
     }
 
     @Override
+    public void renameEntry(Subject subject, String path, String newName,
+            boolean overwrite) throws CacheException
+    {
+        PnfsHandler pnfs = new PnfsHandler(_pnfs, subject);
+        pnfs.renameEntry(path, newName, overwrite);
+    }
+    @Override
     public String pnfsidToPath(Subject subject, PnfsId id) throws CacheException
     {
         PnfsHandler pnfs = new PnfsHandler(_pnfs, subject);

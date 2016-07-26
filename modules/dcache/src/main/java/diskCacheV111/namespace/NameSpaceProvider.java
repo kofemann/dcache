@@ -115,6 +115,9 @@ public interface NameSpaceProvider
     void renameEntry(Subject subject, PnfsId pnfsId, String newName,
                      boolean overwrite) throws CacheException;
 
+    void renameEntry(Subject subject, String path, String newName,
+                     boolean overwrite) throws CacheException;
+
     String pnfsidToPath(Subject subject, PnfsId pnfsId) throws CacheException;
     PnfsId pathToPnfsid(Subject subject, String path, boolean followLinks) throws CacheException;
 

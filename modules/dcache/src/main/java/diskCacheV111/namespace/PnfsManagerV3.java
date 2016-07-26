@@ -1317,11 +1317,23 @@ public class PnfsManagerV3
     public void rename(PnfsRenameMessage msg)
     {
         try {
-            PnfsId pnfsId = populatePnfsId(msg);
+            PnfsId pnfsId = msg.getPnfsId();
             String newName = msg.newName();
-            _log.info("rename " + pnfsId + " to new name : " + newName);
-            checkMask(msg);
-            rename(msg.getSubject(), pnfsId, newName, msg.getOverwrite());
+            if (pnfsId != null) {
+                checkMask(msg);
+                _log.info("rename " + pnfsId + " to new name : " + newName);
+                rename(msg.getSubject(), pnfsId, newName, msg.getOverwrite());
+            } else {
+                String path = msg.getPnfsPath();
+                if (path == null) {
+                    throw new InvalidMessageCacheException("no pnfsid or path defined");
+                }
+                checkMask(msg.getSubject(),
+                          msg.getPnfsPath(),
+                          msg.getAccessMask());
+                _log.info("rename " + path + " to new name : " + newName);
+                rename(msg.getSubject(), path, newName, msg.getOverwrite());
+            }
         } catch (CacheException e){
             msg.setFailed(e.getRc(), e.getMessage());
         } catch (RuntimeException e) {
@@ -1337,6 +1349,15 @@ public class PnfsManagerV3
     {
         _log.info("Renaming " + pnfsId + " to " + newName );
         _nameSpaceProvider.renameEntry(subject, pnfsId, newName, overwrite);
+    }
+
+
+    private void rename(Subject subject, String path,
+                        String newName, boolean overwrite)
+        throws CacheException
+    {
+        _log.info("Renaming " + path + " to " + newName );
+        _nameSpaceProvider.renameEntry(subject, path, newName, overwrite);
     }
 
 

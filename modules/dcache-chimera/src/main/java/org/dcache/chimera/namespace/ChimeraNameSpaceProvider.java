@@ -462,16 +462,67 @@ public class ChimeraNameSpaceProvider
             FsInode inode = new FsInode(_fs, pnfsId.toIdString());
             FsPath source = new FsPath(_fs.inode2path(inode));
             if (source.isEmpty()) {
-                throw new PermissionDeniedCacheException("Access denied: " + source);
+                throw new PermissionDeniedCacheException("Access denied: " + pnfsId);
             }
+            renameEntry(subject,inode,source,newName,overwrite);
+        } catch (FileNotFoundHimeraFsException e) {
+            throw new FileNotFoundCacheException("No such file or directory: "
+                                                 + pnfsId);
+        } catch (FileExistsChimeraFsException e) {
+            /* With the current implementation of Chimera, I don't
+             * expect this to be thrown. Instead Chimera insists on
+             * overwriting the destination file.
+             */
+            throw new FileExistsCacheException("File exists:" + newName);
+        } catch (IOException e) {
+            throw new CacheException(CacheException.UNEXPECTED_SYSTEM_EXCEPTION,
+                                     e.getMessage());
+        }
+    }
 
-            FsInode sourceDir = _fs.getParentOf(inode);
+    @Override
+    public void renameEntry(Subject subject, String path,
+                            String newName, boolean overwrite)
+        throws CacheException
+    {
+        try {
+            FsInode inode = pathToInode(subject, path);
+            FsPath source = new FsPath(path);
+            if (source.isEmpty()) {
+                throw new PermissionDeniedCacheException("Access denied: " + path);
+            }
+            renameEntry(subject,inode,source,newName,overwrite);
+        } catch (FileNotFoundHimeraFsException e) {
+            throw new FileNotFoundCacheException("No such file or directory: "
+                                                 + path);
+        } catch (FileExistsChimeraFsException e) {
+            /* With the current implementation of Chimera, I don't
+             * expect this to be thrown. Instead Chimera insists on
+             * overwriting the destination file.
+             */
+            throw new FileExistsCacheException("File exists:" + newName);
+        } catch (IOException e) {
+            throw new CacheException(CacheException.UNEXPECTED_SYSTEM_EXCEPTION,
+                                     e.getMessage());
+        }
+
+    }
+
+
+    private void renameEntry(Subject subject, FsInode srcInode, FsPath source,
+                             String newName, boolean overwrite)
+        throws CacheException
+    {
+        try {
+
+            FsInode sourceDir = pathToInode(subject, source.getParent().toString());
             Set<FileAttribute> attributes = EnumSet.noneOf(FileAttribute.class);
             attributes.addAll(_permissionHandler.getRequiredAttributes());
             if (!_allowMoveToDirectoryWithDifferentStorageClass) {
                 attributes.add(FileAttribute.STORAGEINFO);
                 attributes.add(FileAttribute.CACHECLASS);
             }
+
             FileAttributes sourceDirAttributes =
                 getFileAttributes(new ExtendedInode(_fs, sourceDir),attributes);
 
@@ -493,9 +544,9 @@ public class ChimeraNameSpaceProvider
                         destDirAttributes = getFileAttributes(new ExtendedInode(_fs, destDir),attributes);
                     if (!_allowMoveToDirectoryWithDifferentStorageClass) {
                         FileAttributes sourceAttributes = sourceDirAttributes;
-                        if (inode.isDirectory()) {
+                        if (srcInode.isDirectory()) {
                             sourceAttributes =
-                                getFileAttributes(new ExtendedInode(_fs, inode),attributes);
+                                getFileAttributes(new ExtendedInode(_fs, srcInode),attributes);
                         }
                         if (!(nullToEmpty(destDirAttributes.getStorageClass()).
                               equals(nullToEmpty(sourceAttributes.getStorageClass())) &&
@@ -516,8 +567,8 @@ public class ChimeraNameSpaceProvider
                 _permissionHandler.canRename(subject,
                                              sourceDirAttributes,
                                              destDirAttributes,
-                                             inode.isDirectory()) != ACCESS_ALLOWED) {
-                throw new PermissionDeniedCacheException("Access denied: " + pnfsId);
+                                             srcInode.isDirectory()) != ACCESS_ALLOWED) {
+                throw new PermissionDeniedCacheException("Access denied: " + source);
             }
 
             if (Subjects.isRoot(subject) && overwrite) {
@@ -562,7 +613,7 @@ public class ChimeraNameSpaceProvider
             _fs.move(sourceDir, source.getName(), destDir, dest.getName());
         } catch (FileNotFoundHimeraFsException e) {
             throw new FileNotFoundCacheException("No such file or directory: "
-                                                 + pnfsId);
+                                                 + source);
         } catch (FileExistsChimeraFsException e) {
             /* With the current implementation of Chimera, I don't
              * expect this to be thrown. Instead Chimera insists on
