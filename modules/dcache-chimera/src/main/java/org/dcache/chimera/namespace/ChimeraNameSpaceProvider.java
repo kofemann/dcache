@@ -548,13 +548,22 @@ public class ChimeraNameSpaceProvider
                             sourceAttributes =
                                 getFileAttributes(new ExtendedInode(_fs, srcInode),attributes);
                         }
-                        if (!(nullToEmpty(destDirAttributes.getStorageClass()).
-                              equals(nullToEmpty(sourceAttributes.getStorageClass())) &&
-                              nullToEmpty(destDirAttributes.getCacheClass()).
-                              equals(nullToEmpty(sourceAttributes.getCacheClass())))) {
-                            throw new PermissionDeniedCacheException("Mv denied: " +
-                                                                     dest.getParent() +
-                                                                     " has different storage tags; use cp.");
+                        String destStorageClass = nullToEmpty(destDirAttributes.getStorageClass());
+                        String srcStorageClass  = nullToEmpty(sourceAttributes.getStorageClass());
+
+                        if (!srcStorageClass.equals("none.none") &&
+                            !destStorageClass.equals("none.none") &&
+                            !srcStorageClass.equals("") &&
+                            !destStorageClass.equals("")) {
+
+                            if (!(nullToEmpty(destDirAttributes.getStorageClass()).
+                                  equals(nullToEmpty(sourceAttributes.getStorageClass())) &&
+                                  nullToEmpty(destDirAttributes.getCacheClass()).
+                                  equals(nullToEmpty(sourceAttributes.getCacheClass())))) {
+                                throw new PermissionDeniedCacheException("Mv denied: " +
+                                                                         dest.getParent() +
+                                                                         " has different storage tags; use cp.");
+                            }
                         }
                     }
                 }
