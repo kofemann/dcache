@@ -18,6 +18,7 @@
  */
 package org.dcache.pool.repository.ceph;
 
+import com.google.common.primitives.Longs;
 import diskCacheV111.util.PnfsId;
 import java.io.IOException;
 import java.net.URI;
@@ -43,6 +44,21 @@ import org.dcache.rados4j.RbdImageInfo;
  * A CEPH based implementation of {@link FileStore}.
  */
 public class CephFileStore implements FileStore {
+
+    /**
+     * RADOS objects extended attribute name to store creation time.
+     */
+    private final static String CREATION_TIME_ATTR = "creation_time";
+
+    /**
+     * RADOS objects extended attribute name to store last access time.
+     */
+    private final static String LAST_ACCESS_TIME_ATTR = "last_access_time";
+
+    /**
+     * RADOS objects extended attribute name to store last modification time.
+     */
+    private final static String LAST_MODIFICATION_TIME_ATTR = "last_modification_time";
 
     private final Rados rados;
     private final IoCtx ctx;
@@ -77,7 +93,8 @@ public class CephFileStore implements FileStore {
 
     @Override
     public BasicFileAttributeView getFileAttributeView(PnfsId id) throws IOException {
-        try(RbdImage image = rbd.openReadOnly(toImageName(id));) {
+        String imageName = toImageName(id);
+        try(RbdImage image = rbd.openReadOnly(imageName)) {
 
             final RbdImageInfo imageInfo = image.stat();
 
@@ -90,20 +107,46 @@ public class CephFileStore implements FileStore {
                 @Override
                 public BasicFileAttributes readAttributes() throws IOException {
                     return new BasicFileAttributes() {
-                        final private long now = System.currentTimeMillis();
+
                         @Override
                         public FileTime lastModifiedTime() {
-                            return FileTime.fromMillis(now);
+                            long time;
+                            try {
+                                byte[] b = new byte[Long.BYTES];
+                                ctx.getXattr(toObjName(imageName), LAST_MODIFICATION_TIME_ATTR, b);
+                                time = Longs.fromByteArray(b);
+                            } catch (RadosException e) {
+                                time = 0;
+                            }
+                            return FileTime.fromMillis(time);
                         }
 
                         @Override
                         public FileTime lastAccessTime() {
-                            return FileTime.fromMillis(now);
+                            long time;
+                            try {
+                                byte[] b = new byte[Long.BYTES];
+                                ctx.getXattr(toObjName(imageName), LAST_ACCESS_TIME_ATTR, b);
+                                time = Longs.fromByteArray(b);
+                            } catch (RadosException e) {
+                                time = 0;
+                            }
+                            return FileTime.fromMillis(time);
+
                         }
 
                         @Override
                         public FileTime creationTime() {
-                            return FileTime.fromMillis(now);
+                            long time;
+                            try {
+                                byte[] b = new byte[Long.BYTES];
+                                ctx.getXattr(toObjName(imageName), CREATION_TIME_ATTR, b);
+                                time = Longs.fromByteArray(b);
+                            } catch (RadosException e) {
+                                time = 0;
+                            }
+                            return FileTime.fromMillis(time);
+
                         }
 
                         @Override
@@ -140,7 +183,25 @@ public class CephFileStore implements FileStore {
 
                 @Override
                 public void setTimes(FileTime lastModifiedTime, FileTime lastAccessTime, FileTime createTime) throws IOException {
-                    // NOP
+
+                    if (lastModifiedTime != null) {
+                        ctx.setXattr(toObjName(imageName),
+                                LAST_MODIFICATION_TIME_ATTR,
+                                Longs.toByteArray(lastModifiedTime.toMillis()));
+                    }
+
+                    if (lastAccessTime != null) {
+                        ctx.setXattr(toObjName(imageName),
+                                LAST_ACCESS_TIME_ATTR,
+                                Longs.toByteArray(lastAccessTime.toMillis()));
+                    }
+
+                    if (createTime != null) {
+                        ctx.setXattr(toObjName(imageName),
+                                CREATION_TIME_ATTR,
+                                Longs.toByteArray(createTime.toMillis()));
+                    }
+
                 }
             };
         }
@@ -150,6 +211,9 @@ public class CephFileStore implements FileStore {
     public URI create(PnfsId id) throws IOException {
         String imageName = toImageName(id);
         rbd.create(imageName, 0);
+        ctx.setXattr(toObjName(imageName),
+                CREATION_TIME_ATTR,
+                Longs.toByteArray(System.currentTimeMillis()));
         return toUri(imageName);
     }
 
