@@ -1,6 +1,5 @@
 package org.dcache.chimera.nfsv41.door;
 
-import com.google.common.base.Stopwatch;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
@@ -54,6 +53,8 @@ import java.time.format.DateTimeFormatter;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 import java.util.stream.Collectors;
 
 import org.dcache.auth.Subjects;
@@ -78,6 +79,7 @@ import org.dcache.nfs.status.LayoutUnavailableException;
 import org.dcache.nfs.status.BadLayoutException;
 import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.status.BadStateidException;
+import org.dcache.nfs.status.ServerFaultException;
 import org.dcache.nfs.v3.MountServer;
 import org.dcache.nfs.v3.NfsServerV3;
 import org.dcache.nfs.v3.xdr.mount_prot;
@@ -581,7 +583,7 @@ public class NFSv41Door extends AbstractCellComponent implements
             );
             return new Layout(true, layoutStateId.stateid(), new layout4[]{layout});
 
-        } catch (CacheException | TimeoutException | ExecutionException e) {
+        } catch (CacheException e) {
             throw asNfsException(e, LayoutTryLaterException.class);
         } catch (InterruptedException e) {
             throw new LayoutTryLaterException(e.getMessage(), e);
@@ -869,6 +871,7 @@ public class NFSv41Door extends AbstractCellComponent implements
 
         private final Inode _nfsInode;
 
+        private final Lock _selectionLock = new ReentrantLock();
         private ListenableFuture<Void> _redirectFuture;
 
         NfsTransfer(PnfsHandler pnfs, Inode nfsInode, Subject ioSubject) {
@@ -897,33 +900,41 @@ public class NFSv41Door extends AbstractCellComponent implements
         }
 
         PoolDS  getPoolDataServer(long timeout) throws
-                InterruptedException, ExecutionException,
-                TimeoutException, CacheException {
+                ChimeraNFSException {
 
-            synchronized (this) {
-                if (_redirectFuture == null || _redirectFuture.isDone()) {
-                    /*
-                     * Check try to re-run the selection if no pool selected yet.
-                     * Restart/ping mover if not running yet.
-                     */
-                    if (getPool() == null) {
-                        // we did not select a pool
+            // we can't use syncronized block as it block callbacks in async calls
+            _selectionLock.lock();
+            try {
 
-                        _log.debug("looking for {} pool for {}", (isWrite() ? "write" : "read"), getPnfsId());
-
-                        _redirectFuture = selectPoolAndStartMoverAsync(RETRY_POLICY);
-                    } else {
-                        // we may re-send the request, but pool will handle it
-                        _redirectFuture = startMoverAsync(NFS_REQUEST_BLOCKING);
-                    }
+                if (_redirectFuture == null) {
+                    _log.debug("looking for {} pool for {}", (isWrite() ? "write" : "read"), getPnfsId());
+                    _redirectFuture = selectPoolAndStartMoverAsync(RETRY_POLICY);
                 }
+
+                _redirectFuture.get(NFS_REQUEST_BLOCKING, TimeUnit.MILLISECONDS);
+                _log.debug("mover ready: pool={} moverid={}", getPool(), getMoverId());
+
+                return waitForRedirect(NFS_REQUEST_BLOCKING);
+            } catch (TimeoutException e) {
+                throw new DelayException(getStatus() + " : Not ready yet", e);
+            } catch (InterruptedException e) {
+                _redirectFuture = null;
+                throw new LayoutTryLaterException(getStatus() + " : interrupted", e);
+            } catch (CacheException e) {
+                _redirectFuture = null;
+                throw asNfsException(e, LayoutTryLaterException.class);
+            } catch (ExecutionException e) {
+                Throwable cause = e.getCause();
+                _redirectFuture = null;
+                if (!CacheException.class.isAssignableFrom(cause.getClass())) {
+                    // indicated to a bug
+                    _log.error("Unexpected exeption", cause);
+                    throw new ServerFaultException(cause.getMessage(), cause);
+                }
+                throw asNfsException(cause, LayoutTryLaterException.class);
+            } finally {
+                _selectionLock.unlock();
             }
-
-            Stopwatch sw = Stopwatch.createStarted();
-            _redirectFuture.get(NFS_REQUEST_BLOCKING, TimeUnit.MILLISECONDS);
-            _log.debug("mover ready: pool={} moverid={}", getPool(), getMoverId());
-
-            return  waitForRedirect(NFS_REQUEST_BLOCKING - sw.elapsed(TimeUnit.MILLISECONDS));
         }
     }
 
