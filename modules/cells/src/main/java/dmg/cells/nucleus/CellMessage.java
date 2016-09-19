@@ -2,6 +2,7 @@ package dmg.cells.nucleus ;
 
 import com.google.common.base.Strings;
 import com.google.common.base.Throwables;
+import org.nustaq.serialization.simpleapi.DefaultCoder;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -26,6 +27,27 @@ import static com.google.common.base.Preconditions.checkState;
 public final class CellMessage implements Cloneable , Serializable {
 
   private static final long serialVersionUID = -5559658187264201731L;
+
+  /**
+   * As DefaultCoder is not thread safe and it's  expensive to initialize
+   * it every time, keep an instance per thread.
+   */
+  private final static ThreadLocal<DefaultCoder> FST = new ThreadLocal() {
+    @Override
+    protected DefaultCoder initialValue() {
+        return new DefaultCoder();
+    }
+  };
+
+  /**
+   * A header that will added on front of all FST based serialized messages
+   * to identify object serialization type.
+   */
+
+  private static final byte[] FST_MESSAGE_HEADER = new byte[] {
+      0x05, 0x4d,   // 054D -> [o]bject [s]tream [for] [d]Cache
+      0x00, 0x01    // version 1
+  };
 
   /**
    * Maximum TTL adjustment in milliseconds.
@@ -200,6 +222,25 @@ public boolean equals( Object obj ){
 
     protected static byte[] encode(Object message)
     {
+          // we alyes try to use FST serialization. Tunnel well re-encode with jvm
+          // native serialization, if needed.
+          return encodeWithFst(message);
+    }
+
+    // REVISIT: remove in version 4.0
+    /**
+     * Re-encode message payload for older dCache versions.
+     */
+    public void repackForOldTunnel()
+    {
+        // repack with JDK native serialization as expected by old versions
+        Object o = decode(_messageStream);
+        _messageStream =  encodeWithJdk(o);
+    }
+
+    private static byte[] encodeWithJdk(Object message)
+    {
+
         int initialBufferSize = 256;
         ByteArrayOutputStream array = new ByteArrayOutputStream(initialBufferSize);
         try (ObjectOutputStream out = new ObjectOutputStream(array)) {
@@ -215,8 +256,27 @@ public boolean equals( Object obj ){
         return array.toByteArray();
     }
 
+    private static byte[] encodeWithFst(Object message) {
+
+        int initialBufferSize = 256;
+        ByteArrayOutputStream array = new ByteArrayOutputStream(initialBufferSize);
+
+        DefaultCoder coder = FST.get();
+        byte barray[] = coder.toByteArray(message);
+        array.write(FST_MESSAGE_HEADER, 0, FST_MESSAGE_HEADER.length);
+        array.write(barray, 0, barray.length);
+        return array.toByteArray();
+    }
+
     protected static Object decode(byte[] messageStream)
     {
+        if (messageStream[0] == FST_MESSAGE_HEADER[0] &&
+                messageStream[1] == FST_MESSAGE_HEADER[1] &&
+                messageStream[2] == FST_MESSAGE_HEADER[2] &&
+                messageStream[3] == FST_MESSAGE_HEADER[3]
+                ) {
+            return decodeWithFst(messageStream);
+        }
         try (ObjectInputStream stream = new ObjectInputStream(new ByteArrayInputStream(messageStream))) {
             return stream.readObject();
         } catch (ClassNotFoundException e) {
@@ -224,6 +284,13 @@ public boolean equals( Object obj ){
         } catch (IOException e) {
             throw new SerializationException("Failed to deserialize object: " + e, e);
         }
+    }
+
+    private static Object decodeWithFst(byte[] messageStream) {
+
+        DefaultCoder coder = FST.get();
+        // skip 4 bytes header
+        return coder.toObject(messageStream, 4, messageStream.length - 4);
     }
 
     public void addSourceAddress( CellAddressCore source ){
