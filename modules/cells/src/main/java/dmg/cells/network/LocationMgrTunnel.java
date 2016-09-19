@@ -381,6 +381,10 @@ public class LocationMgrTunnel
         @Override
         public void writeObject(CellMessage message) throws IOException
         {
+            // REVISIT: remove in version 4.0
+            // older versions does not support new serialization format
+            message.repackForOldTunnel();
+
             /* An object output stream will only serialize an object once
              * and likewise the object input stream will recreate the
              * object DAG at the other end. To avoid that the receiver
