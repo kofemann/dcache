@@ -461,6 +461,7 @@ public class ChimeraNameSpaceProvider
             }
 
             _fs.remove(parent, name, inode);
+            path2idCache.invalidate(path);
 
             return inode.getPnfsId();
         }catch(FileNotFoundHimeraFsException fnf) {
