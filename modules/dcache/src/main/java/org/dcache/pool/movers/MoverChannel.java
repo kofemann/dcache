@@ -22,6 +22,7 @@ import org.dcache.vehicles.FileAttributes;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.dcache.util.ByteUnit.MiB;
 
+import static org.dcache.commons.stats.Histograms.*;
 /**
  * A wrapper for RepositoryChannel adding features used by movers.
  */
@@ -30,6 +31,9 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
     private static final Logger _logSpaceAllocation =
         LoggerFactory.getLogger("logger.dev.org.dcache.poolspacemonitor." +
                                 MoverChannel.class.getName());
+
+    private static final Logger LOGGER
+            = LoggerFactory.getLogger(MoverChannel.class);
 
     public enum AllocatorMode {
         SOFT,
@@ -95,6 +99,9 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
      */
     private final AllocatorMode _allocatorMode;
 
+    private final Histogram<Integer> readSizes = synchronizedHistogram( newIntHistogram("Read sizes", 10000));
+    private final Histogram<Integer> writeSizes = synchronizedHistogram( newIntHistogram("Write sizes", 10000));
+
     public MoverChannel(Mover<T> mover, RepositoryChannel channel, AllocatorMode allocatorMode)
     {
         this(mover.getIoMode(), mover.getFileAttributes(), mover.getProtocolInfo(), channel, mover.getIoHandle(), allocatorMode);
@@ -151,6 +158,7 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
     @Override
     public void close() throws IOException
     {
+        LOGGER.info("stats: \n{}\n{}", readSizes, writeSizes );
         _lastTransferred.set(System.currentTimeMillis());
         _channel.close();
     }
@@ -165,6 +173,7 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
     public synchronized int read(ByteBuffer dst) throws IOException
     {
         try {
+            readSizes.add(dst.remaining());
             int bytes = _channel.read(dst);
             _bytesTransferred.getAndAdd(bytes);
             return bytes;
@@ -176,6 +185,7 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
     @Override
     public int read(ByteBuffer buffer, long position) throws IOException {
         try {
+            readSizes.add(buffer.remaining());
             int bytes = _channel.read(buffer, position);
             _bytesTransferred.getAndAdd(bytes);
             return bytes;
@@ -187,6 +197,9 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
     @Override
     public synchronized long read(ByteBuffer[] dsts, int offset, int length) throws IOException {
         try {
+            for(ByteBuffer b: dsts) {
+                readSizes.add(b.remaining());
+            }
             long bytes = _channel.read(dsts, offset, length);
             _bytesTransferred.getAndAdd(bytes);
             return bytes;
@@ -198,6 +211,10 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
     @Override
     public synchronized long read(ByteBuffer[] dsts) throws IOException {
         try {
+            for (ByteBuffer b : dsts) {
+                readSizes.add(b.remaining());
+            }
+
             long bytes = _channel.read(dsts);
             _bytesTransferred.getAndAdd(bytes);
             return bytes;
@@ -209,6 +226,7 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
     @Override
     public synchronized int write(ByteBuffer src) throws IOException {
         try {
+            writeSizes.add(src.remaining());
             preallocate(position() + src.remaining());
             int bytes = _channel.write(src);
             _bytesTransferred.getAndAdd(bytes);
@@ -221,6 +239,7 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
     @Override
     public int write(ByteBuffer buffer, long position) throws IOException {
         try {
+            writeSizes.add(buffer.remaining());
             preallocate(position + buffer.remaining());
             int bytes = _channel.write(buffer, position);
             _bytesTransferred.getAndAdd(bytes);
@@ -235,8 +254,10 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
         try {
             long remaining = 0;
             for (int i = offset; i < offset + length; i++) {
+                writeSizes.add(srcs[i].remaining());
                 remaining += srcs[i].remaining();
             }
+
             preallocate(position() + remaining);
 
             long bytes = _channel.write(srcs, offset, length);
@@ -252,6 +273,7 @@ public class MoverChannel<T extends ProtocolInfo> implements RepositoryChannel
         try {
             long remaining = 0;
             for (ByteBuffer src: srcs) {
+                writeSizes.add(src.remaining());
                 remaining += src.remaining();
             }
             preallocate(position() + remaining);
