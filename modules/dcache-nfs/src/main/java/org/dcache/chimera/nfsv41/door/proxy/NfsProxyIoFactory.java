@@ -99,7 +99,7 @@ public class NfsProxyIoFactory implements ProxyIoFactory {
             return adapter;
         } catch (ExecutionException e) {
             Throwable t = e.getCause();
-            _log.error("failed to create IO adapter: {}", t.getMessage());
+            _log.debug("failed to create IO adapter: {}", t.getMessage());
             if (t instanceof ChimeraNFSException) {
                 throw (ChimeraNFSException) t;
             }
