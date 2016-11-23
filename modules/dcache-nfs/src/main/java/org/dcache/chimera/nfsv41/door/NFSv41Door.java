@@ -584,29 +584,41 @@ public class NFSv41Door extends AbstractCellComponent implements
     @Override
     public void layoutReturn(CompoundContext context, stateid4 stateid) throws IOException {
 
-        _log.debug("Releasing device by stateid: {}", stateid);
-
-        NfsTransfer transfer = _ioMessages.get(stateid);
-        if (transfer == null) {
-            return;
+        final NFS4Client client;
+        if (context.getMinorversion() > 0) {
+            client = context.getSession().getClient();
+        } else {
+            // v4.0 client use proxy adapter, which calls layoutreturn
+            client = context.getStateHandler().getClientIdByStateId(stateid);
         }
 
-        _log.debug("Sending KILL to {}@{}", transfer.getMoverId(), transfer.getPool());
-        transfer.killMover(0);
+        final NFS4State layoutState = client.state(stateid);
+        final NFS4State openState = layoutState.getOpenState();
 
-        try {
-            if(transfer.hasMover() && !transfer.waitForMover(500)) {
-                throw new DelayException("Mover not stopped");
+        _log.debug("Releasing layout by stateid: {}, open-state: {}", stateid,
+                openState.stateid());
+
+        NfsTransfer transfer = _ioMessages.get(openState.stateid());
+        if (transfer != null) {
+            _log.debug("Sending KILL to {}@{}", transfer.getMoverId(), transfer.getPool());
+            transfer.killMover(0, TimeUnit.MILLISECONDS);
+
+            try {
+                if (transfer.hasMover() && !transfer.waitForMover(500)) {
+                    throw new DelayException("Mover not stopped");
+                }
+            } catch (FileNotFoundCacheException e) {
+                // REVISIT: remove when pool will stop sending this exception
+                _log.info("Failed removed while being open mover: {}@{} : {}",
+                        transfer.getMoverId(), transfer.getPool(), e.getMessage());
+            } catch (CacheException | InterruptedException e) {
+                _log.info("Failed to kill mover: {}@{} : {}",
+                        transfer.getMoverId(), transfer.getPool(), e.getMessage());
+                throw new NfsIoException(e.getMessage(), e);
             }
-        } catch (FileNotFoundCacheException e){
-            // REVISIT: remove when pool will stop sending this exception
-            _log.info("Failed removed while being open mover: {}@{} : {}",
-                    transfer.getMoverId(), transfer.getPool(), e.getMessage());
-        } catch (CacheException | InterruptedException e) {
-            _log.info("Failed to kill mover: {}@{} : {}",
-                    transfer.getMoverId(), transfer.getPool(), e.getMessage());
-            throw new NfsIoException(e.getMessage(), e);
         }
+        // any further use of this layout-stateid must fail with NFS4ERR_BAD_STATEID
+        client.releaseState(stateid);
     }
 
     /*
