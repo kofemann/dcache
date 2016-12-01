@@ -2100,7 +2100,7 @@ public class DCapDoorInterpreterV3 implements KeepAliveListener,
                EnumSet<RequestContainerV5.RequestState> allowedStates;
                try {
                    allowedStates =
-                       _checkStagePermission.canPerformStaging(_subject, _fileAttributes)
+                       _checkStagePermission.canPerformStaging(_subject, _fileAttributes,_protocolInfo)
                        ? RequestContainerV5.allStates
                        : RequestContainerV5.allStatesExceptStage;
                } catch (IOException e) {

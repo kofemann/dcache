@@ -18,6 +18,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
+import diskCacheV111.vehicles.ProtocolInfo;
 import diskCacheV111.vehicles.StorageInfo;
 
 import org.dcache.auth.FQAN;
@@ -25,6 +26,8 @@ import org.dcache.auth.Subjects;
 import org.dcache.vehicles.FileAttributes;
 
 public class CheckStagePermission {
+
+    private static final Pattern LINE_PATTERN = Pattern.compile("\"(?<dn>([^\"]*))\"([ \t]+\"(?<fqan>([^\"]*))\"([ \t]+\"(?<su>([^\"]*))\")?([ \t]+\"(?<protocol>([^\"]*))\")?)?");
     private File _stageConfigFile;
     private long _lastTimeReadingStageConfigFile;
     private List<Pattern[]> _regexList;
@@ -52,7 +55,9 @@ public class CheckStagePermission {
      * @return true if and only if the subject is allowed to perform
      * staging
      */
-    public boolean canPerformStaging(Subject subject, FileAttributes fileAttributes)
+    public boolean canPerformStaging(Subject subject,
+                                     FileAttributes fileAttributes,
+                                     ProtocolInfo protocolInfo)
         throws PatternSyntaxException, IOException
     {
         if (!_isEnabled || Subjects.isRoot(subject)) {
@@ -75,11 +80,13 @@ public class CheckStagePermission {
                 dn = "";
             }
 
+            String protocol = protocolInfo.getProtocol()+"/"+protocolInfo.getMajorVersion();
+
             if (fqans.isEmpty()) {
-                return canPerformStaging(dn, null, storeUnit);
+                return canPerformStaging(dn, null, storeUnit, protocol);
             } else {
                 for (FQAN fqan: fqans) {
-                    if (canPerformStaging(dn, fqan, storeUnit)) {
+                    if (canPerformStaging(dn, fqan, storeUnit, protocol)) {
                         return true;
                     }
                 }
@@ -101,7 +108,10 @@ public class CheckStagePermission {
      * @throws PatternSyntaxException
      * @throws IOException
      */
-     public boolean canPerformStaging(String dn, FQAN fqan, String storeUnit) throws PatternSyntaxException, IOException {
+     public boolean canPerformStaging(String dn,
+                                      FQAN fqan,
+                                      String storeUnit,
+                                      String protocol) throws PatternSyntaxException, IOException {
 
          if ( !_isEnabled ) {
              return true;
@@ -116,7 +126,7 @@ public class CheckStagePermission {
              rereadConfig();
          }
 
-         return userMatchesPredicates(dn, Objects.toString(fqan, ""), storeUnit);
+         return userMatchesPredicates(dn, Objects.toString(fqan, ""), storeUnit, protocol);
      }
 
      /**
@@ -162,27 +172,31 @@ public class CheckStagePermission {
        * @param storeUnit object's storage unit
        * @return true if the user and object match predicates
        */
-       boolean userMatchesPredicates(String dn, String fqanStr, String storeUnit) {
-           try {
-               _fileReadLock.lock();
-               for (Pattern[] regexLine : _regexList) {
-                   if ( regexLine[0].matcher(dn).matches() ) {
+    boolean userMatchesPredicates(String dn, String fqanStr, String storeUnit, String protocol) {
 
-                       if ( regexLine[1] == null ) {
-                           return true; // line contains only DN; DN match -> STAGE allowed
-                       } else if ( regexLine[1].matcher(fqanStr).matches() && (regexLine[2] == null || regexLine[2].matcher(storeUnit).matches()) ) {
-                           return true;
-                           //two cases covered here:
-                           //line contains DN and FQAN; DN and FQAN match -> STAGE allowed
-                           //line contains DN, FQAN, storeUnit; DN, FQAN, storeUnit match -> STAGE allowed
-                       }
-                   }
-               }
-           } finally {
-               _fileReadLock.unlock();
-           }
-           return false;
-       }
+        try {
+            _fileReadLock.lock();
+            for (Pattern[] regexLine : _regexList) {
+                if ( regexLine[0].matcher(dn).matches() ) {
+
+                    if ( regexLine[1] == null ) {
+                        return true; // line contains only DN; DN match -> STAGE allowed
+                    } else if ( regexLine[1].matcher(fqanStr).matches() &&
+                                (regexLine[2] == null || regexLine[2].matcher(storeUnit).matches()) &&
+                                 (regexLine[3] == null || regexLine[3].matcher(protocol).matches())) {
+                                    //three cases covered here:
+                                    //line contains DN and FQAN; DN and FQAN match -> STAGE allowed
+                                    //line contains DN, FQAN, storeUnit; DN, FQAN, storeUnit match -> STAGE allowed
+                                    //line contains DN, FQAN, storeUnit, protocol; all match -> STAGE allowed
+                                    return true;
+                    }
+                }
+            }
+        } finally {
+            _fileReadLock.unlock();
+        }
+        return false;
+    }
 
        /**
         * Read configuration file and create list of compiled patterns, containing DNs and FQANs(optionally)
@@ -197,7 +211,6 @@ public class CheckStagePermission {
         List<Pattern[]> readStageConfigFile(BufferedReader reader) throws IOException, PatternSyntaxException {
 
             String line;
-            Pattern linePattern = Pattern.compile("\"([^\"]*)\"([ \t]+\"([^\"]*)\"([ \t]+\"([^\"]*)\")?)?");
             Matcher matcherLine;
 
             List<Pattern[]> regexList = new ArrayList<>();
@@ -205,7 +218,7 @@ public class CheckStagePermission {
             while ((line = reader.readLine()) != null) {
 
                 line = line.trim();
-                matcherLine = linePattern.matcher(line);
+                matcherLine = LINE_PATTERN.matcher(line);
                 if ( line.startsWith("#") || line.isEmpty() ) { //commented or empty line
                     continue;
                 }
@@ -214,30 +227,28 @@ public class CheckStagePermission {
                     continue;
                 }
 
-                Pattern[] arrayPattern = new Pattern[3];
+                Pattern[] arrayPattern = new Pattern[4];
 
-                String matchDN = matcherLine.group(1);
-                String matchFQAN = matcherLine.group(3);
-                String matchStoreUnit = matcherLine.group(5);
+                String matchDN = matcherLine.group("dn");
+                String matchFQAN = matcherLine.group("fqan");
+                String matchStoreUnit = matcherLine.group("su");
+                String matchProtocol = matcherLine.group("protocol");
+
+                arrayPattern[0] = Pattern.compile(matchDN);
 
                 if ( matchFQAN != null ) {
-                    if (matchStoreUnit != null) { //line: DN, FQAN, StoreUnit
-                        arrayPattern[0] = Pattern.compile(matchDN);
-                        arrayPattern[1] = Pattern.compile(matchFQAN);
-                        arrayPattern[2] = Pattern.compile(matchStoreUnit);
-                        regexList.add(arrayPattern);
-                    } else { //line: DN, FQAN
-                        arrayPattern[0] = Pattern.compile(matchDN);
-                        arrayPattern[1] = Pattern.compile(matchFQAN);
-                        arrayPattern[2] = null;
-                        regexList.add(arrayPattern);
-                    }
-                } else { //line: DN
-                    arrayPattern[0] = Pattern.compile(matchDN);
-                    arrayPattern[1] = null;
-                    arrayPattern[2] = null;
-                    regexList.add(arrayPattern);
+                    arrayPattern[1] = Pattern.compile(matchFQAN);
                 }
+
+                if (matchStoreUnit != null) {
+                    arrayPattern[2] = Pattern.compile(matchStoreUnit);
+                }
+
+                if ( matchProtocol != null ) {
+                    arrayPattern[3] = Pattern.compile(matchProtocol);
+                }
+                regexList.add(arrayPattern);
+
             }
             return regexList;
         }
