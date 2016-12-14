@@ -149,7 +149,7 @@ public class NFSv41Door extends AbstractCellComponent implements
      */
     private final static long NFS_REPLY_TIMEOUT = TimeUnit.SECONDS.toMillis(3);
 
-    private static final long NFS_REQUEST_BLOCKING = 100; // in Millis
+    private static final long NFS_REQUEST_BLOCKING = 500; // in Millis
 
     /**
      * Given that the timeout is pretty short, the retry period has to
