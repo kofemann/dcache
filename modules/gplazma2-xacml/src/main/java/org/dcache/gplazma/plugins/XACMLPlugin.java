@@ -22,7 +22,6 @@ import org.opensciencegrid.authz.xacml.common.XACMLConstants;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.security.auth.x500.X500Principal;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.SocketException;
@@ -38,6 +37,7 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import javax.security.auth.x500.X500Principal;
 
 import org.dcache.auth.LoginGidPrincipal;
 import org.dcache.auth.LoginNamePrincipal;
@@ -264,7 +264,7 @@ public final class XACMLPlugin implements GPlazmaAuthenticationPlugin {
     /*
      * VOMS setup
      */
-    //private final VOMSACValidator validator;
+    private final VOMSACValidator validator;
 
     /**
      * Configures VOMS extension validation, XACML service location, local id
@@ -275,15 +275,15 @@ public final class XACMLPlugin implements GPlazmaAuthenticationPlugin {
                     CRLException, IOException {
         _properties = properties;
 
-//        String caDir = properties.getProperty(CADIR);
-//        String vomsDir = properties.getProperty(VOMSDIR);
+        String caDir = properties.getProperty(CADIR);
+        String vomsDir = properties.getProperty(VOMSDIR);
 
-//        checkArgument(caDir != null, "Undefined property: " + VOMSDIR);
-//        checkArgument(vomsDir != null, "Undefined property: " + CADIR);
-//
-//        VOMSTrustStore vomsTrustStore = VOMSTrustStores.newTrustStore(asList(vomsDir));
-//        X509CertChainValidatorExt certChainValidator = new CertificateValidatorBuilder().trustAnchorsDir(caDir).build();
-//        validator = VOMSValidators.newValidator(vomsTrustStore, certChainValidator);
+        checkArgument(caDir != null, "Undefined property: " + VOMSDIR);
+        checkArgument(vomsDir != null, "Undefined property: " + CADIR);
+
+        VOMSTrustStore vomsTrustStore = VOMSTrustStores.newTrustStore(asList(vomsDir));
+        X509CertChainValidatorExt certChainValidator = new CertificateValidatorBuilder().trustAnchorsDir(caDir).build();
+        validator = VOMSValidators.newValidator(vomsTrustStore, certChainValidator);
 
         /*
          * Adds SSL system properties required by privilege library.
@@ -308,18 +308,6 @@ public final class XACMLPlugin implements GPlazmaAuthenticationPlugin {
         configureCache();
 
         logger.debug("XACML plugin now loaded for URL {}", _mappingServiceURL);
-    }
-
-    private VOMSACValidator getValidator() {
-        String caDir = _properties.getProperty(CADIR);
-        String vomsDir = _properties.getProperty(VOMSDIR);
-
-        checkArgument(caDir != null, "Undefined property: " + VOMSDIR);
-        checkArgument(vomsDir != null, "Undefined property: " + CADIR);
-
-        VOMSTrustStore vomsTrustStore = VOMSTrustStores.newTrustStore(asList(vomsDir));
-        X509CertChainValidatorExt certChainValidator = new CertificateValidatorBuilder().trustAnchorsDir(caDir).build();
-        return VOMSValidators.newValidator(vomsTrustStore, certChainValidator);
     }
 
     /*
@@ -366,7 +354,7 @@ public final class XACMLPlugin implements GPlazmaAuthenticationPlugin {
                 /*
                  * Get VOMS extensions.
                  */
-                extractExtensionsFromChain(dn, chain, extensions, getValidator());
+                extractExtensionsFromChain(dn, chain, extensions, validator);
             }
         }
 
