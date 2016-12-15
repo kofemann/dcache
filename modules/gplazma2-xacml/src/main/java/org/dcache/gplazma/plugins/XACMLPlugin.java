@@ -204,11 +204,14 @@ public final class XACMLPlugin implements GPlazmaAuthenticationPlugin {
             xacmlClient.setResourceX509Issuer(_targetServiceIssuer);
             xacmlClient.setRequestedaction(XACMLConstants.ACTION_ACCESS);
 
+            long start = System.currentTimeMillis();
             LocalId localId = xacmlClient.mapCredentials(_mappingServiceURL);
+            long end = System.currentTimeMillis();
+
             Preconditions.checkArgument(localId != null, DENIED_MESSAGE + key);
 
-            logger.debug("mapping service {} returned localId {} for {} ",
-                            _mappingServiceURL, localId, key);
+            logger.info("mapping service {} returned localId {} for {}: call took {} ",
+                         _mappingServiceURL, localId, key, end-start);
             return localId;
         }
     }
