@@ -131,7 +131,7 @@
             <id>rpm</id>
 
             <properties>
-                <build.id>1</build.id>
+                <build.id>dcap1</build.id>
                 <local.version />
                 <build.number>${build.id}${local.version}</build.number>
 
