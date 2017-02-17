@@ -17,7 +17,6 @@
 package org.dcache.chimera;
 
 import com.google.common.base.Throwables;
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -49,6 +48,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
+import javax.cache.Cache;
+import javax.cache.Caching;
 
 import org.dcache.acl.ACE;
 import org.dcache.acl.enums.RsType;
@@ -57,7 +58,6 @@ import org.dcache.chimera.store.InodeStorageInformation;
 import org.dcache.util.Checksum;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static org.dcache.acl.enums.AceFlags.*;
 import static org.dcache.chimera.FileSystemProvider.StatCacheOption.NO_STAT;
 import static org.dcache.chimera.FileSystemProvider.StatCacheOption.STAT;
 import static org.dcache.util.ByteUnit.EiB;
@@ -133,19 +133,13 @@ public class JdbcFs implements FileSystemProvider {
                     }
             , _fsStatUpdateExecutor));
 
-    /* The PNFS ID to inode number mapping will never change while dCache is running.
+    /* The PNFS ID to inode number mapping.
      */
-    protected final Cache<String, Long> _inoCache =
-            CacheBuilder.newBuilder()
-                    .maximumSize(100000)
-                    .build();
+    protected  Cache<String, Long> _inoCache;
 
-    /* The inode number to PNFS ID mapping will never change while dCache is running.
+    /* The inode number to PNFS ID mapping.
      */
-    protected final Cache<Long, String> _idCache =
-            CacheBuilder.newBuilder()
-                    .maximumSize(100000)
-                    .build();
+    protected  Cache<Long, String> _idCache;
 
     /**
      * current fs id
@@ -179,6 +173,9 @@ public class JdbcFs implements FileSystemProvider {
 
         // try to get database dialect specific query engine
         _sqlDriver = FsSqlDriver.getDriverInstance(dataSource);
+
+        _idCache = Caching.getCache("inumber-pnfsid-mapping", Long.class, String.class);
+        _inoCache = Caching.getCache("pnfsid-inumber-mapping", String.class, Long.class);
     }
 
     private FsInode getWormID() throws ChimeraFsException {
@@ -536,8 +533,8 @@ public class JdbcFs implements FileSystemProvider {
             throw new FileNotFoundHimeraFsException(inode.toString());
         }
         if (level == 0) {
-            _inoCache.put(stat.getId(), stat.getIno());
-            _idCache.put(stat.getIno(), stat.getId());
+            _inoCache.putIfAbsent(stat.getId(), stat.getIno());
+            _idCache.putIfAbsent(stat.getIno(), stat.getId());
         }
         return stat;
     }
@@ -591,8 +588,8 @@ public class JdbcFs implements FileSystemProvider {
     {
         Stat stat = inode.getStatCache();
         if (stat != null) {
-            _inoCache.put(stat.getId(), stat.getIno());
-            _idCache.put(stat.getIno(), stat.getId());
+            _inoCache.putIfAbsent(stat.getId(), stat.getIno());
+            _idCache.putIfAbsent(stat.getIno(), stat.getId());
         }
     }
 
@@ -645,46 +642,31 @@ public class JdbcFs implements FileSystemProvider {
 
     @Override
     public String inode2id(FsInode inode) throws ChimeraFsException {
-        try {
-            return _idCache.get(inode.ino(), () -> {
-                String id = _sqlDriver.getId(inode);
-                if (id == null) {
-                    throw new FileNotFoundHimeraFsException(String.valueOf(inode.ino()));
-                }
-                return id;
-            });
-        } catch (ExecutionException e) {
-            Throwables.throwIfInstanceOf(e.getCause(), ChimeraFsException.class);
-            Throwables.throwIfInstanceOf(e.getCause(), DataAccessException.class);
-            Throwables.throwIfUnchecked(e.getCause());
-            throw new RuntimeException(e.getCause());
+
+        String id = _idCache.get(inode.ino());
+        if (id == null) {
+            id = _sqlDriver.getId(inode.ino());
+            _idCache.putIfAbsent(inode.ino(), id);
         }
+        return id;
     }
 
     @Override
     public FsInode id2inode(String id, StatCacheOption option) throws ChimeraFsException {
         if (option == NO_STAT) {
-            try {
-                return new FsInode(this, _inoCache.get(id, () -> {
-                    Long ino = _sqlDriver.getInumber(id);
-                    if (ino == null) {
-                        throw new FileNotFoundHimeraFsException(id);
-                    }
-                    return ino;
-                }));
-            } catch (ExecutionException e) {
-                Throwables.throwIfInstanceOf(e.getCause(), ChimeraFsException.class);
-                Throwables.throwIfInstanceOf(e.getCause(), DataAccessException.class);
-                Throwables.throwIfUnchecked(e.getCause());
-                throw new RuntimeException(e.getCause());
+            Long ino = _inoCache.get(id);
+            if (ino == null) {
+                ino = _sqlDriver.getInumber(id);
+                _inoCache.putIfAbsent(id, ino);
             }
+            return new FsInode(this, ino);
         } else {
             Stat stat = _sqlDriver.stat(id);
             if (stat == null) {
                 throw new FileNotFoundHimeraFsException(id);
             }
-            _inoCache.put(stat.getId(), stat.getIno());
-            _idCache.put(stat.getIno(), stat.getId());
+            _inoCache.putIfAbsent(stat.getId(), stat.getIno());
+            _idCache.putIfAbsent(stat.getIno(), stat.getId());
             return new FsInode(this, stat.getIno(), FsInodeType.INODE, 0, stat);
         }
     }

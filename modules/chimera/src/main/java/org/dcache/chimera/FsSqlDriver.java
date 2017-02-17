@@ -177,11 +177,10 @@ public class FsSqlDriver {
                 rs -> rs.next() ? rs.getLong("inumber") : null);
     }
 
-    String getId(FsInode inode)
-    {
+    String getId(Long ino) {
         return _jdbc.query(
                 "SELECT ipnfsid FROM t_inodes WHERE inumber=?",
-                ps -> ps.setLong(1, inode.ino()),
+                ps -> ps.setLong(1, ino),
                 rs -> rs.next() ? rs.getString("ipnfsid") : null);
     }
 
