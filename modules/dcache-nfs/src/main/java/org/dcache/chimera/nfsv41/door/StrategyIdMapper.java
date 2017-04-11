@@ -1,10 +1,13 @@
 package org.dcache.chimera.nfsv41.door;
 
 import com.google.common.base.Strings;
+import org.ietf.jgss.GSSContext;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.security.auth.Subject;
+import javax.security.auth.kerberos.KerberosPrincipal;
 
 import java.security.Principal;
 import java.util.Set;
@@ -19,6 +22,7 @@ import org.dcache.auth.UidPrincipal;
 import org.dcache.auth.UserNamePrincipal;
 import org.dcache.nfs.v4.NfsIdMapping;
 import org.dcache.xdr.RpcLoginService;
+import org.dcache.xdr.XdrTransport;
 
 public class StrategyIdMapper implements NfsIdMapping, RpcLoginService {
 
@@ -141,7 +145,8 @@ public class StrategyIdMapper implements NfsIdMapping, RpcLoginService {
     }
 
     @Override
-    public Subject login(Principal principal) {
+    public Subject login(XdrTransport xt, GSSContext gssc) {
+        KerberosPrincipal principal = new KerberosPrincipal(gssc.getSrcName().toString());
         Subject in = new Subject();
         in.getPrincipals().add(principal);
         in.setReadOnly();
