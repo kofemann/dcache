@@ -8,6 +8,7 @@ import java.util.UUID;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import org.dcache.util.NetworkUtils;
 
@@ -57,7 +58,8 @@ public class NfsProxyIo implements ProxyIoAdapter {
      * How long we wait for an IO request. The typical NFS client will wait
      * 30 sec. We will use a shorter timeout to avoid retry.
      */
-    private final static int IO_TIMEOUT = (int)TimeUnit.SECONDS.toMillis(15);
+    private final static int IO_TIMEOUT = 15;
+    private final static TimeUnit IO_TIMEOUT_UNIT = TimeUnit.SECONDS;
 
     /**
      * Most up-to-date seqid for a given stateid as defined by rfc5661.
@@ -173,8 +175,8 @@ public class NfsProxyIo implements ProxyIoAdapter {
         COMPOUND4res result = new COMPOUND4res();
 
         try {
-            client.call(nfs4_prot.NFSPROC4_COMPOUND_4, arg, result, IO_TIMEOUT);
-        } catch (IOException e) {
+            client.call(nfs4_prot.NFSPROC4_COMPOUND_4, arg, result, IO_TIMEOUT, IO_TIMEOUT_UNIT);
+        } catch (IOException | TimeoutException e) {
             // unfortunately RPC library maps timeout to IOException
             throw new DelayException(e.getMessage(), e);
         }

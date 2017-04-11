@@ -813,7 +813,7 @@
         <dependency>
             <groupId>org.dcache</groupId>
             <artifactId>nfs4j-core</artifactId>
-            <version>0.10.8a</version>
+            <version>0.10.10fnal</version>
             <exclusions>
                 <exclusion>
                     <groupId>org.dcache.chimera</groupId>

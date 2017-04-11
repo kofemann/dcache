@@ -1,6 +1,7 @@
 package org.dcache.chimera.nfsv41.mover;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.ietf.jgss.GSSContext;
 import org.ietf.jgss.GSSException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -64,6 +65,7 @@ import org.dcache.xdr.RpcDispatchable;
 import org.dcache.xdr.RpcLoginService;
 import org.dcache.xdr.gss.GssSessionManager;
 import org.dcache.xdr.OncRpcException;
+import org.dcache.xdr.XdrTransport;
 
 /**
  *
@@ -236,7 +238,7 @@ public class NFSv4MoverHandler {
             RpcLoginService rpcLoginService = new RpcLoginService() {
 
                 @Override
-                public Subject login(Principal principal) {
+                public Subject login(XdrTransport t, GSSContext ctx) {
                     return Subjects.NOBODY;
                 }
             };
