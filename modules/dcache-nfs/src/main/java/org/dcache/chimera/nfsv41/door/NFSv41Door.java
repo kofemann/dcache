@@ -37,6 +37,7 @@ import diskCacheV111.vehicles.PoolStatusChangedMessage;
 
 import dmg.cells.nucleus.AbstractCellComponent;
 import dmg.cells.nucleus.CDC;
+import dmg.cells.nucleus.CellAddressCore;
 import dmg.cells.nucleus.CellCommandListener;
 import dmg.cells.nucleus.CellInfoProvider;
 import dmg.cells.nucleus.CellMessageReceiver;
@@ -442,17 +443,7 @@ public class NFSv41Door extends AbstractCellComponent implements
 
         // Ensure that we do not kill re-started transfer
         if(transfer.getId() == transferFinishedMessage.getId()) {
-            if (transfer.isWrite()) {
-                /*
-                 * Inject poison to ensure that any other attempt to re-use
-                 * the transfer to fail. The cleanup will happen with open-state
-                 * disposal on close.
-                 */
-                transfer.enforceErrorIfRunning(POISON);
-            } else {
-                // it's ok to remove read mover as it's safe to re-create it again.
-                _ioMessages.remove(openStateId);
-            }
+            _ioMessages.remove(openStateId);
         }
     }
 
@@ -602,12 +593,6 @@ public class NFSv41Door extends AbstractCellComponent implements
                              * Cleanup transfer when state invalidated.
                              */
                             t.shutdownMover();
-                            if (t.isWrite()) {
-                                /* write request keep in the message map to
-                                 * avoid re-creates and trigger errors.
-                                 */
-                                _ioMessages.remove(openStateId.stateid());
-                            }
                         });
 
                          _ioMessages.put(openStateId.stateid(), transfer);
@@ -1007,7 +992,14 @@ public class NFSv41Door extends AbstractCellComponent implements
                  */
                 setOnlineFilesOnly(true);
                 _log.debug("looking for {} pool for {}", (isWrite() ? "write" : "read"), getPnfsId());
-                _redirectFuture = selectPoolAndStartMoverAsync(POOL_SELECTION_RETRY_POLICY);
+                if (!getFileAttributes().getLocations().isEmpty()) {
+                    String pool = getFileAttributes().getLocations().iterator().next();
+                    setPool(pool);
+                    setPoolAddress(new CellAddressCore(pool));
+                    _redirectFuture = startMoverAsync(STAGE_REQUEST_TIMEOUT);
+                } else {
+                    _redirectFuture = selectPoolAndStartMoverAsync(POOL_SELECTION_RETRY_POLICY);
+                }
             }
 
             /*

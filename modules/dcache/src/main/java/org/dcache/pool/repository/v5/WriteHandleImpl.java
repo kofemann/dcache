@@ -306,7 +306,8 @@ class WriteHandleImpl implements ReplicaDescriptor
 
             long length = _entry.getReplicaSize();
             adjustReservation(length);
-            verifyFileSize(length);
+            // FIXME: for permannent files only
+            //verifyFileSize(length);
             _fileAttributes.setSize(length);
 
             registerFileAttributesInNameSpace();
