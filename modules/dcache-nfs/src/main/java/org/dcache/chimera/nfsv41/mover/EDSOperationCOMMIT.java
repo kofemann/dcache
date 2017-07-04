@@ -4,6 +4,7 @@ import diskCacheV111.util.CacheException;
 import diskCacheV111.util.PnfsId;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.file.AccessDeniedException;
 import java.util.Map;
 import org.dcache.chimera.FsInodeType;
 import org.dcache.nfs.ChimeraNFSException;
@@ -34,6 +35,7 @@ public class EDSOperationCOMMIT extends AbstractNFSv4Operation {
     @Override
     public void process(CompoundContext cc, nfs_resop4 result) throws ChimeraNFSException, IOException, OncRpcException {
 
+        final COMMIT4res res = result.opcommit;
         try {
             Inode inode = cc.currentInode();
             PnfsId pnfsId = toPnfsid(inode);
@@ -45,12 +47,14 @@ public class EDSOperationCOMMIT extends AbstractNFSv4Operation {
             RepositoryChannel fc = mover.getMoverChannel();
             fc.sync();
             mover.commitFileSize(fc.size());
-            final COMMIT4res res = result.opcommit;
+
             res.status = nfsstat.NFS_OK;
             res.resok4 = new COMMIT4resok();
             res.resok4.writeverf = mover.getBootVerifier();
         } catch (CacheException e) {
             throw new NfsIoException(e.getMessage());
+        } catch (AccessDeniedException e) {
+            res.status = nfsstat.NFSERR_PERM;
         }
     }
 

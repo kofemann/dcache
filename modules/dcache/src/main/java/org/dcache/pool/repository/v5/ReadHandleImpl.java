@@ -11,6 +11,7 @@ import diskCacheV111.util.PnfsHandler;
 import org.dcache.namespace.FileAttribute;
 import org.dcache.pool.repository.FileStore;
 import org.dcache.pool.repository.ReplicaRecord;
+import org.dcache.pool.repository.ReadonlyRepositoryChannel;
 import org.dcache.pool.repository.ReplicaDescriptor;
 import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.util.Checksum;
@@ -51,7 +52,7 @@ class ReadHandleImpl implements ReplicaDescriptor
 
     @Override
     public RepositoryChannel createChannel() throws IOException {
-        return _entry.openChannel(FileStore.O_READ);
+        return new ReadonlyRepositoryChannel(_entry.openChannel(FileStore.O_READ));
     }
 
     /**
