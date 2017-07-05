@@ -285,7 +285,11 @@ class WriteHandleImpl implements ReplicaDescriptor
 
     private void verifyFileSize(long length) throws CacheException
     {
-        assert _initialState == ReplicaState.FROM_CLIENT || _fileAttributes.isDefined(SIZE);
+        if (!_fileAttributes.getStorageInfo().isCreatedOnly()) {
+            // by-pass file size check in case of update
+            return;
+        }
+
         if ((_initialState != ReplicaState.FROM_CLIENT ||
              (_fileAttributes.isDefined(SIZE) && _fileAttributes.getSize() > 0)) &&
                 _fileAttributes.getSize() != length) {
@@ -306,8 +310,7 @@ class WriteHandleImpl implements ReplicaDescriptor
 
             long length = _entry.getReplicaSize();
             adjustReservation(length);
-            // FIXME: for permannent files only
-            //verifyFileSize(length);
+            verifyFileSize(length);
             _fileAttributes.setSize(length);
 
             registerFileAttributesInNameSpace();
