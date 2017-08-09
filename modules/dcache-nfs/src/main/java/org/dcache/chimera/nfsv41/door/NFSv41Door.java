@@ -73,6 +73,7 @@ import org.dcache.chimera.nfsv41.mover.NFS4ProtocolInfo;
 import org.dcache.commons.stats.RequestExecutionTimeGauges;
 import org.dcache.poolmanager.PoolManagerStub;
 import org.dcache.namespace.FileAttribute;
+import org.dcache.utils.Bytes;
 import org.dcache.nfs.ChimeraNFSException;
 import org.dcache.nfs.ExportFile;
 import org.dcache.nfs.FsExport;
@@ -1064,6 +1065,59 @@ public class NFSv41Door extends AbstractCellComponent implements
             return  waitForRedirect(NFS_REQUEST_BLOCKING);
         }
 
+        /**
+         * Retry transfer.
+         */
+        public String retry() {
+
+            /*
+             * client re-try will trigger transfer
+             */
+            if (_redirectFuture == null) {
+                return "Nothing to do.";
+            }
+
+            /*
+             * The transfer is in the middle of an action
+             */
+            String s = getStatus();
+            if (s != null) {
+                return "Can't reset transfer in action: " + s;
+            }
+
+            /*
+             * Reply from pool selection is lost. It's safe to start over.
+             */
+            if (getPool() == null) {
+                _redirectFuture = null;
+                return "Restariung from pool selection";
+            }
+
+            /*
+             * Mover id is lost. it's ok to start it again, will start mover for
+             * given transfer only once.
+             */
+            if (!hasMover()) {
+                _redirectFuture = startMoverAsync(NFS_REQUEST_BLOCKING);
+                return "Re-activating mover on: " + getPool();
+            }
+
+            /*
+             * Redirect is comple.
+             */
+            if (getRedirect() != null) {
+                return "Can't re-try complete mover.";
+            }
+
+            /**
+             * Redirect is lost
+             */
+
+
+
+            return "OK";
+        }
+
         public synchronized void shutdownMover() throws NfsIoException, DelayException {
 
             if (!hasMover()) {
@@ -1232,6 +1286,40 @@ public class NFSv41Door extends AbstractCellComponent implements
         public String call() {
             long n = recallLayouts(pool);
             return n + " layouts scheduled for recall.";
+        }
+    }
+
+    @Command(name = "transfer retry", hint = "retry transfer for given open state.")
+    public class TransferResetCmd implements Callable<String> {
+
+        @Argument(metaVar = "stateid")
+        String os;
+
+        @Override
+        public String call() {
+            stateid4 stateid = new stateid4(Bytes.fromHexString(os), 0);
+            NfsTransfer t = _ioMessages.get(stateid);
+            if (t == null) {
+                return "No matching transfer";
+            }
+            return t.retry();
+        }
+    }
+
+    @Command(name = "transfer forget", hint = "remove transfer for given open state.")
+    public class TransferForgetCmd implements Callable<String> {
+
+        @Argument(metaVar = "stateid")
+        String os;
+
+        @Override
+        public String call() {
+            stateid4 stateid = new stateid4(Bytes.fromHexString(os), 0);
+            NfsTransfer t = _ioMessages.remove(stateid);
+            if (t == null) {
+                return "No matching transfer";
+            }
+            return "Removed: " + t;
         }
     }
 
