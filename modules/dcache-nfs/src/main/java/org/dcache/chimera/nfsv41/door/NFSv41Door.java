@@ -571,8 +571,17 @@ public class NFSv41Door extends AbstractCellComponent implements
 
                     NfsTransfer transfer = _ioMessages.get(openStateId.stateid());
                     if (transfer == null) {
+
+                        int shareAccess = context.getStateHandler().getFileTracker().getShareAccess(client, nfsInode,
+                            openStateId.stateid());
+
+                        // always start a read-write mover if file is opened for write
+                       boolean isWrite = (shareAccess & nfs4_prot.OPEN4_SHARE_ACCESS_WRITE) != 0;
+                       isWrite = true;
+
+
                         transfer = new NfsTransfer(_pnfsHandler, client, openStateId, nfsInode,
-                                context.getRpcCall().getCredential().getSubject(), ioMode);
+                                context.getRpcCall().getCredential().getSubject(), isWrite);
 
                         transfer.setProtocolInfo(protocolInfo);
                         transfer.setCellAddress(getCellAddress());
@@ -925,9 +934,9 @@ public class NFSv41Door extends AbstractCellComponent implements
         private ListenableFuture<Void> _redirectFuture;
         private AtomicReference<ChimeraNFSException> _errorHolder = new AtomicReference<>();
         private final NFS4Client _client;
-        private final int _ioMode;
+        private final boolean _isWrite;
 
-        NfsTransfer(PnfsHandler pnfs, NFS4Client client, NFS4State openStateId, Inode nfsInode, Subject ioSubject, int ioMode)
+        NfsTransfer(PnfsHandler pnfs, NFS4Client client, NFS4State openStateId, Inode nfsInode, Subject ioSubject, boolean isWrite)
                 throws ChimeraNFSException {
             super(pnfs, Subjects.ROOT, Restrictions.none(), ioSubject,  FsPath.ROOT);
 
@@ -936,7 +945,7 @@ public class NFSv41Door extends AbstractCellComponent implements
             // layout, or a transfer in dCache language, must have a unique stateid
             _stateid = client.createState(openStateId.getStateOwner(), openStateId);
             _client = client;
-            _ioMode = ioMode;
+            _isWrite = isWrite;
         }
 
         @Override
@@ -977,7 +986,7 @@ public class NFSv41Door extends AbstractCellComponent implements
 
             if (_redirectFuture == null) {
 
-                readNameSpaceEntry(_ioMode == layoutiomode4.LAYOUTIOMODE4_RW);
+                readNameSpaceEntry(_isWrite);
 
                 FileAttributes attr = getFileAttributes();
                 if (!isWrite() && attr.getLocations().isEmpty()

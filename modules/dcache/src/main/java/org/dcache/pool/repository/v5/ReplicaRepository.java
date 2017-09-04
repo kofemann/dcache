@@ -626,11 +626,16 @@ public class ReplicaRepository
                         targetState, stickyRecords);
             });
         } catch (DuplicateEntryException e) {
-            /* Somebody got the idea that we don't have the file, so we make
-             * sure to register it.
-             */
-            _pnfs.notify(new PnfsAddCacheLocationMessage(id, getPoolName()));
-            throw new FileInCacheException("Entry already exists: " + id);
+
+            ReplicaRecord entry = _store.get(id);
+
+            return entry.update(r -> {
+                r.setFileAttributes(fileAttributes);
+                r.setState(transferState);
+                return new WriteHandleImpl(
+                        this, _allocator, _pnfs, entry, fileAttributes,
+                        targetState, stickyRecords);
+            });
         } finally {
             _stateLock.readLock().unlock();
         }
