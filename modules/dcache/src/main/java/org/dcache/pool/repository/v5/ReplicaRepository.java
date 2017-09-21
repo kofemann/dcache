@@ -358,6 +358,17 @@ public class ReplicaRepository
         }
     }
 
+    @Override
+    public Allocator getAllocator() {
+        _stateLock.readLock().lock();
+        try {
+            checkUninitialized();
+            return _allocator;
+        } finally {
+            _stateLock.readLock().unlock();
+        }
+    }
+
     public void setReplicaStore(ReplicaStore store)
     {
         _stateLock.readLock().lock();

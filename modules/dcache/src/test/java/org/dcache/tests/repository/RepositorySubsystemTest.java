@@ -142,7 +142,7 @@ public class RepositorySubsystemTest
                                                sticky,
                                                EnumSet.noneOf(OpenFlags.class));
                 try {
-                    handle.allocate(attributes.getSize());
+                    repository.getAllocator().allocate(attributes.getSize());
                     createFile(handle, attributes.getSize());
                     handle.commit();
                 } finally {
@@ -492,7 +492,7 @@ public class RepositorySubsystemTest
                 ReplicaDescriptor handle = repository.createEntry(attributes5, FROM_STORE, CACHED, stickyRecords,
                         EnumSet.noneOf(OpenFlags.class));
                 try {
-                    handle.allocate(attributes5.getSize());
+                    repository.getAllocator().allocate(attributes5.getSize());
                     createFile(handle, attributes5.getSize());
                     handle.commit();
                 }catch( IOException e) {
@@ -814,7 +814,7 @@ public class RepositorySubsystemTest
                     repository.createEntry(attributes4, transferState,
                                            finalState, stickyRecords, EnumSet.noneOf(OpenFlags.class));
                 try {
-                    handle.allocate(size4 + overallocation);
+                    repository.getAllocator().allocate(size4 + overallocation);
                     assertStep("No clear after this point", 2);
                     createFile(handle, size4);
                     if (!cancel) {
@@ -915,7 +915,7 @@ public class RepositorySubsystemTest
 
         ReplicaDescriptor handle =
             repository.createEntry(attributes4, FROM_CLIENT, PRECIOUS, null, EnumSet.noneOf(OpenFlags.class));
-        handle.allocate(-1);
+        repository.getAllocator().allocate(-1);
     }
 
     @Test

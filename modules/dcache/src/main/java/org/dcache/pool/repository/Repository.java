@@ -191,4 +191,12 @@ public interface Repository
      * Removes a fault change listener.
      */
     void removeFaultListener(FaultListener listener);
+
+    /**
+     * Get {@link Allocator} which have to be used with this
+     * {@code Repository}.
+     *
+     * @return allocator to use with this replica descriptor.
+     */
+    Allocator getAllocator();
 }
