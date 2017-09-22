@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2013 - 2015 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2013 - 2017 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -110,7 +110,6 @@ public abstract class MoverChannelMover<P extends ProtocolInfo, M extends MoverC
             if (_wrappedChannel != null && getIoMode().contains(StandardOpenOption.WRITE)) {
                 long size = _wrappedChannel.size();
                 s.append(":SU=").append(size);
-                s.append(";SA=").append(_wrappedChannel.getAllocated());
             }
         } catch (IOException e) {
         }

@@ -9,6 +9,7 @@ import diskCacheV111.util.CacheException;
 import diskCacheV111.util.PnfsHandler;
 
 import org.dcache.namespace.FileAttribute;
+import org.dcache.pool.repository.Allocator;
 import org.dcache.pool.repository.FileStore;
 import org.dcache.pool.repository.ReplicaRecord;
 import org.dcache.pool.repository.ReplicaDescriptor;
@@ -112,17 +113,7 @@ class ReadHandleImpl implements ReplicaDescriptor
     }
 
     @Override
-    public void allocate(long size) throws IllegalStateException, IllegalArgumentException, InterruptedException {
-        throw new IllegalStateException("Read-only handle");
-    }
-
-    @Override
-    public boolean allocateNow(long size) throws IllegalStateException, IllegalArgumentException, InterruptedException {
-        throw new IllegalStateException("Read-only handle");
-    }
-
-    @Override
-    public void free(long size) throws IllegalStateException, IllegalArgumentException {
-        throw new IllegalStateException("Read-only handle");
+    public Allocator getAllocator() {
+        return null;
     }
 }

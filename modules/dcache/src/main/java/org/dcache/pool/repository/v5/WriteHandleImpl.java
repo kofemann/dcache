@@ -17,7 +17,9 @@ import diskCacheV111.util.PnfsId;
 import org.dcache.alarms.AlarmMarkerFactory;
 import org.dcache.alarms.PredefinedAlarm;
 import org.dcache.pool.repository.Allocator;
+import org.dcache.pool.repository.AllocatorAwareRepositoryChannel;
 import org.dcache.pool.repository.FileStore;
+import org.dcache.pool.repository.ForwardingRepositoryChannel;
 import org.dcache.pool.repository.ReplicaState;
 import org.dcache.pool.repository.ReplicaRecord;
 import org.dcache.pool.repository.ReplicaDescriptor;
@@ -74,14 +76,18 @@ class WriteHandleImpl implements ReplicaDescriptor
     /** The state of the write handle. */
     private HandleState _state;
 
-    /** Amount of space allocated for this handle. */
-    private long _allocated;
-
-    /** Current thread which performs allocation. */
-    private Thread _allocationThread;
-
     /** Last access time of new replica. */
     private Long _atime;
+
+    /**
+     * Opened channel associated with this handle.
+     */
+    private AllocatorAwareRepositoryChannel _channel;
+
+    /**
+     * Reference count of client's on open channel.
+     */
+    private int refCount;
 
     WriteHandleImpl(ReplicaRepository repository,
                     Allocator allocator,
@@ -100,7 +106,6 @@ class WriteHandleImpl implements ReplicaDescriptor
         _targetState = checkNotNull(targetState);
         _stickyRecords = checkNotNull(stickyRecords);
         _state = HandleState.OPEN;
-        _allocated = 0;
 
         checkState(_initialState != ReplicaState.FROM_CLIENT || _fileAttributes.isDefined(EnumSet.of(RETENTION_POLICY, ACCESS_LATENCY)));
         checkState(_initialState == ReplicaState.FROM_CLIENT || _fileAttributes.isDefined(SIZE));
@@ -109,159 +114,50 @@ class WriteHandleImpl implements ReplicaDescriptor
     private synchronized void setState(HandleState state)
     {
         _state = state;
-        if (state != HandleState.OPEN && _allocationThread != null) {
-            _allocationThread.interrupt();
-        }
-    }
-
-    private synchronized boolean isOpen()
-    {
-        return _state == HandleState.OPEN;
     }
 
     @Override
-    public RepositoryChannel createChannel() throws IOException {
-        return _entry.openChannel(FileStore.O_RW);
-    }
+    public synchronized RepositoryChannel createChannel() throws IOException {
 
-    /**
-     * Sets the allocation thread to the calling thread. Blocks if
-     * allocation thread is already set.
-     *
-     * @throws InterruptedException if thread is interrupted
-     * @throws IllegalStateException if handle is closed
-     */
-    private synchronized void setAllocationThread()
-        throws InterruptedException,
-               IllegalStateException
-    {
-        while (_allocationThread != null) {
-            wait();
-        }
-
-        if (!isOpen()) {
+        if (_state == HandleState.CLOSED) {
             throw new IllegalStateException("Handle is closed");
         }
 
-        _allocationThread = Thread.currentThread();
-    }
-
-    /**
-     * Clears the allocation thread field.
-     */
-    private synchronized void clearAllocationThread()
-    {
-        _allocationThread = null;
-        notifyAll();
-    }
-
-    /**
-     * Allocate space and block until space becomes available.
-     *
-     * @param size in bytes
-     * @throws InterruptedException if thread is interrupted
-     * @throws IllegalStateException if handle is closed
-     * @throws IllegalArgumentException
-     *             if <i>size</i> &lt; 0
-     */
-    @Override
-    public void allocate(long size)
-        throws IllegalStateException, IllegalArgumentException, InterruptedException
-    {
-        if (size < 0) {
-            throw new IllegalArgumentException("Size is negative");
+        if (_channel == null) {
+            _channel = new AllocatorAwareRepositoryChannel(_entry.openChannel(FileStore.O_RW), _allocator);
         }
 
-        setAllocationThread();
-        try {
-            _allocator.allocate(size);
-        } catch (InterruptedException e) {
-            if (!isOpen()) {
-                throw new IllegalStateException("Handle is closed");
+        refCount ++;
+        return new ForwardingRepositoryChannel() {
+
+            final RepositoryChannel channel = _channel;
+
+            @Override
+            protected RepositoryChannel delegate() {
+                // REVISIT
+                return channel;
             }
-            throw e;
-        } finally {
-            clearAllocationThread();
-        }
 
-        synchronized (this) {
-            _allocated += size;
-        }
-    }
-
-    /**
-     * Allocate space if available. A non blocking version of {@link Allocator#allocate(long)}
-     *
-     * @param size in bytes
-     * @throws InterruptedException if thread is interrupted
-     * @throws IllegalStateException if handle is closed
-     * @throws IllegalArgumentException if <i>size</i> &lt; 0
-     * @return true if and only if the request space was allocated
-     */
-    @Override
-    public boolean allocateNow(long size)
-            throws IllegalStateException, IllegalArgumentException, InterruptedException {
-        if (size < 0) {
-            throw new IllegalArgumentException("Size is negative");
-        }
-
-        boolean isAllocated;
-        setAllocationThread();
-        try {
-            isAllocated = _allocator.allocateNow(size);
-        } catch (InterruptedException e) {
-            if (!isOpen()) {
-                throw new IllegalStateException("Handle is closed");
+            @Override
+            public boolean isOpen() {
+                synchronized(WriteHandleImpl.this) {
+                    // is it a new channel and if not, is it still open?
+                    return channel.equals(_channel) && _channel.isOpen();
+                }
             }
-            throw e;
-        } finally {
-            clearAllocationThread();
-        }
 
-        if (isAllocated) {
-            synchronized (this) {
-                _allocated += size;
+            @Override
+            public void close() throws IOException {
+                synchronized(WriteHandleImpl.this) {
+                    checkState(_channel != null);
+                    refCount--;
+                    if (refCount == 0) {
+                        _channel.close();
+                        _channel = null;
+                    }
+                }
             }
-        }
-        return  isAllocated;
-    }
-
-    /**
-     * Freeing space through a write handle is not supported. This
-     * method always throws IllegalStateException.
-     */
-    @Override
-    public void free(long size)
-        throws IllegalStateException
-    {
-        throw new IllegalStateException("Space cannot be freed through a write handle");
-    }
-
-    /**
-     * Adjust space reservation. Will log an error in case of under
-     * allocation.
-     */
-    private synchronized void adjustReservation(long length)
-        throws InterruptedException
-    {
-        try {
-            if (_allocated < length) {
-                _log.error("Under allocation detected. This is a bug. Please report it.");
-                _allocator.allocate(length - _allocated);
-            } else if (_allocated > length) {
-                _allocator.free(_allocated - length);
-            }
-            _allocated = length;
-        } catch (InterruptedException e) {
-            /* Space allocation is broken now. The entry size
-             * matches up with what was actually allocated,
-             * however the file on disk is too large.
-             *
-             * Should only happen during shutdown, so no harm done.
-             */
-            _log.warn("Failed to adjust space reservation because the operation was interrupted. The pool is now over allocated.");
-            throw e;
-        }
+        };
     }
 
     private void registerFileAttributesInNameSpace()
@@ -305,7 +201,6 @@ class WriteHandleImpl implements ReplicaDescriptor
             _entry.setLastAccessTime((_atime == null) ? System.currentTimeMillis() : _atime);
 
             long length = _entry.getReplicaSize();
-            adjustReservation(length);
             verifyFileSize(length);
             _fileAttributes.setSize(length);
 
@@ -352,12 +247,6 @@ class WriteHandleImpl implements ReplicaDescriptor
      */
     private synchronized void fail()
     {
-        long length = _entry.getReplicaSize();
-        try {
-            adjustReservation(length);
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-        }
 
         /* Files from tape or from another pool are deleted in case of
          * errors.
@@ -370,6 +259,7 @@ class WriteHandleImpl implements ReplicaDescriptor
         /* If nothing was uploaded, we delete the replica and leave the name space
          * entry it is virgin state.
          */
+        long length = _entry.getReplicaSize();
         if (length == 0) {
             _targetState = ReplicaState.REMOVED;
         }
@@ -495,5 +385,10 @@ class WriteHandleImpl implements ReplicaDescriptor
     public long getReplicaSize()
     {
         return _entry.getReplicaSize();
+    }
+
+    @Override
+    public Allocator getAllocator() {
+        return _allocator;
     }
 }

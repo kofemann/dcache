@@ -362,7 +362,7 @@ public class ReplicaRepository
     public Allocator getAllocator() {
         _stateLock.readLock().lock();
         try {
-            checkUninitialized();
+            checkInitialized();
             return _allocator;
         } finally {
             _stateLock.readLock().unlock();

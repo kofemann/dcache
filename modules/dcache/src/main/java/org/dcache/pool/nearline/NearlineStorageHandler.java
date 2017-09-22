@@ -1067,7 +1067,7 @@ public class NearlineStorageHandler
             if (allocationFuture == null) {
                 allocationFuture = register(executor.submit(
                         () -> {
-                            descriptor.allocate(descriptor.getFileAttributes().getSize());
+                            repository.getAllocator().allocate(descriptor.getFileAttributes().getSize());
                             return null;
                         }
                 ));
