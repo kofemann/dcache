@@ -24,7 +24,6 @@ import diskCacheV111.util.TimeoutCacheException;
 import diskCacheV111.vehicles.PnfsMapPathMessage;
 import diskCacheV111.vehicles.RestoreHandlerInfo;
 import diskCacheV111.vehicles.StorageInfo;
-import diskCacheV111.vehicles.hsmControl.HsmControlGetBfDetailsMsg;
 
 import dmg.cells.nucleus.CellCommandListener;
 import dmg.cells.nucleus.CellEndpoint;
@@ -99,7 +98,6 @@ public class HttpPoolMgrEngineV3 implements
     private long        _requestCounter;
     private final Object      _updateLock      = new Object();
     private boolean     _addStorageInfo;
-    private boolean     _addHsmInfo;
     private String[]    _siDetails;
     private String      _cssFile         = "/poolInfo/css/default.css";
     private Map<String, Object> _context;
@@ -117,9 +115,6 @@ public class HttpPoolMgrEngineV3 implements
             if (argsString[i].equals("addStorageInfo")) {
                 _addStorageInfo = true;
                 _log.info("Option accepted : addStorageInfo");
-            } else if (argsString[i].equals("addHsmInfo")) {
-                _addHsmInfo = true;
-                _log.info("Option accepted : addHsmInfo");
             } else if (argsString[i].startsWith("details=")) {
                 _log.info("Details for lazy restore : {}", argsString[i]);
                 decodeDetails(argsString[i]);
@@ -213,7 +208,6 @@ public class HttpPoolMgrEngineV3 implements
         pw.println("     Error Counter : "+_errorCounter);
         pw.println("  Collector Update : "+(_collectorUpdate/1000L)+" seconds");
         pw.println("    addStorageInfo : "+_addStorageInfo);
-        pw.println("        addHsmInfo : "+_addHsmInfo);
     }
 
     public static final String hh_set_update = "[<updateTime/sec>]";
@@ -281,13 +275,6 @@ public class HttpPoolMgrEngineV3 implements
                         }
                         if (fileAttributes != null) {
                             StorageInfo storageInfo = fileAttributes.getStorageInfo();
-                            if (_addHsmInfo) {
-                                StorageInfo si = getHsmInfoByStorageInfo(pnfsId,storageInfo);
-                                if (si != null) {
-                                    storageInfo = si;
-                                    fileAttributes.setStorageInfo(si);
-                                }
-                            }
                             if (_siDetails != null) { // allows to select items
                                 if (fileAttributes.isDefined(FileAttribute.SIZE)) {
                                     storageInfo.setKey("size", String.valueOf(fileAttributes.getSize()));
@@ -310,18 +297,6 @@ public class HttpPoolMgrEngineV3 implements
             }
         }
         _lazyRestoreList = agedList;
-    }
-
-    private StorageInfo getHsmInfoByStorageInfo(String pnfsId, StorageInfo storageInfo)
-    {
-        try {
-            HsmControlGetBfDetailsMsg msg =
-                new HsmControlGetBfDetailsMsg(new PnfsId(pnfsId),storageInfo,"default");
-            return _hsmController.sendAndWait(msg).getStorageInfo();
-        } catch (InterruptedException | CacheException | NoRouteToCellException e) {
-            _log.warn(e.toString(), e);
-            return null;
-        }
     }
 
     private String getPathByPnfsId(String pnfsId)
