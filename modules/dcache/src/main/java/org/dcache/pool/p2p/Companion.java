@@ -1,6 +1,7 @@
 package org.dcache.pool.p2p;
 
-import com.google.common.io.ByteStreams;
+import com.google.common.base.Strings;
+import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import org.apache.http.HttpEntity;
@@ -18,7 +19,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.EOFException;
+import java.io.InputStream;
+import java.io.InterruptedIOException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.SyncFailedException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -29,11 +33,12 @@ import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.stream.Collectors;
 
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.CacheFileAvailable;
@@ -86,7 +91,7 @@ class Companion
     private static final Logger _log = LoggerFactory.getLogger(Companion.class);
 
     private static final long PING_PERIOD = TimeUnit.MINUTES.toMillis(5);
-    private static final int BUFFER_SIZE = KiB.toBytes(64);
+    private static final int BUFFER_SIZE = KiB.toBytes(256);
     private static final String PROTOCOL_INFO_NAME = "Http";
     private static final int PROTOCOL_INFO_MAJOR_VERSION = 1;
     private static final int PROTOCOL_INFO_MINOR_VERSION = 1;
@@ -107,6 +112,7 @@ class Companion
     private final List<StickyRecord> _stickyRecords;
     private final CacheFileAvailable _callback;
     private final ScheduledExecutorService _executor;
+    private final ExecutorService _transferExecutor;
     private final CellStub _pnfs;
     private final CellStub _pool;
     private final boolean _forceSourceMode;
@@ -158,6 +164,7 @@ class Companion
      * @param atime       Last access time for the new replica
      */
     Companion(ScheduledExecutorService executor,
+              ExecutorService transferExecutor,
               InetAddress address,
               Repository repository,
               ChecksumModule checksumModule,
@@ -176,6 +183,7 @@ class Companion
         _fsm = new CompanionContext(this);
 
         _executor = executor;
+        _transferExecutor = transferExecutor;
         _address = address;
         _repository = repository;
         _checksumModule = checksumModule;
@@ -349,7 +357,7 @@ class Companion
                     throw new EOFException("Received file does not match expected file size.");
                 }
 
-                ByteStreams.copy(entity.getContent(), Channels.newOutputStream(checksumChannel));
+                pooledCopy(entity.getContent(), Channels.newOutputStream(checksumChannel), BUFFER_SIZE);
 
                 try {
                     checksumChannel.sync();
@@ -673,5 +681,46 @@ class Companion
                 ueh.uncaughtException( thisThread, e);
             }
         }
+    }
+
+    /**
+     * Copy data from input stream to output stream by chunks. Each
+     * IO request is executed in a dedicated thread.
+     * @param from IO stream to read from.
+     * @param to IO stream to write.
+     * @param bufsize size of IO buffer to use.
+     * @return number of transferred bytes.
+     * @throws IOException
+     */
+    private long pooledCopy(final InputStream from, final OutputStream to, int bufsize) throws IOException {
+        checkNotNull(from);
+        checkNotNull(to);
+        byte[] buf = new byte[bufsize];
+        long total = 0;
+
+        while (true) {
+            try {
+                Integer n = _transferExecutor.submit(() -> {
+                    int r = from.read(buf);
+                    if (r != -1) {
+                        to.write(buf, 0, r);
+                    }
+                    return r;
+                }).get();
+
+                if (n == -1) {
+                    break;
+                }
+                total += n;
+            } catch (InterruptedException e) {
+                throw new InterruptedIOException(e.getMessage());
+            } catch (ExecutionException e) {
+                Throwable t = Throwables.getRootCause(e);
+                Throwables.throwIfInstanceOf(t, IOException.class);
+                throw new IOException("Transfer failed: " + Strings.nullToEmpty(t.getMessage()), t);
+            }
+        }
+
+        return total;
     }
 }

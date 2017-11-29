@@ -26,6 +26,7 @@ import dmg.cells.nucleus.CellMessageReceiver;
 import dmg.cells.nucleus.CellSetupProvider;
 import dmg.util.command.Argument;
 import dmg.util.command.Command;
+import java.util.concurrent.ExecutorService;
 import org.dcache.cells.CellStub;
 import org.dcache.pool.PoolDataBeanProvider;
 import org.dcache.pool.classic.ChecksumModule;
@@ -44,6 +45,7 @@ public class P2PClient
 {
     private final Map<Integer, Companion> _companions = new HashMap<>();
     private ScheduledExecutorService _executor;
+    private ExecutorService _transferExecutor;
     private Repository _repository;
     private ChecksumModule _checksumModule;
 
@@ -54,6 +56,10 @@ public class P2PClient
     public synchronized void setExecutor(ScheduledExecutorService executor)
     {
         _executor = executor;
+    }
+
+    public synchronized void setTransferExecutor(ExecutorService executor) {
+        _transferExecutor = executor;
     }
 
     public synchronized void setRepository(Repository repository)
@@ -233,7 +239,7 @@ public class P2PClient
         Callback cb = new Callback(callback);
 
         Companion companion =
-            new Companion(_executor, _interface, _repository,
+            new Companion(_executor, _transferExecutor, _interface, _repository,
                           _checksumModule,
                           _pnfs, _pool,
                           fileAttributes,

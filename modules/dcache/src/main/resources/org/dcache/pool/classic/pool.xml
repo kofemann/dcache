@@ -265,6 +265,18 @@
       </constructor-arg>
   </bean>
 
+  <bean id="transferThreadPool"
+        class="org.dcache.util.CDCExecutorServiceDecorator">
+      <description>Thread pool for transfer requests</description>
+      <constructor-arg>
+          <bean class="java.util.concurrent.Executors"
+                factory-method="newFixedThreadPool"
+                destroy-method="shutdown">
+              <constructor-arg value="#{ T(java.lang.Runtime).getRuntime().availableProcessors() }"/>
+          </bean>
+      </constructor-arg>
+  </bean>
+
   <bean id="pinManagerStub" class="org.dcache.cells.CellStub">
     <description>Pin manager cell stub</description>
       <property name="destination" value="${pool.service.pinmanager}"/>
@@ -281,6 +293,7 @@
     <property name="pnfs" ref="pnfsStub"/>
     <property name="pool" ref="poolStub"/>
     <property name="executor" ref="workerThreadPool"/>
+    <property name="transferExecutor" ref="transferThreadPool" />
   </bean>
 
   <bean id="migration" class="org.dcache.pool.migration.MigrationModule"
