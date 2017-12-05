@@ -146,6 +146,7 @@ public class JdbcFs implements FileSystemProvider {
     protected final Cache<Long, String> _idCache =
             CacheBuilder.newBuilder()
                     .maximumSize(100000)
+                    .expireAfterWrite(1, TimeUnit.SECONDS)
                     .build();
 
     /**
