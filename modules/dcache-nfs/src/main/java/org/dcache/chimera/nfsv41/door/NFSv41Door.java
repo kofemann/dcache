@@ -437,8 +437,7 @@ public class NFSv41Door extends AbstractCellComponent implements
         InetSocketAddress[] usableAddresses = Stream.of(ds.getDeviceAddr())
                 .filter(a -> !a.getAddress().isLoopbackAddress() || clientAddress.isLoopbackAddress())
                 .filter(a -> !a.getAddress().isLinkLocalAddress() || clientAddress.isLinkLocalAddress())
-                .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
-                .toArray(size -> new InetSocketAddress[size]);
+                .toArray(InetSocketAddress[]::new);
 
         return layoutDriver.getDeviceAddress(usableAddresses);
     }
