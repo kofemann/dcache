@@ -523,6 +523,7 @@ public class NFSv41Door extends AbstractCellComponent implements
                 .filter(a -> !a.getAddress().isLoopbackAddress() || clientAddress.isLoopbackAddress())
                 .filter(a -> !a.getAddress().isLinkLocalAddress() || clientAddress.isLinkLocalAddress())
                 .filter(a -> !a.getAddress().isSiteLocalAddress() || clientAddress.isSiteLocalAddress())
+                .filter(a -> clientAddress.getAddress().length >= a.getAddress().getAddress().length)
                 .toArray(size -> new InetSocketAddress[size]);
 
         return layoutDriver.getDeviceAddress(usableAddresses);
