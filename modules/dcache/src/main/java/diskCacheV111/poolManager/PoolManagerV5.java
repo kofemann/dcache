@@ -77,6 +77,7 @@ import org.dcache.util.Version;
 import org.dcache.vehicles.FileAttributes;
 
 import static java.util.stream.Collectors.toList;
+import org.dcache.poolmanager.RequestContainer;
 
 public class PoolManagerV5
     implements CellCommandListener, CellMessageReceiver, CellLifeCycleAware, CellInfoProvider, CellArgsAware
@@ -97,7 +98,7 @@ public class PoolManagerV5
     private CellStub _poolMonitorTopic;
     private PnfsHandler _pnfsHandler;
 
-    private RequestContainerV5 _requestContainer ;
+    private RequestContainer _requestContainer;
     private WatchdogThread     _watchdog;
     private PoolMonitorThread _poolMonitorThread;
 
@@ -142,8 +143,7 @@ public class PoolManagerV5
     }
 
     @Required
-    public void setRequestContainer(RequestContainerV5 requestContainer)
-    {
+    public void setRequestContainer(RequestContainer requestContainer)    {
         _requestContainer = requestContainer;
     }
 

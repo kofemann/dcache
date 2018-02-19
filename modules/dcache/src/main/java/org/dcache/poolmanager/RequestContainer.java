@@ -34,10 +34,14 @@ import diskCacheV111.vehicles.PoolMgrSelectReadPoolMsg;
 import diskCacheV111.vehicles.PoolStatusChangedMessage;
 import diskCacheV111.vehicles.RestoreHandlerInfo;
 import dmg.cells.nucleus.AbstractCellComponent;
+import dmg.cells.nucleus.CellCommandListener;
 import dmg.cells.nucleus.CellEndpoint;
 import dmg.cells.nucleus.CellMessage;
 import dmg.cells.nucleus.CellMessageReceiver;
 import dmg.cells.nucleus.CellPath;
+import dmg.util.command.Argument;
+import dmg.util.command.Command;
+import dmg.util.command.Option;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
@@ -45,6 +49,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -59,7 +64,7 @@ import static org.dcache.poolmanager.SelectPoolRequest.State.*;
 /**
  *
  */
-public class RequestContainer extends AbstractCellComponent implements CellMessageReceiver {
+public class RequestContainer extends AbstractCellComponent implements CellMessageReceiver, CellCommandListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RequestContainer.class);
 
@@ -217,4 +222,23 @@ public class RequestContainer extends AbstractCellComponent implements CellMessa
         this.sendHitInfo = sendHitInfo;
     }
 
+    @Command(name = "rc ls")
+    public class RcLsCommand implements Callable<String> {
+
+        @Argument(required = false)
+        String args;
+
+        @Option(name = "l")
+        boolean longFormat;
+
+        @Override
+        public String call() throws Exception {
+            synchronized(waitingRequests) {
+                return waitingRequests.values().stream()
+                        .map(String::valueOf)
+                        .collect(Collectors.joining("\n"))
+                        .toString();
+            }
+        }
+    }
 }

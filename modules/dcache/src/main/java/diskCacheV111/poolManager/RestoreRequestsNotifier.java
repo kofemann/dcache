@@ -69,6 +69,7 @@ import dmg.cells.nucleus.CellLifeCycleAware;
 
 import org.dcache.cells.CellStub;
 import org.dcache.poolmanager.PoolManagerGetRestoreHandlerInfo;
+import org.dcache.poolmanager.RequestContainer;
 import org.dcache.util.FireAndForgetTask;
 
 /**
@@ -80,7 +81,7 @@ public final class RestoreRequestsNotifier implements Runnable,
     private long     timeout     = 1;
     private TimeUnit timeoutUnit = TimeUnit.MINUTES;
 
-    private RequestContainerV5       requestContainer;
+    private RequestContainer requestContainer;
     private ScheduledExecutorService executorService;
     private CellStub                 restoreRequests;
     private CellAddressCore          address;
@@ -115,8 +116,7 @@ public final class RestoreRequestsNotifier implements Runnable,
     }
 
     @Required
-    public void setRequestContainer(
-                    RequestContainerV5 requestContainer) {
+    public void setRequestContainer(RequestContainer requestContainer) {
         this.requestContainer = requestContainer;
     }
 

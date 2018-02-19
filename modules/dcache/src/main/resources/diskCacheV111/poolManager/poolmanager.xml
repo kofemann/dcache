@@ -101,10 +101,10 @@
       </constructor-arg>
   </bean>
 
-  <bean id="rc" class="diskCacheV111.poolManager.RequestContainerV5"
+  <bean id="rc" class="org.dcache.poolmanager.RequestContainer"
         init-method="start" destroy-method="shutdown">
     <description>Request container</description>
-    <property name="poolSelectionUnit" ref="psu"/>
+    <!--  <property name="poolSelectionUnit" ref="psu"/> -->
     <property name="poolMonitor" ref="poolMonitor"/>
     <property name="partitionManager" ref="pm"/>
     <property name="executor" ref="rc-pool"/>
@@ -114,6 +114,8 @@
     <property name="billing" ref="billing-stub"/>
     <property name="poolStub" ref="pool-stub"/>
   </bean>
+
+  <bean id="rc-cli" class="org.dcache.poolmanager.RequestContainerCli"/>
 
   <bean id="rc-request-notifier" class="diskCacheV111.poolManager.RestoreRequestsNotifier">
     <description>Publishes restore request listings to the request topic.</description>
