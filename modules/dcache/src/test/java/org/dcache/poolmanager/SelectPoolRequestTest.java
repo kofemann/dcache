@@ -187,7 +187,7 @@ public class SelectPoolRequestTest {
 
         given(selectedPool.name()).willReturn("hsm-pool-A");
         given(selectedPool.address()).willReturn(new CellAddressCore("hsm-pool-A"));
-        given(poolSelector.selectStagePool(any(), any())).willReturn(selectedPool);
+        given(poolSelector.selectStagePool(any())).willReturn(selectedPool);
 
         afterExecution();
         assertEquals(NEED_STAGE, request.getState());

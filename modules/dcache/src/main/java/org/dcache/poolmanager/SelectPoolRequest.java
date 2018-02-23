@@ -31,6 +31,7 @@ import dmg.cells.nucleus.CellMessage;
 import dmg.cells.nucleus.CellPath;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import javax.annotation.concurrent.GuardedBy;
@@ -176,9 +177,7 @@ public class SelectPoolRequest implements Runnable {
                 break;
             case NEED_STAGE:
                 try {
-                    String previousPool;
-                    String previousHost;
-                    SelectedPool pool = poolSelector.selectStagePool(identity, identity);
+                    SelectedPool pool = poolSelector.selectStagePool(Optional.of((SelectedPool)payload));
                     //  remember what we did last time
                     payload = pool;
                     state = State.WAITING;
