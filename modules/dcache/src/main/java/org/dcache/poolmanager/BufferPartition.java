@@ -27,7 +27,6 @@ import diskCacheV111.poolManager.CostModule;
 import diskCacheV111.pools.PoolCostInfo;
 import diskCacheV111.util.CacheException;
 
-import org.dcache.pool.assumption.AvailableSpaceAssumption;
 import org.dcache.vehicles.FileAttributes;
 
 /**
@@ -134,7 +133,7 @@ public class BufferPartition extends Partition
 
         for (int i = 0; i < available.length; i++) {
             if (threshold < available[i]) {
-                return new SelectedPool(pools.get(i), new AvailableSpaceAssumption(preallocated));
+                return new SelectedPool(pools.get(i));
             }
         }
 

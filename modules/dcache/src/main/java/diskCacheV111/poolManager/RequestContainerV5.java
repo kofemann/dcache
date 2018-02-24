@@ -1102,7 +1102,6 @@ public class RequestContainerV5
                 if (_currentRc == 0) {
                     rpm.setPoolName(_poolCandidate.name());
                     rpm.setPoolAddress(_poolCandidate.info().getAddress());
-                    rpm.setAssumption(_poolCandidate.assumption());
                     rpm.setSucceeded();
                 } else {
                     rpm.setFailed(_currentRc, _currentRm);

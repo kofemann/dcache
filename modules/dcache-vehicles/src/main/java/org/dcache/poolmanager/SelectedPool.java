@@ -21,43 +21,24 @@ package org.dcache.poolmanager;
 
 import dmg.cells.nucleus.CellAddressCore;
 
-import org.dcache.pool.assumption.Assumption;
-import org.dcache.pool.assumption.Assumptions;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 /**
  * Result of a pool selection.
  *
- * Encapsulates information about the pool and the assumptions under which
- * the pool was selected.
  */
 public class SelectedPool
 {
     private final PoolInfo info;
 
-    private final Assumption assumption;
-
     public SelectedPool(PoolInfo info)
     {
         this.info = checkNotNull(info);
-        this.assumption = Assumptions.none();
-    }
-
-    public SelectedPool(PoolInfo info, Assumption assumption)
-    {
-        this.info = checkNotNull(info);
-        this.assumption = checkNotNull(assumption);
     }
 
     public PoolInfo info()
     {
         return info;
-    }
-
-    public Assumption assumption()
-    {
-        return assumption;
     }
 
     public String name()

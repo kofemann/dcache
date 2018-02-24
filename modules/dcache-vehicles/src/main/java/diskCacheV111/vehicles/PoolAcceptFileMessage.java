@@ -2,7 +2,6 @@ package diskCacheV111.vehicles;
 
 import java.util.EnumSet;
 
-import org.dcache.pool.assumption.Assumption;
 import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -17,21 +16,16 @@ public class PoolAcceptFileMessage extends PoolIoFileMessage
     private final long _preallocated;
 
     public PoolAcceptFileMessage(String pool,
-                                 ProtocolInfo protocolInfo,
-                                 FileAttributes fileAttributes,
-                                 Assumption assumption)
-    {
-        this(pool, protocolInfo, fileAttributes, assumption,
-             fileAttributes.isDefined(SIZE) ? fileAttributes.getSize() : 0);
+            ProtocolInfo protocolInfo, FileAttributes fileAttributes) {
+        this(pool, protocolInfo, fileAttributes,
+                fileAttributes.isDefined(SIZE) ? fileAttributes.getSize() : 0);
     }
 
     public PoolAcceptFileMessage(String pool,
                                  ProtocolInfo protocolInfo,
-                                 FileAttributes fileAttributes,
-                                 Assumption assumption,
-                                 long preallocated)
+            FileAttributes fileAttributes,                                 long preallocated)
     {
-        super(pool, protocolInfo, fileAttributes, assumption);
+        super(pool, protocolInfo, fileAttributes);
         checkArgument(fileAttributes.isDefined(
                 EnumSet.of(ACCESS_LATENCY, RETENTION_POLICY)));
         _preallocated = preallocated;

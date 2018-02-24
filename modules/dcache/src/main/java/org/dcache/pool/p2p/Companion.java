@@ -54,7 +54,6 @@ import dmg.cells.nucleus.NoRouteToCellException;
 import org.dcache.cells.AbstractMessageCallback;
 import org.dcache.cells.CellStub;
 import org.dcache.namespace.FileAttribute;
-import org.dcache.pool.assumption.Assumptions;
 import org.dcache.pool.classic.ChecksumModule;
 import org.dcache.pool.movers.ChecksumChannel;
 import org.dcache.pool.repository.ReplicaState;
@@ -466,8 +465,7 @@ class Companion
             PoolDeliverFileMessage request =
                     new PoolDeliverFileMessage(_sourcePoolName,
                                                protocolInfo,
-                                               _fileAttributes,
-                                               Assumptions.none());
+                            _fileAttributes);
             request.setPool2Pool();
             request.setInitiator(getInitiator());
             request.setId(_id);

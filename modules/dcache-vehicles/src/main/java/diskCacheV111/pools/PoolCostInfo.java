@@ -8,8 +8,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import org.dcache.pool.assumption.Assumption;
-
 import static com.google.common.base.Preconditions.checkNotNull;
 
 public class PoolCostInfo implements Serializable
@@ -42,8 +40,7 @@ public class PoolCostInfo implements Serializable
         _extendedMoverHash = new HashMap<>();
     }
 
-    public PoolCostInfo(String defaultQueue, Assumption.Pool info)
-    {
+    public PoolCostInfo(String defaultQueue, PoolInfo info) {
         _poolName = info.name();
         _defaultQueueName = checkNotNull(defaultQueue);
         _space = info.space();

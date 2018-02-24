@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2015 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2015 - 2018 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,7 +20,6 @@ package diskCacheV111.vehicles;
 import diskCacheV111.util.PnfsId;
 
 import org.dcache.auth.attributes.Restriction;
-import org.dcache.pool.assumption.Assumptions;
 
 /**
  * A request that the {@literal dir} cell list information about the specified
@@ -33,7 +32,7 @@ public class DirRequestMessage extends PoolIoFileMessage
     private final Restriction _restriction;
 
     public DirRequestMessage(String pool, PnfsId pnfsId, ProtocolInfo info, Restriction restriction) {
-        super(pool, pnfsId, info, Assumptions.none());
+        super(pool, pnfsId, info);
         _restriction = restriction;
     }
 

@@ -12,10 +12,6 @@ import diskCacheV111.util.DestinationCostException;
 import diskCacheV111.util.PermissionDeniedCacheException;
 import diskCacheV111.util.SourceCostException;
 
-import org.dcache.pool.assumption.Assumption;
-import org.dcache.pool.assumption.Assumptions;
-import org.dcache.pool.assumption.AvailableSpaceAssumption;
-import org.dcache.pool.assumption.PerformanceCostAssumption;
 import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -78,7 +74,7 @@ public class WassPartition extends ClassicPartition
         if (pool == null) {
             throw new CostException("All pools are full", null, _fallbackOnSpace, false);
         }
-        return new SelectedPool(pool, new AvailableSpaceAssumption(preallocated));
+        return new SelectedPool(pool);
     }
 
     /* REVISIT: The current implementation is a mix of the read pool
@@ -136,12 +132,6 @@ public class WassPartition extends ClassicPartition
         }
 
         long filesize = attributes.getSize();
-        Assumption sourceAssumption = force ? Assumptions.none() : PerformanceCostAssumption.of(_error, _alertCostCut);
-        Assumption destinationAssumption = force
-                                           ? new AvailableSpaceAssumption(filesize)
-                                           : new AvailableSpaceAssumption(filesize).and(PerformanceCostAssumption.of(
-                _error, maxTargetCost));
-
         if (_allowSameHostCopy != SameHost.NOTCHECKED) {
             /* Loop over all sources and find the most appropriate
              * destination such that same host constraints are
@@ -158,8 +148,7 @@ public class WassPartition extends ClassicPartition
                 PoolInfo destination =
                         wass.selectByAvailableSpace(destinations, filesize, PoolInfo::getCostInfo);
                 if (destination != null) {
-                    return new P2pPair(new SelectedPool(source.pool, sourceAssumption),
-                                       new SelectedPool(destination, destinationAssumption));
+                    return new P2pPair(new SelectedPool(source.pool), new SelectedPool(destination));
                 }
             }
 
@@ -174,8 +163,7 @@ public class WassPartition extends ClassicPartition
         if (destination == null) {
             throw new DestinationCostException("All pools are full");
         }
-        return new P2pPair(new SelectedPool(sources.get(0).pool, sourceAssumption),
-                           new SelectedPool(destination, destinationAssumption));
+        return new P2pPair(new SelectedPool(sources.get(0).pool), new SelectedPool(destination));
     }
 
     private PoolInfo selectByPrevious(List<PoolInfo> pools,
@@ -227,7 +215,7 @@ public class WassPartition extends ClassicPartition
             PoolInfo pool =
                 selectByPrevious(filtered, previousPool, previousHost, attributes);
             if (pool != null) {
-                return new SelectedPool(pool, PerformanceCostAssumption.of(_error, _fallbackCostCut));
+                return new SelectedPool(pool);
             }
 
             /* Didn't find a pool. Redo the selection from the full

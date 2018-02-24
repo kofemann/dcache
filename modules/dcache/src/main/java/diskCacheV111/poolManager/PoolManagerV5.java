@@ -824,7 +824,6 @@ public class PoolManagerV5
         {
             _request.setPoolName(pool.name());
             _request.setPoolAddress(pool.address());
-            _request.setAssumption(pool.assumption());
             _request.setSucceeded();
             reply(_request);
         }

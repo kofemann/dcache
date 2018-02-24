@@ -101,7 +101,6 @@ import org.dcache.cells.MessageReply;
 import org.dcache.pool.FaultEvent;
 import org.dcache.pool.FaultListener;
 import org.dcache.pool.PoolDataBeanProvider;
-import org.dcache.pool.assumption.Assumption;
 import org.dcache.pool.json.PoolDataDetails;
 import org.dcache.pool.json.PoolDataDetails.Duplicates;
 import org.dcache.pool.json.PoolDataDetails.Lsf;
@@ -132,6 +131,7 @@ import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.stream.Collectors.toList;
 import static org.dcache.namespace.FileAttribute.CHECKSUM;
+import diskCacheV111.pools.PoolInfo;
 
 public class PoolV4
     extends AbstractCellComponent
@@ -210,7 +210,7 @@ public class PoolV4
     private double _moverCostFactor = 0.5;
     private TransferServices _transferServices;
 
-    private final Assumption.Pool _poolInfo = new PoolInfo();
+    private final PoolInfoImpl _poolInfo = new PoolInfoImpl();
 
     private final RateLimiter _pingLimiter = RateLimiter.create(100);
 
@@ -798,8 +798,6 @@ public class PoolV4
 
     private int queueIoRequest(CellMessage envelope, PoolIoFileMessage message) throws CacheException
     {
-        message.getAssumption().check(_poolInfo);
-
         String queueName = message.getIoQueueName();
         String doorUniqueId = envelope.getSourceAddress().toString() + message.getId();
 
@@ -1970,8 +1968,8 @@ public class PoolV4
     /**
      * Provides access to various performance metrics of the pool.
      */
-    private class PoolInfo implements Assumption.Pool
-    {
+    public class PoolInfoImpl implements PoolInfo {
+
         @Override
         public String name()
         {
@@ -1983,7 +1981,7 @@ public class PoolV4
         {
             SpaceRecord space = _repository.getSpaceRecord();
             return new PoolCostInfo.PoolSpaceInfo(space.getTotalSpace(), space.getFreeSpace(), space.getPreciousSpace(),
-                                                  space.getRemovableSpace(), space.getLRU(), _breakEven, space.getGap());
+                    space.getRemovableSpace(), space.getLRU(), _breakEven, space.getGap());
         }
 
         @Override

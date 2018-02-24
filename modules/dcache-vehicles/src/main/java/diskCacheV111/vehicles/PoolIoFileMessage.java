@@ -4,8 +4,6 @@ import java.util.EnumSet;
 
 import diskCacheV111.util.PnfsId;
 
-import org.dcache.pool.assumption.Assumption;
-import org.dcache.pool.assumption.Assumptions;
 import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -24,15 +22,12 @@ public class PoolIoFileMessage extends PoolMessage {
     private boolean      _forceSourceMode;
     private String _pnfsPath;
     private String _transferPath;
-    private final Assumption _assumption;
 
     private static final long serialVersionUID = -6549886547049510754L;
 
     public PoolIoFileMessage(String pool ,
                              ProtocolInfo protocolInfo ,
-                             FileAttributes fileAttributes,
-                             Assumption assumption)
-    {
+            FileAttributes fileAttributes)    {
         super(pool);
 
         checkNotNull(fileAttributes);
@@ -40,24 +35,14 @@ public class PoolIoFileMessage extends PoolMessage {
 
         _fileAttributes = fileAttributes;
         _protocolInfo = protocolInfo;
-        _assumption = assumption;
     }
 
     public PoolIoFileMessage(String pool,
                              PnfsId pnfsId,
-                             ProtocolInfo protocolInfo,
-                             Assumption assumption)
-    {
+            ProtocolInfo protocolInfo)    {
         super(pool);
         _protocolInfo = protocolInfo;
         _fileAttributes = FileAttributes.ofPnfsId(pnfsId);
-        _assumption = assumption;
-    }
-
-    public Assumption getAssumption()
-    {
-        // REVISIT in 4.0: We need to check for null for backwards compatibility
-        return _assumption == null ? Assumptions.none() : _assumption;
     }
 
     public PnfsId       getPnfsId(){ return _fileAttributes.getPnfsId(); }

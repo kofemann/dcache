@@ -13,7 +13,6 @@ import diskCacheV111.pools.PoolCostInfo.PoolSpaceInfo;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.CostException;
 
-import org.dcache.pool.assumption.AvailableSpaceAssumption;
 import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -129,7 +128,7 @@ public class LruPartition extends Partition
         if (freePools.isEmpty()) {
             throw new CostException("All pools are full", null, false, false);
         }
-        return new SelectedPool(select(freePools, _lastWrite), new AvailableSpaceAssumption(preallocated));
+        return new SelectedPool(select(freePools, _lastWrite));
     }
 
     @Override

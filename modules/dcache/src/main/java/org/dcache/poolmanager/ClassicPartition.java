@@ -15,7 +15,6 @@ import diskCacheV111.util.CacheException;
 import diskCacheV111.util.CostException;
 import diskCacheV111.util.PnfsId;
 
-import org.dcache.pool.assumption.PerformanceCostAssumption;
 import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkState;
@@ -194,8 +193,7 @@ public abstract class ClassicPartition extends Partition
         }
         if (isFallbackCostExceeded || isCostCutExceeded) {
             throw new CostException("Cost limit exceeded",
-                                    new SelectedPool(bestPool, PerformanceCostAssumption.of(_error, _panicCostCut)),
-                                    isFallbackCostExceeded, isCostCutExceeded);
+                    new SelectedPool(bestPool), isFallbackCostExceeded, isCostCutExceeded);
         }
 
         /* Add an assumption of the load being lower than the second best pool while still
@@ -204,7 +202,7 @@ public abstract class ClassicPartition extends Partition
         double nextBest =
                 (best.size() > 1) ? Math.max(best.get(1).getPerformanceCost(), mcc) : Double.POSITIVE_INFINITY;
 
-        return new SelectedPool(bestPool, PerformanceCostAssumption.of(_error, _panicCostCut, _fallbackCostCut, _costCut, nextBest));
+        return new SelectedPool(bestPool);
     }
 
     /**
