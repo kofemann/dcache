@@ -133,6 +133,10 @@ public class SelectPoolRequest implements Runnable {
         this.state = newState;
     }
 
+    void setPayload(CacheException exception) {
+        payload = exception;
+    }
+
     @Override
     public void run() {
         switch (state) {
@@ -177,7 +181,7 @@ public class SelectPoolRequest implements Runnable {
                 break;
             case NEED_STAGE:
                 try {
-                    SelectedPool pool = poolSelector.selectStagePool(Optional.of((SelectedPool)payload));
+                    SelectedPool pool = poolSelector.selectStagePool(Optional.of((SelectedPool) payload));
                     //  remember what we did last time
                     payload = pool;
                     state = State.WAITING;
@@ -221,21 +225,31 @@ public class SelectPoolRequest implements Runnable {
                 break;
             case STAGE_COMPLETE:
             case P2P_COMPLETE:
-                synchronized (waitingRequests) {
-                    cellMessages.forEach((dmg.cells.nucleus.CellMessage m) -> {
-                        PoolMgrSelectReadPoolMsg reply = (PoolMgrSelectReadPoolMsg) m.getMessageObject();
-                        reply.setReply(CacheException.OUT_OF_DATE, "File location/availability is changed, retry");
-                        m.revertDirection();
-                        messageSender.sendMessage(m);
-                    });
-                }
+                cellMessages.forEach((dmg.cells.nucleus.CellMessage m) -> {
+                    PoolMgrSelectReadPoolMsg reply = (PoolMgrSelectReadPoolMsg) m.getMessageObject();
+                    reply.setReply(CacheException.OUT_OF_DATE, "File location/availability is changed, retry");
+                    m.revertDirection();
+                    messageSender.sendMessage(m);
+                });
                 state = State.DONE;
                 break;
             case WAITING:
                 // Request is out of wating queue. Start over.
                 state = State.INIT;
                 break;
+            case FAILED:
+                CacheException e = (CacheException) payload;
+                cellMessages.forEach((dmg.cells.nucleus.CellMessage m) -> {
+                    PoolMgrSelectReadPoolMsg reply = (PoolMgrSelectReadPoolMsg) m.getMessageObject();
+                    reply.setReply(e.getRc(), e);
+                    m.revertDirection();
+                    messageSender.sendMessage(m);
+                });
+
+                state = State.DONE;
+                break;
         }
+
         // post-processing: exit, resubmit or go into wating queue
         switch (state) {
             case DONE:

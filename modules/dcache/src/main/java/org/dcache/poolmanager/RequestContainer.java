@@ -60,6 +60,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static org.dcache.poolmanager.SelectPoolRequest.State.*;
+import org.dcache.util.CacheExceptionFactory;
 
 /**
  *
@@ -222,7 +223,7 @@ public class RequestContainer extends AbstractCellComponent implements CellMessa
         this.sendHitInfo = sendHitInfo;
     }
 
-    @Command(name = "rc ls")
+    @Command(name = "rc ls", description = "list reequests in WAITING state")
     public class RcLsCommand implements Callable<String> {
 
         @Argument(required = false)
@@ -239,6 +240,36 @@ public class RequestContainer extends AbstractCellComponent implements CellMessa
                         .collect(Collectors.joining("\n"))
                         .toString();
             }
+        }
+    }
+
+    @Command(name = "rc failed", description = "Fail the request and send optinal error message to the requestor")
+    public class RcFailCommand implements Callable<String> {
+
+        @Argument(required = true, index = 0)
+        String identity;
+
+        @Argument(required = false, index = 1)
+        int errorCode = 1;
+
+        @Argument(required = false, index = 2)
+        String errorMessage = "Operator Intervention";
+
+        @Override
+        public String call() throws Exception {
+
+            SelectPoolRequest r;
+            synchronized (waitingRequests) {
+                r = waitingRequests.get(identity);
+            }
+
+            if (r != null) {
+                r.setState(FAILED);
+                r.setPayload(CacheExceptionFactory.exceptionOf(errorCode, errorMessage));
+                executor.execute(r);
+            }
+
+            return "";
         }
     }
 }
