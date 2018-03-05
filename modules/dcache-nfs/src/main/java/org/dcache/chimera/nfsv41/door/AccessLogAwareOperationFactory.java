@@ -48,6 +48,8 @@ import org.dcache.nfs.v4.OperationOPEN;
 import org.dcache.nfs.v4.OperationGETATTR;
 import org.dcache.nfs.v4.OperationRENAME;
 import org.dcache.nfs.v4.OperationSETATTR;
+import org.dcache.nfs.v4.xdr.SETATTR4res;
+import org.dcache.nfs.v4.xdr.bitmap4;
 import org.dcache.nfs.v4.xdr.opentype4;
 import org.dcache.util.NetLoggerBuilder;
 import org.dcache.nfs.vfs.Inode;
@@ -65,6 +67,8 @@ public class AccessLogAwareOperationFactory extends MDSOperationFactory {
 
     private static final Logger LOG = LoggerFactory.getLogger(AccessLogAwareOperationFactory.class);
     private static final Logger ACCESS_LOGGER = LoggerFactory.getLogger("org.dcache.access.nfs");
+
+    private static final bitmap4 EMPTY_BITMASK = new bitmap4();
 
     private static final String[] TYPES = {
         null,
@@ -151,6 +155,17 @@ public class AccessLogAwareOperationFactory extends MDSOperationFactory {
 
         @Override
         public void process(CompoundContext context, nfs_resop4 result) throws ChimeraNFSException, IOException, OncRpcException {
+
+            final SETATTR4res res = result.opsetattr;
+
+           /*
+            * on either success or failure of the operation, the server will return
+            * the attrsset bitmask to represent what (if any) attributes were
+            * successfully set.
+            *
+            * Initialize with an empty bitmask, which will be replaces on success.
+            */
+            res.attrsset = EMPTY_BITMASK;
 
             Inode parent = context.currentInode();
             FsInode cInode = _vfs.inodeFromBytes(parent.getFileId());
