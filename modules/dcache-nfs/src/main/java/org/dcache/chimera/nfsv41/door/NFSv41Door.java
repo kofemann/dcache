@@ -559,7 +559,7 @@ public class NFSv41Door extends AbstractCellComponent implements
             // serialize all requests by the same stateid
             synchronized(openStateId) {
 
-                if (inode.type() != FsInodeType.INODE || inode.getLevel() != 0) {
+                if (layoutType != layouttype4.LAYOUT4_NFSV4_1_FILES || inode.type() != FsInodeType.INODE || inode.getLevel() != 0) {
                     /*
                      * all non regular files ( AKA pnfs dot files ) provided by door itself.
                      */
