@@ -17,7 +17,6 @@
 package org.dcache.chimera;
 
 import com.google.common.base.Throwables;
-import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
@@ -33,7 +32,9 @@ import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
-
+import com.hazelcast.core.HazelcastInstance;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.IMap;
 import javax.sql.DataSource;
 
 import java.io.File;
@@ -57,6 +58,7 @@ import org.dcache.chimera.store.InodeStorageInformation;
 import org.dcache.util.Checksum;
 
 import static com.google.common.base.Preconditions.checkArgument;
+import com.hazelcast.config.Config;
 import static org.dcache.acl.enums.AceFlags.*;
 import static org.dcache.chimera.FileSystemProvider.StatCacheOption.NO_STAT;
 import static org.dcache.chimera.FileSystemProvider.StatCacheOption.STAT;
@@ -133,21 +135,11 @@ public class JdbcFs implements FileSystemProvider {
                     }
             , _fsStatUpdateExecutor));
 
-    /* The PNFS ID will never point to an other inumber.
-     */
-    protected final Cache<String, Long> _inoCache =
-            CacheBuilder.newBuilder()
-                    .maximumSize(100000)
-                    .build();
+    private HazelcastInstance hz;
 
-    /* The same can point to a single PNFS ID at the time, but it can change,
-     * if file is truncated.
-     */
-    protected final Cache<Long, String> _idCache =
-            CacheBuilder.newBuilder()
-                    .maximumSize(100000)
-                    .expireAfterWrite(1, TimeUnit.SECONDS)
-                    .build();
+    protected final IMap<String, Long> _inoCache;
+
+    protected final IMap<Long, String> _idCache;
 
     /**
      * current fs id
@@ -181,6 +173,11 @@ public class JdbcFs implements FileSystemProvider {
 
         // try to get database dialect specific query engine
         _sqlDriver = FsSqlDriver.getDriverInstance(dataSource);
+
+        hz = Hazelcast.newHazelcastInstance();
+
+        _idCache = hz.getMap("inumber-to-pnfsid");
+        _inoCache = hz.getMap("pnfsid-to-inumber");
     }
 
     private FsInode getWormID() throws ChimeraFsException {
@@ -647,47 +644,47 @@ public class JdbcFs implements FileSystemProvider {
 
     @Override
     public String inode2id(FsInode inode) throws ChimeraFsException {
+        Long ino = inode.ino();
+        _idCache.lock(ino);
         try {
-            return _idCache.get(inode.ino(), () -> {
-                String id = _sqlDriver.getId(inode);
+            String id = _idCache.get(ino);
+            if (id == null) {
+                id = _sqlDriver.getId(inode);
                 if (id == null) {
                     throw new FileNotFoundHimeraFsException(String.valueOf(inode.ino()));
                 }
-                return id;
-            });
-        } catch (ExecutionException e) {
-            Throwables.throwIfInstanceOf(e.getCause(), ChimeraFsException.class);
-            Throwables.throwIfInstanceOf(e.getCause(), DataAccessException.class);
-            Throwables.throwIfUnchecked(e.getCause());
-            throw new RuntimeException(e.getCause());
+                _idCache.put(ino, id);
+            }
+            return id;
+        } finally {
+            _idCache.unlock(ino);
         }
     }
 
     @Override
     public FsInode id2inode(String id, StatCacheOption option) throws ChimeraFsException {
-        if (option == NO_STAT) {
-            try {
-                return new FsInode(this, _inoCache.get(id, () -> {
-                    Long ino = _sqlDriver.getInumber(id);
+        _inoCache.lock(id);
+        try {
+            if (option == NO_STAT) {
+                Long ino = _inoCache.get(id);
+                if (ino == null) {
+                    ino = _sqlDriver.getInumber(id);
                     if (ino == null) {
                         throw new FileNotFoundHimeraFsException(id);
                     }
-                    return ino;
-                }));
-            } catch (ExecutionException e) {
-                Throwables.throwIfInstanceOf(e.getCause(), ChimeraFsException.class);
-                Throwables.throwIfInstanceOf(e.getCause(), DataAccessException.class);
-                Throwables.throwIfUnchecked(e.getCause());
-                throw new RuntimeException(e.getCause());
+                    _inoCache.put(id, ino);
+                }
+                return new FsInode(this, ino);
+            } else {
+                Stat stat = _sqlDriver.stat(id);
+                if (stat == null) {
+                    throw new FileNotFoundHimeraFsException(id);
+                }
+                _inoCache.put(stat.getId(), stat.getIno());
+                return new FsInode(this, stat.getIno(), FsInodeType.INODE, 0, stat);
             }
-        } else {
-            Stat stat = _sqlDriver.stat(id);
-            if (stat == null) {
-                throw new FileNotFoundHimeraFsException(id);
-            }
-            _inoCache.put(stat.getId(), stat.getIno());
-            _idCache.put(stat.getIno(), stat.getId());
-            return new FsInode(this, stat.getIno(), FsInodeType.INODE, 0, stat);
+        } finally {
+            _inoCache.unlock(id);
         }
     }
 
@@ -1004,9 +1001,15 @@ public class JdbcFs implements FileSystemProvider {
 
     public void truncate(FsInode inode) throws ChimeraFsException {
         inTransaction(status -> {
-            _idCache.invalidate(inode.ino());
-            _sqlDriver.truncate(inode);
-            return null;
+            Long ino = inode.ino();
+            _idCache.lock(ino);
+            try {
+                _idCache.remove(ino);
+                _sqlDriver.truncate(inode);
+                return null;
+            } finally {
+                _idCache.unlock(ino);
+            }
         });
     }
 
@@ -1389,7 +1392,7 @@ public class JdbcFs implements FileSystemProvider {
      */
     @Override
     public void close() throws IOException {
-	// enforced by the interface
+        hz.shutdown();
     }
 
     @Override
