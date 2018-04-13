@@ -5,7 +5,18 @@
            xmlns="http://www.hazelcast.com/schema/config">
 
     <group>
-        <name>dcache-lab</name>
+        <name>desy-cloud</name>
     </group>
+
+    <map name="inumber-to-pnfsid">
+        <eviction-policy>LRU</eviction-policy>
+        <max-size policy="PER_NODE">10000</max-size>
+    </map>
+
+
+    <map name="pnfsid-to-inumber">
+        <eviction-policy>LRU</eviction-policy>
+        <max-size policy="PER_NODE">10000</max-size>
+    </map>
 
 </hazelcast>
