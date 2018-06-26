@@ -164,11 +164,7 @@ public class NFSv41Door extends AbstractCellComponent implements
     /**
      * Layout type specific driver.
      */
-
-    private final Map<layouttype4, LayoutDriver> _supportedDrivers = ImmutableMap.of(
-            layouttype4.LAYOUT4_FLEX_FILES,  new FlexFileLayoutDriver(4, 1, new utf8str_mixed("17"), new utf8str_mixed("17"), lr -> {}),
-            layouttype4.LAYOUT4_NFSV4_1_FILES,  new NfsV41FileLayoutDriver()
-    );
+    private Map<layouttype4, LayoutDriver> _supportedDrivers;
 
     /**
      * A mapping between pool name, nfs device id and pool's ip addresses.
@@ -375,6 +371,12 @@ public class NFSv41Door extends AbstractCellComponent implements
                     throw new IllegalArgumentException("Unsupported NFS version: " + version);
             }
         }
+
+        // Supported layout drivers
+        _supportedDrivers = new EnumMap<>(layouttype4.class);
+        _supportedDrivers.put(layouttype4.LAYOUT4_FLEX_FILES,
+                new FlexFileLayoutDriver(4, 1, new utf8str_mixed("17"), new utf8str_mixed("17"), lr -> {}));
+        _supportedDrivers.put(layouttype4.LAYOUT4_NFSV4_1_FILES, new NfsV41FileLayoutDriver());
 
         _rpcService = oncRpcSvcBuilder.build();
         _rpcService.start();
