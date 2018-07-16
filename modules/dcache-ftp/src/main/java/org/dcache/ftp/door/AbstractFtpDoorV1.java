@@ -1137,7 +1137,7 @@ public abstract class AbstractFtpDoorV1
         @Override
         protected void onQueued()
         {
-            setStatus("Mover " + getPool() + "/" + getMoverId());
+            setStatus("Mover " + getMover());
         }
 
         @Override
@@ -1192,14 +1192,14 @@ public abstract class AbstractFtpDoorV1
                 _adapter.start();
             }
 
-            setStatus("Mover " + getPool() + "/" + getMoverId() + ": " +
+            setStatus("Mover " + getMover() + ": " +
                       (isWrite() ? "Receiving" : "Sending"));
 
             reply(_request, "150 Opening BINARY data connection for " + _path);
 
             if (isWrite() && _xferMode == TransferMode.MODE_E && _performanceMarkerPeriod > 0) {
                 _perfMarkerTask = new PerfMarkerTask(_request, getPool().getAddress(),
-                        getMoverId(), _performanceMarkerPeriod / 2);
+                        getMover().getMoverId(), _performanceMarkerPeriod / 2);
                 TIMER.schedule(_perfMarkerTask, _performanceMarkerPeriod, _performanceMarkerPeriod);
             }
         }

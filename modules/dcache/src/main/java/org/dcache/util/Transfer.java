@@ -119,8 +119,7 @@ public class Transfer implements Comparable<Transfer>
     private CellAddressCore _cellAddress;
 
     private Pool _pool;
-    private Integer _moverId;
-    private boolean _hasMoverBeenCreated;
+    private Mover _mover;
     private boolean _hasMoverFinished;
     private String _status;
     private CacheException _error;
@@ -405,32 +404,12 @@ public class Transfer implements Comparable<Transfer>
     }
 
     /**
-     * Registers the fact that the transfer now has a mover.
-     *
-     * @param moverId The mover ID of the transfer.
-     */
-    public synchronized void setMoverId(Integer moverId)
-    {
-        _moverId = moverId;
-        _hasMoverBeenCreated = (_moverId != null);
-    }
-
-    /**
-     * Returns the ID of the mover of this transfer.
-     */
-    @Nullable
-    public synchronized Integer getMoverId()
-    {
-        return _moverId;
-    }
-
-    /**
      * Returns whether this transfer has a mover (to the best of our
      * knowledge).
      */
     public synchronized boolean hasMover()
     {
-        return _hasMoverBeenCreated && !_hasMoverFinished;
+        return _mover != null && !_hasMoverFinished;
     }
 
     /**
@@ -1067,7 +1046,7 @@ public class Transfer implements Comparable<Transfer>
         ListenableFuture<PoolIoFileMessage> reply = _poolStub.send(new CellPath(pool.getAddress()), message, timeout);
         setStatusUntil("Pool " + pool + ": Creating mover", reply);
         return CellStub.transformAsync(reply, msg -> {
-            setMoverId(msg.getMoverId());
+            setMover(new Mover(pool, msg.getMoverId()));
             return immediateFuture(null);
         });
     }
@@ -1101,22 +1080,21 @@ public class Transfer implements Comparable<Transfer>
             return;
         }
 
-        Integer moverId = getMoverId();
-        Pool pool = getPool();
-        setStatus("Mover " + pool + "/" + moverId + ": Killing mover");
+        Mover activeTransfer = getMover();
+        setStatus("Mover " + activeTransfer.getPool() + "/" + activeTransfer.getMoverId() + ": Killing mover");
         try {
             /* Kill the mover.
              */
             PoolMoverKillMessage message =
-                    new PoolMoverKillMessage(pool.getName(), moverId, explanation);
+                    new PoolMoverKillMessage(activeTransfer.getPool().getName(), activeTransfer.getMoverId(), explanation);
             message.setReplyRequired(false);
-            _poolStub.notify(new CellPath(pool.getAddress()), message);
+            _poolStub.notify(new CellPath(activeTransfer.getPool().getAddress()), message);
 
             /* To reduce the risk of orphans when using PNFS, we wait
              * for the transfer confirmation.
              */
             if (millis > 0 && !waitForMover(millis)) {
-                _log.error("Failed to kill mover {}/{}: Timeout", pool, moverId);
+                _log.error("Failed to kill mover {}/{}: Timeout", activeTransfer.getPool().getName(), activeTransfer.getMoverId());
             }
         } catch (CacheException e) {
             // Not surprising that the pool reported a failure
@@ -1124,7 +1102,7 @@ public class Transfer implements Comparable<Transfer>
             _log.debug("Killed mover and pool reported: {}",
                        e.getMessage());
         } catch (InterruptedException e) {
-            _log.warn("Failed to kill mover {}/{}: {}", pool, moverId, e.getMessage());
+            _log.warn("Failed to kill mover {}/{}: {}", activeTransfer.getPool().getName(), activeTransfer.getMoverId(), e.getMessage());
             Thread.currentThread().interrupt();
         } finally {
             setStatus(null);
@@ -1139,8 +1117,8 @@ public class Transfer implements Comparable<Transfer>
         }
 
         try {
-            return _poolStub.sendAndWait(new CellPath(getPool().getAddress()),
-                                     "mover ls -binary " + getMoverId(),
+            return _poolStub.sendAndWait(new CellPath(getMover().getPool().getAddress()),
+                                     "mover ls -binary " + getMover().getMoverId(),
                                      IoJobInfo.class);
         } catch (NoRouteToCellException e) {
             throw new TimeoutCacheException(e.getMessage(), e);
@@ -1361,5 +1339,49 @@ public class Transfer implements Comparable<Transfer>
     public long getCreationTime()
     {
         return _startedAt;
+    }
+
+    /**
+     * Returns the mover associated with this transfer.
+     */
+    @Nullable
+    public synchronized Mover getMover() {
+        return _mover;
+    }
+
+    /**
+     * Registers the fact that the transfer now has a mover.
+     *
+     * @param mover the mover associated with this transfer.
+     */
+    private synchronized void setMover(Mover mover) {
+        _mover = mover;
+    }
+
+    /**
+     * Container class which represents Pool with a corresponding mover id.
+     */
+    public static class Mover {
+
+        private final Pool pool;
+        private final int moverId;
+
+        public Mover(Pool pool, int moverId) {
+            this.pool = pool;
+            this.moverId = moverId;
+        }
+
+        public Pool getPool() {
+            return pool;
+        }
+
+        public int getMoverId() {
+            return moverId;
+        }
+
+        @Override
+        public String toString() {
+            return pool.getName() + "/" + moverId;
+        }
     }
 }

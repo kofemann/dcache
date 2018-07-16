@@ -67,8 +67,7 @@ public class RedirectedTransfer<T> extends Transfer
         throws CacheException, InterruptedException
     {
         try {
-            setStatus("Mover " + getPool() + "/" +
-                      getMoverId() + ": Waiting for redirect");
+            setStatus("Mover " +  getMover() + ": Waiting for redirect");
             long deadline = addWithInfinity(System.currentTimeMillis(), Math.max(0, millis));
             while (hasMover() && !_isRedirected &&
                    System.currentTimeMillis() < deadline) {

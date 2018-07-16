@@ -100,6 +100,7 @@ import org.dcache.xrootd.util.FileStatus;
 
 import static com.google.common.base.Preconditions.checkNotNull;
 import diskCacheV111.util.FileExistsCacheException;
+import java.util.Objects;
 import org.springframework.kafka.core.KafkaTemplate;
 
 import static org.dcache.namespace.FileAttribute.*;
@@ -492,8 +493,7 @@ public class XrootdDoor
                 throw new CacheException(transfer.getPool() + " failed to open TCP socket");
             }
 
-            transfer.setStatus("Mover " + transfer.getPool() + "/" +
-                               transfer.getMoverId() + ": Sending");
+            transfer.setStatus("Mover " + transfer.getMover() + ": Sending");
         } catch (CacheException e) {
             explanation = e.getMessage();
             transfer.notifyBilling(e.getRc(), e.getMessage());
@@ -593,8 +593,7 @@ public class XrootdDoor
                     throw new CacheException(transfer.getPool() + " failed to open TCP socket");
                 }
 
-                transfer.setStatus("Mover " + transfer.getPool() + "/"
-                        + transfer.getMoverId() + ": Receiving");
+                transfer.setStatus("Mover " + transfer.getMover() + ": Receiving");
             } finally {
                 if (address == null) {
                     transfer.deleteNameSpaceEntry();
@@ -1142,7 +1141,7 @@ public class XrootdDoor
         String pool = args.argv(0);
 
         for (Transfer transfer : _transfers.values()) {
-            if (transfer.getMoverId() == mover && transfer.getPool() != null && transfer.getPool().equals(pool)) {
+            if (transfer.getMover().getMoverId() == mover && transfer.getMover().getPool().getName().equals(pool)) {
 
                 transfer.killMover(0, "killed by door 'kill mover' command");
                 return "Kill request to the mover " + mover + " has been submitted";

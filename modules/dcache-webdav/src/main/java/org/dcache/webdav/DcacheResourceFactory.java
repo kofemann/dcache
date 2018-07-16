@@ -779,8 +779,7 @@ public class DcacheResourceFactory
                     throw new TimeoutCacheException("Server is busy (internal timeout)");
                 }
 
-                transfer.setStatus("Mover " + transfer.getPool() + "/" +
-                        transfer.getMoverId() + ": Waiting for completion");
+                transfer.setStatus("Mover " + transfer.getMover() + ": Waiting for completion");
             } catch (CacheException e) {
                 transfer.notifyBilling(e.getRc(), e.getMessage());
                 transfer.killMover("door experienced internal error: " + e.getMessage());
@@ -1134,8 +1133,7 @@ public class DcacheResourceFactory
             } finally {
                 transfer.setStatus(null);
             }
-            transfer.setStatus("Mover " + transfer.getPool() + "/" +
-                               transfer.getMoverId() + ": Waiting for completion");
+            transfer.setStatus("Mover " + transfer.getMover() + ": Waiting for completion");
         } catch (CacheException e) {
             transfer.notifyBilling(e.getRc(), e.getMessage());
             transfer.killMover("door experienced internal error: " + e.getMessage());
@@ -1523,8 +1521,7 @@ public class DcacheResourceFactory
         public void relayData(OutputStream outputStream, io.milton.http.Range range)
             throws IOException, CacheException, InterruptedException
         {
-            setStatus("Mover " + getPool() + "/" + getMoverId() +
-                      ": Opening data connection");
+            setStatus("Mover " + getMover() + ": Opening data connection");
             try {
                 URL url = new URL(getRedirect());
                 HttpURLConnection connection =
@@ -1538,8 +1535,7 @@ public class DcacheResourceFactory
                     connection.connect();
                     try (InputStream inputStream = connection
                             .getInputStream()) {
-                        setStatus("Mover " + getPool() + "/" + getMoverId() +
-                                ": Sending data");
+                        setStatus("Mover " + getMover() + ": Sending data");
                         ByteStreams.copy(inputStream, outputStream);
                         outputStream.flush();
                     }
@@ -1628,8 +1624,7 @@ public class DcacheResourceFactory
         public void relayData(InputStream inputStream)
                 throws IOException, CacheException, InterruptedException, BadRequestException
         {
-            setStatus("Mover " + getPool() + "/" + getMoverId() +
-                    ": Opening data connection");
+            setStatus("Mover " + getMover() + ": Opening data connection");
             try {
                 URL url = new URL(getRedirect());
                 HttpURLConnection connection =
@@ -1645,8 +1640,7 @@ public class DcacheResourceFactory
                     }
                     connection.connect();
                     try (OutputStream outputStream = connection.getOutputStream()) {
-                        setStatus("Mover " + getPool() + "/" + getMoverId() +
-                                ": Receiving data");
+                        setStatus("Mover " + getMover() + ": Receiving data");
                         ByteStreams.copy(inputStream, outputStream);
                         outputStream.flush();
                     }

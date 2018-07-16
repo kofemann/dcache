@@ -218,12 +218,12 @@ public class CopyManager extends AbstractCellComponent
         {
             PnfsId id = transfer.getPnfsId();
             Pool pool = transfer.getPool();
-            Integer mover = transfer.getMoverId();
+            Transfer.Mover mover = transfer.getMover();
             sb.append("        PNFS-ID: ").append(id == null ? "Not yet known" : id).append('\n');
             sb.append("        Pool: ").append(pool == null ? "Not yet selected" : pool.getName());
             if (mover != null) {
                 sb.append('\n');
-                sb.append("        Mover: ").append(mover);
+                sb.append("        Mover: ").append(mover.getMoverId());
             }
         }
 

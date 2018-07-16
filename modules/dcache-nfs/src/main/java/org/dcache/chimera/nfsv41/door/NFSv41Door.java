@@ -983,13 +983,12 @@ public class NFSv41Door extends AbstractCellComponent implements
                 status = "idle";
             }
 
-            return String.format("    %s : %s : %s %s@%s, OS=%s, cl=[%s], status=[%s]",
+            return String.format("    %s : %s : %s %s, OS=%s, cl=[%s], status=[%s]",
                     DateTimeFormatter.ISO_OFFSET_DATE_TIME
                             .format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(getCreationTime()), timeZone)),
                     getPnfsId(),
                     isWrite() ? "WRITE" : "READ",
-                    getMoverId(),
-                    getPool(),
+                    getMover(),
                     ((NFS4ProtocolInfo)getProtocolInfoForPool()).stateId(),
                     ((NFS4ProtocolInfo)getProtocolInfoForPool()).getSocketAddress().getAddress().getHostAddress(),
                     status);
@@ -1111,7 +1110,7 @@ public class NFSv41Door extends AbstractCellComponent implements
                 _redirectFuture = selectPoolAndStartMoverAsync(POOL_SELECTION_RETRY_POLICY);
                 throw new LayoutTryLaterException("File is not online: stage or p2p required");
             }
-            _log.debug("mover ready: pool={} moverid={}", getPool(), getMoverId());
+            _log.debug("mover ready: {}", getMover());
 
             deviceid4 ds = waitForRedirect(NFS_REQUEST_BLOCKING).getDeviceId();
             return new deviceid4[] {ds};
@@ -1186,11 +1185,11 @@ public class NFSv41Door extends AbstractCellComponent implements
                 }
             } catch (FileNotFoundCacheException e) {
                 // REVISIT: remove when pool will stop sending this exception
-                _log.info("File removed while being opened: {}@{} : {}",
-                        getMoverId(), getPool(), e.getMessage());
+                _log.info("File removed while being opened: {} : {}",
+                        getMover(), e.getMessage());
             } catch (CacheException | InterruptedException e) {
-                _log.info("Failed to kill mover: {}@{} : {}",
-                        getMoverId(), getPool(), e.getMessage());
+                _log.info("Failed to kill mover: {} : {}",
+                        getMover(), e.getMessage());
                 throw new NfsIoException(e.getMessage(), e);
             }
         }
