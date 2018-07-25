@@ -32,6 +32,10 @@
         <property name="destination" value="${nfs.service.poolmanager}"/>
     </bean>
 
+    <bean id="poolMonitor" class="org.dcache.poolmanager.RemotePoolMonitor">
+        <property name="poolManagerStub" ref="poolManagerStub"/>
+    </bean>
+
     <bean id="pinManagerStub" class="org.dcache.cells.CellStub">
         <description>Pin manager cell stub</description>
         <property name="timeout" value="${nfs.service.pinmanager.timeout}"/>
@@ -193,6 +197,7 @@
         <property name="loginBrokerPublisher" ref="lb"/>
         <property name="vfsCacheConfig" ref="cache-config"/>
         <property name="accessLogMode" value="${nfs.enable.access-log}" />
+        <property name="poolMonitor" ref="poolMonitor" />
     </bean>
 
     <bean id="pool-manager-handler" class="org.dcache.poolmanager.PoolManagerHandlerSubscriber">

@@ -407,7 +407,7 @@ public class Transfer implements Comparable<Transfer>
     /**
      * Sets whether this is an upload.
      */
-    protected synchronized void setWrite(boolean isWrite)
+    public synchronized void setWrite(boolean isWrite)
     {
         _isWrite = isWrite;
     }

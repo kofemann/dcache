@@ -49,6 +49,7 @@ import dmg.cells.nucleus.CellCommandListener;
 import dmg.cells.nucleus.CellInfoProvider;
 import dmg.cells.nucleus.CellMessageReceiver;
 import dmg.cells.nucleus.CellPath;
+import dmg.cells.nucleus.NoRouteToCellException;
 import dmg.cells.services.login.LoginBrokerPublisher;
 import dmg.cells.services.login.LoginManagerChildrenInfo;
 import dmg.util.command.Argument;
@@ -157,6 +158,7 @@ import javax.annotation.concurrent.GuardedBy;
 import org.dcache.auth.attributes.Restrictions;
 
 import static org.dcache.chimera.nfsv41.door.ExceptionUtils.asNfsException;
+import org.dcache.poolmanager.RemotePoolMonitor;
 
 public class NFSv41Door extends AbstractCellComponent implements
         NFSv41DeviceManager, CellCommandListener,
@@ -272,6 +274,8 @@ public class NFSv41Door extends AbstractCellComponent implements
      * Exception thrown by transfer if accessed after mover have finished.
      */
     private static final ChimeraNFSException POISON = new NfsIoException("Mover finished, EIO");
+
+    private RemotePoolMonitor poolMonitor;
 
     public void setEnableRpcsecGss(boolean enable) {
         _enableRpcsecGss = enable;
@@ -420,7 +424,7 @@ public class NFSv41Door extends AbstractCellComponent implements
          * Door reboot.
          */
         if(transfer != null) {
-            transfer.redirect(device);
+            transfer.redirect(device, poolName, message.getId());
         }
     }
 
@@ -445,8 +449,7 @@ public class NFSv41Door extends AbstractCellComponent implements
         Serializable error = transferFinishedMessage.getErrorObject();
         transfer.notifyBilling(transferFinishedMessage.getReturnCode(), error == null? "" : error.toString());
 
-        // Ensure that we do not kill re-started transfer
-        if(transfer.getId() == transferFinishedMessage.getId()) {
+
             if (transfer.isWrite()) {
                 /*
                  * Inject poison to ensure that any other attempt to re-use
@@ -458,7 +461,6 @@ public class NFSv41Door extends AbstractCellComponent implements
                 // it's ok to remove read mover as it's safe to re-create it again.
                 _ioMessages.remove(openStateId);
             }
-        }
     }
 
     public DoorValidateMoverMessage<org.dcache.chimera.nfs.v4.xdr.stateid4> messageArrived(DoorValidateMoverMessage<org.dcache.chimera.nfs.v4.xdr.stateid4> message) {
@@ -528,6 +530,11 @@ public class NFSv41Door extends AbstractCellComponent implements
         return layoutDriver.getDeviceAddress(usableAddresses);
     }
 
+    @Required
+    public void setPoolMonitor(RemotePoolMonitor poolMonitor) {
+        this.poolMonitor = poolMonitor;
+    }
+
     /**
      * ask pool manager for a file
      *
@@ -594,6 +601,9 @@ public class NFSv41Door extends AbstractCellComponent implements
                     transfer.setClientAddress(remote);
                     transfer.setIoQueue(_ioQueue);
                     transfer.setKafkaSender(_kafkaSender);
+                    transfer.setPnfs(_pnfsHandler);
+                    transfer.setPoolMonitor(poolMonitor);
+                    transfer.setWrite(ioMode == layoutiomode4.LAYOUTIOMODE4_RW);
 
                     /*
                      * As all our layouts marked 'return-on-close', stop mover when
@@ -638,7 +648,7 @@ public class NFSv41Door extends AbstractCellComponent implements
 
             return new Layout(true, layoutStateId.stateid(), new layout4[]{layout});
 
-        } catch (CacheException | ChimeraFsException | TimeoutException | ExecutionException e) {
+        } catch (CacheException | NoRouteToCellException | ChimeraFsException | TimeoutException | ExecutionException e) {
             throw asNfsException(e, LayoutTryLaterException.class);
         } catch (InterruptedException e) {
             throw new LayoutTryLaterException(e.getMessage(), e);
@@ -886,7 +896,6 @@ public class NFSv41Door extends AbstractCellComponent implements
 
             return _ioMessages.values()
                     .stream()
-                    .filter(d -> pool == null ? true : pool.matches(d.getPool().getName()))
                     .filter(d -> client == null ? true : client.matches(d.getClient().toString()))
                     .filter(d -> pnfsid == null ? true : pnfsid.matches(d.getPnfsId().toString()))
                     .map(Object::toString)
@@ -950,19 +959,18 @@ public class NFSv41Door extends AbstractCellComponent implements
         }
     }
 
-    private class NfsTransfer extends RedirectedTransfer<PoolDS> {
+    private class NfsTransfer extends MirroredTransfer {
 
         private final Inode _nfsInode;
         private final NFS4State _stateid;
         private final NFS4State _openStateid;
-        private ListenableFuture<Void> _redirectFuture;
+        private ListenableFuture<List<Void>> _redirectFuture;
         private AtomicReference<ChimeraNFSException> _errorHolder = new AtomicReference<>();
         private final NFS4Client _client;
-        private final int _ioMode;
+        private final Instant crTime = Instant.now();
 
         NfsTransfer(PnfsHandler pnfs, NFS4Client client, NFS4State openStateId, Inode nfsInode, Subject ioSubject, int ioMode)
                 throws ChimeraNFSException {
-            super(pnfs, Subjects.ROOT, Restrictions.none(), ioSubject,  FsPath.ROOT);
 
             _nfsInode = nfsInode;
 
@@ -970,7 +978,6 @@ public class NFSv41Door extends AbstractCellComponent implements
             _stateid = client.createState(openStateId.getStateOwner(), openStateId);
             _openStateid = openStateId;
             _client = client;
-            _ioMode = ioMode;
         }
 
         @Override
@@ -978,17 +985,14 @@ public class NFSv41Door extends AbstractCellComponent implements
 
             ZoneId timeZone = ZoneId.systemDefault();
 
-            String status = getStatus();
-            if (status == null) {
-                status = "idle";
-            }
+            String status = "N/A";
 
             return String.format("    %s : %s : %s %s, OS=%s, cl=[%s], status=[%s]",
                     DateTimeFormatter.ISO_OFFSET_DATE_TIME
-                            .format(ZonedDateTime.ofInstant(Instant.ofEpochMilli(getCreationTime()), timeZone)),
+                            .format(ZonedDateTime.ofInstant(crTime, timeZone)),
                     getPnfsId(),
                     isWrite() ? "WRITE" : "READ",
-                    getMover(),
+                    "N/A",
                     ((NFS4ProtocolInfo)getProtocolInfoForPool()).stateId(),
                     ((NFS4ProtocolInfo)getProtocolInfoForPool()).getSocketAddress().getAddress().getHostAddress(),
                     status);
@@ -1013,7 +1017,7 @@ public class NFSv41Door extends AbstractCellComponent implements
         @GuardedBy("nfsState")
         deviceid4[] getPoolDataServers(long timeout) throws
                 InterruptedException, ExecutionException,
-                TimeoutException, CacheException, ChimeraNFSException {
+                TimeoutException, CacheException, ChimeraNFSException, LayoutTryLaterException, NoRouteToCellException {
 
             ChimeraNFSException error = _errorHolder.get();
             if (error != null) {
@@ -1022,98 +1026,22 @@ public class NFSv41Door extends AbstractCellComponent implements
 
             if (_redirectFuture == null) {
 
-                readNameSpaceEntry(_ioMode == layoutiomode4.LAYOUTIOMODE4_RW);
+                readNameSpaceEntryAsync().get();
+                selectPools();
 
-                FileAttributes attr = getFileAttributes();
 
-                /*
-                 * allow writes only into new files
-                 */
-                if ((_ioMode == layoutiomode4.LAYOUTIOMODE4_RW) && !attr.getStorageInfo().isCreatedOnly()) {
-                    throw new PermException("Can't modify existing file");
-                }
-
-                if (!isWrite() && attr.getLocations().isEmpty()
-                        && !attr.getStorageInfo().isStored()) {
-                    throw new NfsIoException("lost file " + getPnfsId());
-                }
-
-                /*
-                 * We start new request with an assumption, that file is available
-                 * and can be directly accessed by the client, e.q. no stage
-                 * or p2p is required.
-                 */
-                setOnlineFilesOnly(true);
-                // REVISIT: this have to go into Transfer class.
-                if (isWrite() && getFileAttributes().isDefined(FileAttribute.LOCATIONS) && !getFileAttributes().getLocations().isEmpty()) {
-
-                    /*
-                     * If we need to start a write-mover for a file which already has
-                     * a location assigned to it, then we stick that location and by-pass
-                     * any pool selection step.
-                     */
-
-                    Collection<String> locations = getFileAttributes().getLocations();
-                    if (locations.size() > 1) {
-                        /*
-                         * Huh! We don't support mirroring (yet), thus there
-                         * can't by multiple locations, unless some something
-                         * went wrong!
-                         */
-                        throw new ServerFaultException("multiple locations for: " + getPnfsId() + " : " + locations);
-                    }
-                    String location = locations.iterator().next();
-                    _log.debug("Using pre-existing WRITE pool {} for {}", location, getPnfsId());
-                    // REVISIT: here we knoe that pool name and address are the same thing
-                    setPool(new Pool(location, new CellAddressCore(location), Assumptions.none()));
-                    _redirectFuture = startMoverAsync(STAGE_REQUEST_TIMEOUT);
-                } else {
                     _log.debug("looking a {} pool for {}", (isWrite() ? "WRITE" : "READ"), getPnfsId());
-                    _redirectFuture = selectPoolAndStartMoverAsync(POOL_SELECTION_RETRY_POLICY);
-                }
-            }
-
-            /*
-             * If we wait for offline file, then there is no need to block.
-             * The async reply will update _redirectFuture when it's timed out or
-             * ready.
-             */
-            if (!isWrite() && !getOnlineFilesOnly() && !_redirectFuture.isDone()) {
-                throw new LayoutTryLaterException("Wating for file to become online.");
+                    _redirectFuture = startMoverAsync();
             }
 
             try {
                 _redirectFuture.get(NFS_REQUEST_BLOCKING, TimeUnit.MILLISECONDS);
             } catch (ExecutionException e) {
 
-                /*
-                 * PERMISSION_DENIED on read indicates that pool manager was not allowed to run p2p or stage.
-                 */
-
-                 // No fancy things on write.
-                if(isWrite()) {
-                    throw e;
-                }
-
-                Throwable t = e.getCause();
-                if (!(t instanceof CacheException)) {
-                    throw e;
-                }
-
-                CacheException ce = (CacheException) t;
-                if (ce.getRc() != CacheException.PERMISSION_DENIED) {
-                    throw e;
-                }
-
-                // kick stage/ p2p
-                setOnlineFilesOnly(false);
-                _redirectFuture = selectPoolAndStartMoverAsync(POOL_SELECTION_RETRY_POLICY);
                 throw new LayoutTryLaterException("File is not online: stage or p2p required");
             }
-            _log.debug("mover ready: {}", getMover());
 
-            deviceid4 ds = waitForRedirect(NFS_REQUEST_BLOCKING).getDeviceId();
-            return new deviceid4[] {ds};
+            return waitForRedirect(NFS_REQUEST_BLOCKING);
         }
 
         /**
@@ -1121,45 +1049,7 @@ public class NFSv41Door extends AbstractCellComponent implements
          */
         private String retry() {
 
-            /*
-             * client re-try will trigger transfer
-             */
-            if (_redirectFuture == null) {
-                return "Nothing to do.";
-            }
-
-            /*
-             * The transfer is in the middle of an action
-             */
-            String s = getStatus();
-            if (s != null) {
-                return "Can't reset transfer in action: " + s;
-            }
-
-            /*
-             * Reply from pool selection is lost. It's safe to start over.
-             */
-            if (getPool() == null) {
-                _redirectFuture = null;
-                return "Restarting from pool selection";
-            }
-
-            /*
-             * Mover id is lost. it's ok to start it again, as pool will start
-             * mover for given transfer only once.
-             */
-            if (!hasMover()) {
-                _redirectFuture = startMoverAsync(NFS_REQUEST_BLOCKING);
-                return "Re-activating mover on: " + getPool();
-            }
-
-            /*
-             * Redirect is complete.
-             */
-            if (getRedirect() != null) {
-                return "Can't re-try complete mover.";
-            }
-
+// fixme
             /**
              * Redirect is lost
              */
@@ -1185,11 +1075,9 @@ public class NFSv41Door extends AbstractCellComponent implements
                 }
             } catch (FileNotFoundCacheException e) {
                 // REVISIT: remove when pool will stop sending this exception
-                _log.info("File removed while being opened: {} : {}",
-                        getMover(), e.getMessage());
+                _log.info("File removed while being opened: {}", e.getMessage());
             } catch (CacheException | InterruptedException e) {
-                _log.info("Failed to kill mover: {} : {}",
-                        getMover(), e.getMessage());
+                _log.info("Failed to kill mover: {} ", e.getMessage());
                 throw new NfsIoException(e.getMessage(), e);
             }
         }
@@ -1223,11 +1111,6 @@ public class NFSv41Door extends AbstractCellComponent implements
          */
         void recallLayout(ScheduledExecutorService executorService) {
 
-            if (getRedirect() == null) {
-                // client don't have a layout at all
-                return;
-            }
-
             ChimeraNFSException e = isWrite() ? POISON : DELAY;
             if (!enforceErrorIfRunning(e)) {
                 // alredy recalled
@@ -1245,6 +1128,7 @@ public class NFSv41Door extends AbstractCellComponent implements
             _log.info("Recalling layout from {}", _client);
             executorService.submit(new FireAndForgetTask(new LayoutRecallTask(this, executorService)));
         }
+
     }
 
     /*
@@ -1278,7 +1162,7 @@ public class NFSv41Door extends AbstractCellComponent implements
 
             List<IoDoorEntry> entries = _ioMessages.values()
                     .stream()
-                    .map(Transfer::getIoDoorEntry)
+                    .map(NfsTransfer::getIoDoorEntry)
                     .collect(toList());
 
             IoDoorInfo doorInfo = new IoDoorInfo(NFSv41Door.this.getCellName(), NFSv41Door.this.getCellDomainName());
@@ -1378,7 +1262,7 @@ public class NFSv41Door extends AbstractCellComponent implements
                 return "No matching transfer";
             }
             if (killMover) {
-                t.killMover(0, TimeUnit.SECONDS, "manual transfer termination");
+                t.killMover(0, "manual transfer termination");
             }
             return "Removed: " + t;
         }
@@ -1390,15 +1274,8 @@ public class NFSv41Door extends AbstractCellComponent implements
      * @return number of affected transfers.
      */
     private synchronized long recallLayouts(String pool) {
-
-        return _ioMessages.values().stream()
-                .filter(t -> t.getPool() != null)
-                .filter(t -> pool.equals(t.getPool().getName()))
-                .filter(t -> t.getClient().getMinorVersion() > 0)
-                .peek(t -> {
-                    t.recallLayout(_callbackExecutor);
-                })
-                .count();
+        // FIXME
+        return 0;
     }
 
     private void updateLbPaths() {
