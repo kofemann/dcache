@@ -22,6 +22,10 @@ public class RedirectedTransfer<T> extends Transfer
     private boolean _isRedirected;
     private T _redirectObject;
 
+    RedirectedTransfer(PnfsHandler pnfs, Subject namespaceSubject, Restriction namespaceRestriction, Subject ioSubject, FsPath path, long id, Object session) {
+        super(pnfs, namespaceSubject, namespaceRestriction, ioSubject, path, id, session);
+    }
+
     public RedirectedTransfer(PnfsHandler pnfs, Subject namespaceSubject,
             Restriction restriction, Subject subject, FsPath path) {
         super(pnfs, namespaceSubject, restriction, subject, path);

@@ -159,6 +159,29 @@ public class Transfer implements Comparable<Transfer>
     /**
      * Constructs a new Transfer object.
      *
+     * @param pnfs PnfsHandler used for pnfs communication
+     * @param namespaceSubject The subject performing the namespace operations
+     * @param namespaceRestriction Any additional restrictions from this users
+     * session
+     * @param ioSubject The subject performing the transfer
+     * @param path The path of the file to transfer
+     * @param id id used to identify this transfer within session
+     * @param session session used to identify this transfer
+     */
+    Transfer(PnfsHandler pnfs, Subject namespaceSubject,
+            Restriction namespaceRestriction, Subject ioSubject, FsPath path, long id, Object session) {
+        _pnfs = new PnfsHandler(pnfs, namespaceSubject, namespaceRestriction);
+        _subject = ioSubject;
+        _path = path;
+        _startedAt = System.currentTimeMillis();
+        _id = id;
+        _session = session;
+        _checkStagePermission = new CheckStagePermission(null);
+    }
+
+    /**
+     * Constructs a new Transfer object.
+     *
      * @param pnfs             PnfsHandler used for pnfs communication
      * @param namespaceSubject The subject performing the namespace operations
      * @param namespaceRestriction Any additional restrictions from this users session
@@ -168,13 +191,7 @@ public class Transfer implements Comparable<Transfer>
     public Transfer(PnfsHandler pnfs, Subject namespaceSubject,
             Restriction namespaceRestriction, Subject ioSubject, FsPath path)
     {
-        _pnfs = new PnfsHandler(pnfs, namespaceSubject, namespaceRestriction);
-        _subject = ioSubject;
-        _path = path;
-        _startedAt = System.currentTimeMillis();
-        _id = _sessionCounter.next();
-        _session = CDC.getSession();
-        _checkStagePermission = new CheckStagePermission(null);
+        this(pnfs, namespaceSubject, namespaceRestriction, ioSubject, path, _sessionCounter.next(), CDC.getSession());
     }
 
     /**
