@@ -1,5 +1,6 @@
 package org.dcache.poolmanager;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -21,6 +22,7 @@ import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.stream.Collectors.toList;
+import static java.util.Collections.singleton;
 
 /**
  * Partition that implements the probabilistic weighted available
@@ -69,8 +71,9 @@ public class WassPartition extends ClassicPartition
     }
 
     @Override
-    public SelectedPool selectWritePool(CostModule cm,
+    public Collection<SelectedPool> selectWritePool(CostModule cm,
                                         List<PoolInfo> pools,
+                                        int nReplicas,
                                         FileAttributes attributes,
                                         long preallocated)
         throws CacheException
@@ -79,7 +82,7 @@ public class WassPartition extends ClassicPartition
         if (pool == null) {
             throw new CostException("All pools are full", null, _fallbackOnSpace, false);
         }
-        return new SelectedPool(pool, new AvailableSpaceAssumption(preallocated));
+        return singleton(new SelectedPool(pool, new AvailableSpaceAssumption(preallocated)));
     }
 
     /* REVISIT: The current implementation is a mix of the read pool

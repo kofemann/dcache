@@ -1,5 +1,6 @@
 package org.dcache.poolmanager;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -14,6 +15,7 @@ import org.dcache.pool.assumption.AvailableSpaceAssumption;
 import org.dcache.vehicles.FileAttributes;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.Collections.singleton;
 
 /**
  * Partition that selects pools randomly.
@@ -64,8 +66,9 @@ public class RandomPartition extends Partition
     }
 
     @Override
-    public SelectedPool selectWritePool(CostModule cm,
+    public Collection<SelectedPool> selectWritePool(CostModule cm,
                                         List<PoolInfo> pools,
+                                        int nReplicas,
                                         FileAttributes attributes,
                                         long preallocated)
         throws CacheException
@@ -75,7 +78,7 @@ public class RandomPartition extends Partition
         if (freePools.isEmpty()) {
             throw new CostException("All pools are full", null, false, false);
         }
-        return new SelectedPool(select(freePools), new AvailableSpaceAssumption(preallocated));
+        return singleton(new SelectedPool(select(freePools), new AvailableSpaceAssumption(preallocated)));
     }
 
     @Override
@@ -97,7 +100,7 @@ public class RandomPartition extends Partition
         throws CacheException
     {
         return new P2pPair(new SelectedPool(select(src)),
-                           selectWritePool(cm, dst, attributes, attributes.getSize()));
+                           selectWritePool(cm, dst, 1, attributes, attributes.getSize()).stream().findAny().get());
     }
 
     @Override
@@ -107,6 +110,6 @@ public class RandomPartition extends Partition
                                         FileAttributes attributes)
         throws CacheException
     {
-        return selectWritePool(cm, pools, attributes, attributes.getSize());
+        return selectWritePool(cm, pools, 1, attributes, attributes.getSize()).stream().findAny().get();
     }
 }
