@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.LongAdder;
+import java.util.stream.Collectors;
 
 import diskCacheV111.poolManager.PoolSelectionUnit.DirectionType;
 import diskCacheV111.pools.PoolCostInfo;
@@ -804,12 +805,12 @@ public class PoolManagerV5
               return ;
            }
 
-           SelectedPool pool;
+           Collection<SelectedPool> pools;
            try {
-               pool = _poolMonitor
+               pools = _poolMonitor
                        .getPoolSelector(fileAttributes, protocolInfo, _request.getLinkGroup())
                        .selectWritePool(_request.getPreallocated());
-               _log.info("{} write handler selected {} after {} ms", _pnfsId, pool.name(),
+               _log.info("{} write handler selected {} after {} ms", _pnfsId, pools,
                          System.currentTimeMillis() - started);
            } catch (CacheException ce) {
                requestFailed(ce.getRc(), ce.getMessage());
@@ -818,7 +819,7 @@ public class PoolManagerV5
                requestFailed(17, ee.getMessage());
                return;
            }
-           requestSucceeded(pool);
+           requestSucceeded(pools);
        }
 
         protected void requestFailed(int errorCode, String errorMessage)
@@ -827,9 +828,13 @@ public class PoolManagerV5
             reply(_request);
         }
 
-        protected void requestSucceeded(SelectedPool pool)
+        protected void requestSucceeded(Collection<SelectedPool> pools)
         {
-            _request.setPool(new diskCacheV111.vehicles.Pool(pool.name(), pool.address(), pool.assumption()));
+            _request.setPools(
+                    pools.stream()
+                        .map( sp ->  new diskCacheV111.vehicles.Pool(sp.name(), sp.address(), sp.assumption()))
+                        .collect(Collectors.toSet())
+            );
             _request.setSucceeded();
             reply(_request);
         }

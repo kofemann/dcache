@@ -1,5 +1,6 @@
 package org.dcache.poolmanager;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -24,11 +25,12 @@ public interface PoolSelector
     Partition getCurrentPartition();
 
     /**
-     * Returns a pool for reading the file.
+     * Returns pools for reading the file.
      *
      * The partition used for the pool selection is available after
      * this method returns by calling getCurrentPartition().
      *
+     * @return collection of pools for reading.
      * @throw FileNotInCacheException if the file is not on any
      *        pool that is online.
      * @throw PermissionDeniedCacheException if the file is is not
@@ -37,14 +39,15 @@ public interface PoolSelector
      *        it exceed cost limits; the exception contains information
      *        about how the caller may recover
      */
-    SelectedPool selectReadPool() throws CacheException;
+    Collection<SelectedPool> selectReadPool() throws CacheException;
 
     /**
-     * Returns a pool for writing a file described by this PoolSelector.
+     * Returns pools for writing a file described by this PoolSelector.
      *
      * @param preallocated Space in bytes reserved for the file, or zero.
+     * @return collection of pools for writing.
      */
-    SelectedPool selectWritePool(long preallocated) throws CacheException;
+    Collection<SelectedPool> selectWritePool(long preallocated) throws CacheException;
 
     Partition.P2pPair selectPool2Pool(boolean force) throws CacheException;
 

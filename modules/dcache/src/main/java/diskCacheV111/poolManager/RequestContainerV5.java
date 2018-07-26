@@ -77,6 +77,7 @@ import org.dcache.util.FireAndForgetTask;
 import org.dcache.vehicles.FileAttributes;
 
 import static java.util.stream.Collectors.toList;
+import static java.util.Collections.singleton;
 
 public class RequestContainerV5
     extends AbstractCellComponent
@@ -1092,7 +1093,7 @@ public class RequestContainerV5
                     (PoolMgrSelectReadPoolMsg) m.getMessageObject();
                 rpm.setContext(_retryCounter + 1, _stageCandidate.orElse(null));
                 if (_currentRc == 0) {
-                    rpm.setPool( new diskCacheV111.vehicles.Pool(_poolCandidate.name(), _poolCandidate.info().getAddress(), _poolCandidate.assumption()));
+                    rpm.setPools(singleton(new diskCacheV111.vehicles.Pool(_poolCandidate.name(), _poolCandidate.info().getAddress(), _poolCandidate.assumption())));
                     rpm.setSucceeded();
                 } else {
                     rpm.setFailed(_currentRc, _currentRm);
@@ -1923,7 +1924,7 @@ public class RequestContainerV5
         private RequestStatusCode askIfAvailable()
         {
            try {
-               _bestPool = _poolSelector.selectReadPool();
+               _bestPool = _poolSelector.selectReadPool().stream().findAny().get();
                _parameter = _poolSelector.getCurrentPartition();
            } catch (FileNotInCacheException e) {
                _log.info("[read] {}", e.getMessage());
