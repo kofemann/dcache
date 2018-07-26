@@ -157,18 +157,27 @@ public class PoolMonitorV5
         {
             String hostName = getHostName();
             String protocol = getProtocol();
+            String storeUnitName = _fileAttributes.getStorageClass() + "@" + _fileAttributes.getHsm();
             PoolPreferenceLevel[] levels = _selectionUnit.match(DirectionType.WRITE,
                     hostName,
                     protocol,
                     _fileAttributes,
                     _linkGroup);
 
+            int replicaCount = _selectionUnit.getSelectionUnits().entrySet().stream()
+                    .filter(e -> e.getValue().getType() == PoolSelectionUnit.UnitType.STORE)
+                    .filter(e -> e.getKey().equals(storeUnitName))
+                    .map(e -> e.getValue())
+                    .map(StorageUnit.class::cast)
+                    .mapToInt(e -> e.getRequiredCopies())
+                    .findAny().orElse(1);
+
             if (levels.length == 0) {
                 throw new CacheException(CacheException.NO_POOL_CONFIGURED,
                                          "No write links configured for [" +
                                                  "net=" + hostName +
                                                  ",protocol=" + protocol +
-                                                 ",store=" + _fileAttributes.getStorageClass() + "@" + _fileAttributes.getHsm() +
+                                                 ",store=" + storeUnitName +
                                                  ",cache=" + nullToEmpty(_fileAttributes.getCacheClass()) +
                                                  ",linkgroup=" + nullToEmpty(_linkGroup) + "]");
             }
@@ -183,7 +192,7 @@ public class PoolMonitorV5
                 if (!pools.isEmpty()) {
                     Partition partition = _partitionManager.getPartition(level.getTag());
                     try {
-                        return partition.selectWritePool(_costModule, pools, _fileAttributes, preallocated);
+                        return partition.selectWritePool(_costModule, pools, replicaCount, _fileAttributes, preallocated).stream().findAny().get();
                     } catch (CostException e) {
                         if (!e.shouldFallBack()) {
                             throw e;

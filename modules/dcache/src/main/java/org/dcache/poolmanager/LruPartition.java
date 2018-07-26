@@ -2,6 +2,7 @@ package org.dcache.poolmanager;
 
 import com.google.common.collect.Maps;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -19,6 +20,7 @@ import org.dcache.vehicles.FileAttributes;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.util.stream.Collectors.toList;
+import static java.util.Collections.singleton;
 
 /**
  * Partition that selects the least recently used pool.
@@ -119,8 +121,9 @@ public class LruPartition extends Partition
     }
 
     @Override
-    public SelectedPool selectWritePool(CostModule cm,
+    public Collection<SelectedPool> selectWritePool(CostModule cm,
                                         List<PoolInfo> pools,
+                                        int nReplicas,
                                         FileAttributes attributes,
                                         long preallocated)
         throws CacheException
@@ -130,7 +133,7 @@ public class LruPartition extends Partition
         if (freePools.isEmpty()) {
             throw new CostException("All pools are full", null, false, false);
         }
-        return new SelectedPool(select(freePools, _lastWrite), new AvailableSpaceAssumption(preallocated));
+        return singleton(new SelectedPool(select(freePools, _lastWrite), new AvailableSpaceAssumption(preallocated)));
     }
 
     @Override
@@ -151,7 +154,7 @@ public class LruPartition extends Partition
         throws CacheException
     {
         return new P2pPair(new SelectedPool(select(src, _lastRead)),
-                           selectWritePool(cm, dst, attributes, attributes.getSize()));
+                           selectWritePool(cm, dst, 1, attributes, attributes.getSize()).stream().findAny().get());
     }
 
     @Override
@@ -161,6 +164,6 @@ public class LruPartition extends Partition
                                         FileAttributes attributes)
         throws CacheException
     {
-        return selectWritePool(cm, pools, attributes, attributes.getSize());
+        return selectWritePool(cm, pools, 1, attributes, attributes.getSize()).stream().findAny().get();
     }
 }

@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014 - 2018 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,6 +20,7 @@ package org.dcache.poolmanager;
 import com.google.common.collect.ImmutableMap;
 
 import java.security.SecureRandom;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -30,6 +31,8 @@ import diskCacheV111.util.CacheException;
 
 import org.dcache.pool.assumption.AvailableSpaceAssumption;
 import org.dcache.vehicles.FileAttributes;
+
+import static java.util.Collections.singleton;
 
 /**
  * This partition type is for pools that are used as temporary transfer buffers
@@ -143,10 +146,10 @@ public class BufferPartition extends Partition
     }
 
     @Override
-    public SelectedPool selectWritePool(CostModule cm, List<PoolInfo> pools, FileAttributes attributes,
+    public Collection<SelectedPool> selectWritePool(CostModule cm, List<PoolInfo> pools, int nRreplicas, FileAttributes attributes,
                                         long preallocated) throws CacheException
     {
-        return selectPool(pools, preallocated);
+        return singleton(selectPool(pools, preallocated));
     }
 
     @Override

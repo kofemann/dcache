@@ -17,6 +17,7 @@ import org.dcache.vehicles.FileAttributes;
 import static com.google.common.base.Predicates.*;
 import static com.google.common.collect.Maps.filterKeys;
 import static com.google.common.collect.Maps.filterValues;
+import java.util.Collection;
 
 /**
  * Encapsulates configuration parameters and pool selection logic.
@@ -339,13 +340,20 @@ public abstract class Partition implements Serializable
     public abstract String getType();
 
     /**
-     * Selects a pool for writing among a set of pools. May modify
-     * the input list of pools.
+     * Selects up to {@code nReplicas} pools for writing among a set of
+     * pools. May modify the input list of pools.
      *
      * An implementation cannot rely on any file attributes being defined.
+     * @param cm cost module to use for selection.
+     * @param pools list of potentially allowed pools.
+     * @param nReplicas number of desired pools.
+     * @param attributes file attribute.
+     * @param preallocated estimated space required for file.
+     * @return a collection of write pools to use.
      */
-    public abstract SelectedPool selectWritePool(CostModule cm,
+    public abstract Collection<SelectedPool> selectWritePool(CostModule cm,
                                                  List<PoolInfo> pools,
+                                                 int nReplicas,
                                                  FileAttributes attributes,
                                                  long preallocated)
         throws CacheException;
