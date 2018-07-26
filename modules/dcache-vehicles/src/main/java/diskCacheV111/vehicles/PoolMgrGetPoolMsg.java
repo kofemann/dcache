@@ -2,6 +2,8 @@ package diskCacheV111.vehicles;
 
 import javax.annotation.Nonnull;
 
+import java.util.Collection;
+import java.util.Collections;
 import java.util.EnumSet;
 
 import diskCacheV111.util.PnfsId;
@@ -17,7 +19,11 @@ public class PoolMgrGetPoolMsg extends PoolManagerMessage
     private static final long serialVersionUID = 8907604668091102254L;
 
     private final FileAttributes _fileAttributes;
-    private Pool _pool;
+
+    /**
+     * A {@code Collection} of pools that satisfy the query.
+     */
+    private Collection<Pool> _pools;
 
     public PoolMgrGetPoolMsg(FileAttributes fileAttributes)
     {
@@ -45,14 +51,28 @@ public class PoolMgrGetPoolMsg extends PoolManagerMessage
 	return _fileAttributes.getPnfsId();
     }
 
-    public Pool getPool()
+    /**
+     * Get a {@code Collection} of pools that satisfy the query.
+     * @return collection of pools that satisfy the query.
+     */
+    public Collection<Pool> getPools()
     {
-	return _pool;
+	return Collections.unmodifiableCollection(_pools);
     }
 
-    public void setPool(Pool pool)
+    @Deprecated
+    // for bakward compatibility
+    public Pool getPool() {
+        return _pools == null ? null : _pools.stream().findAny().orElse(null);
+    }
+
+    /**
+     * Set a {@code Collection} of pools that satisfy the query.
+     * @param pools collection of pools that satisfy the query.
+     */
+    public void setPools(Collection<Pool> pools)
     {
-	_pool = pool;
+	_pools = pools;
     }
 
     @Override
@@ -61,7 +81,7 @@ public class PoolMgrGetPoolMsg extends PoolManagerMessage
         if (getReturnCode() == 0) {
             return "PnfsId=" + getPnfsId()
                     + ";StorageInfo=" + getStorageInfo() + ";"
-                    + ((_pool == null) ? "" : _pool);
+                    + ((_pools == null) ? "" : _pools);
         } else {
             return super.toString();
         }
