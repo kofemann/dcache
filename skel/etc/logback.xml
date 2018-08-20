@@ -174,6 +174,10 @@
     <appender-ref ref="resilience"/>
   </logger>
 
+  <logger name="com.hazelcast" additivity="false">
+    <appender-ref ref="stdout" />
+  </logger>
+
   <!-- Nothing is logged to this logger. Its sole purpose is to list
        all appenders available; this ensures that the appenders are
        available in the dCache admin interface. -->
@@ -297,6 +301,12 @@
     <threshold>
       <appender>resilience</appender>
       <logger>org.dcache.resilience-log</logger>
+      <level>error</level>
+    </threshold>
+
+    <threshold>
+      <appender>stdout</appender>
+      <logger>com.hazelcast</logger>
       <level>error</level>
     </threshold>
 
