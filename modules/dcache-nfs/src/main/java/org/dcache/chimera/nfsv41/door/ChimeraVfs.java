@@ -313,8 +313,9 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
             // OperationSETATTR already have checked for a valid open stateid
             if (stat.isDefined(Stat.StatAttribute.SIZE)) {
                 if (stat.getSize() == 0) {
-                    // TODO: we have to clear file size bit to avoid second db update
                     _fs.truncate(fsInode);
+                    // clean to avoid extra db update
+                    stat.undefine(Stat.StatAttribute.SIZE);
                 } else {
                     // allow set size only for empty files
                     if (_fs.stat(fsInode).getSize() != 0) {
@@ -323,7 +324,11 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
                 }
             }
 
-            fsInode.setStat(toChimeraStat(stat));
+            org.dcache.chimera.posix.Stat chimeraStat = toChimeraStat(stat);
+            // convert empty setattr to noop
+            if (!chimeraStat.getDefinedAttributeses().isEmpty()) {
+                fsInode.setStat(chimeraStat);
+            }
         } catch (InvalidArgumentChimeraException e) {
             throw new InvalException(e.getMessage());
         } catch (IsDirChimeraException e) {
