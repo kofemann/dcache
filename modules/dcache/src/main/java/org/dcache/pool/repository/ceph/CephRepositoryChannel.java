@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2016 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2016 - 2018 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,9 +18,9 @@
  */
 package org.dcache.pool.repository.ceph;
 
-import org.dcache.rados4j.RadosException;
-import org.dcache.rados4j.Rbd;
-import org.dcache.rados4j.RbdImage;
+import com.ceph.rbd.Rbd;
+import com.ceph.rbd.RbdException;
+import com.ceph.rbd.RbdImage;
 import java.io.IOException;
 import java.io.SyncFailedException;
 import java.nio.ByteBuffer;
@@ -43,7 +43,7 @@ public class CephRepositoryChannel implements RepositoryChannel {
     private long size;
     private long offset = 0;
 
-    public CephRepositoryChannel(Rbd rbd, String name, Set<? extends OpenOption> mode) throws RadosException {
+    public CephRepositoryChannel(Rbd rbd, String name, Set<? extends OpenOption> mode) throws RbdException {
         if(mode.contains(StandardOpenOption.WRITE)) {
                 // REVISIT: we do not create image here as it already created by CephFileStore.
                 //rbd.create(name, 0);
@@ -53,7 +53,7 @@ public class CephRepositoryChannel implements RepositoryChannel {
         } else if(mode.contains(StandardOpenOption.READ)) {
                 rbdImage = rbd.openReadOnly(name);
                 rdOnly = true;
-                size = rbdImage.stat().obj_size.get();
+                size = rbdImage.stat().obj_size;
         } else {
                 throw new IllegalArgumentException("Illegal mode: " + mode);
         }
@@ -90,7 +90,10 @@ public class CephRepositoryChannel implements RepositoryChannel {
             this.resize(position + src.remaining());
         }
 
-        return rbdImage.write(src, position);
+        byte[]  b = new byte[src.remaining()];
+        src.get(b);
+        rbdImage.write(b, position);
+        return b.length;
     }
 
     @Override
@@ -101,10 +104,15 @@ public class CephRepositoryChannel implements RepositoryChannel {
             return -1;
         }
 
-        return rbdImage.read(dst, position);
+        byte[]  b = new byte[dst.remaining()];
+        int n = rbdImage.read(position, b, b.length);
+        if (n > 0) {
+            dst.put(b);
+        }
+        return n;
     }
 
-    private void resize(long size) throws RadosException {
+    private void resize(long size) throws RbdException {
         rbdImage.resize(size);
         this.size = size;
     }

@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2016 - 2017 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2016 - 2018 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,9 +24,11 @@ import org.slf4j.LoggerFactory;
 
 import diskCacheV111.util.PnfsId;
 
+import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
@@ -34,17 +36,19 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
 import java.util.Set;
 import java.util.stream.Collectors;
-import jnr.constants.platform.Errno;
+import java.util.stream.Stream;
 
 import org.dcache.pool.repository.FileStore;
 import org.dcache.pool.repository.RepositoryChannel;
-import org.dcache.rados4j.IoCtx;
-import org.dcache.rados4j.Rados;
-import org.dcache.rados4j.RadosClusterInfo;
-import org.dcache.rados4j.RadosException;
-import org.dcache.rados4j.Rbd;
-import org.dcache.rados4j.RbdImage;
-import org.dcache.rados4j.RbdImageInfo;
+import com.ceph.rados.exceptions.RadosException;
+import com.ceph.rados.jna.RadosClusterInfo;
+import com.ceph.rados.IoCTX;
+import com.ceph.rados.Rados;
+import com.ceph.rados.exceptions.ErrorCode;
+import com.ceph.rbd.Rbd;
+import com.ceph.rbd.RbdException;
+import com.ceph.rbd.RbdImage;
+import com.ceph.rbd.jna.RbdImageInfo;
 
 import static org.dcache.util.ByteUnit.KiB;
 
@@ -71,17 +75,18 @@ public class CephFileStore implements FileStore {
     private final static String LAST_MODIFICATION_TIME_ATTR = "last_modification_time";
 
     private final Rados rados;
-    private final IoCtx ctx;
+    private final IoCTX ctx;
     private final Rbd rbd;
     private final String poolName;
 
     public CephFileStore(String poolName, String cluster, String config) throws RadosException {
 
-        rados = new Rados(cluster, config);
+        rados = new Rados(cluster);
+        rados.confReadFile(new File(config));
         rados.connect();
 
-        ctx = rados.createIoContext(poolName);
-        rbd = ctx.createRbd();
+        ctx = rados.ioCtxCreate(poolName);
+        rbd = new Rbd(ctx);
         this.poolName = poolName;
     }
 
@@ -96,7 +101,7 @@ public class CephFileStore implements FileStore {
             RbdImage image = rbd.openReadOnly(toImageName(id));
             image.close();
             return true;
-        } catch (RadosException e) {
+        } catch (IOException e) {
             return false;
         }
     }
@@ -119,13 +124,14 @@ public class CephFileStore implements FileStore {
                     return new BasicFileAttributes() {
 
                         private FileTime getTimeFromXattr(String image, String attr) {
-                            long time;
+                            long time = 0;
                             try {
-                                byte[] b = new byte[Long.BYTES];
-                                ctx.getXattr(toObjName(image), attr, b);
-                                time = Longs.fromByteArray(b);
+                                String s = ctx.getExtendedAttribute(toObjName(image), attr);
+                                if (!s.isEmpty()) {
+                                    time = Longs.fromByteArray(s.getBytes(StandardCharsets.UTF_8));
+                                }
                             } catch (RadosException e) {
-                                time = 0;
+                                // NOP
                             }
                             return FileTime.fromMillis(time);
                         }
@@ -167,7 +173,7 @@ public class CephFileStore implements FileStore {
 
                         @Override
                         public long size() {
-                            return imageInfo.obj_size.longValue();
+                            return imageInfo.size;
                         }
 
                         @Override
@@ -178,9 +184,9 @@ public class CephFileStore implements FileStore {
                 }
 
                 private void setTimeToXattr(String image, String attr, FileTime time) throws RadosException {
-                    ctx.setXattr(toObjName(image),
+                    ctx.setExtendedAttribute(toObjName(image),
                             attr,
-                            Longs.toByteArray(time.toMillis()));
+                            new String(Longs.toByteArray(time.toMillis()), StandardCharsets.UTF_8));
                 }
 
                 @Override
@@ -200,7 +206,7 @@ public class CephFileStore implements FileStore {
 
                 }
             };
-        } catch (RadosException e) {
+        } catch (RbdException e) {
             throwIfMappable(e, "Failed to get file's attribute: " + imageName);
             throw e;
         }
@@ -211,9 +217,9 @@ public class CephFileStore implements FileStore {
         String imageName = toImageName(id);
         try {
             rbd.create(imageName, 0);
-            ctx.setXattr(toObjName(imageName),
+            ctx.setExtendedAttribute(toObjName(imageName),
                     CREATION_TIME_ATTR,
-                    Longs.toByteArray(System.currentTimeMillis()));
+                    new String(Longs.toByteArray(System.currentTimeMillis()),StandardCharsets.UTF_8));
         } catch (RadosException e) {
             throwIfMappable(e, "Failed to create file: " + imageName);
             throw e;
@@ -226,10 +232,9 @@ public class CephFileStore implements FileStore {
         String imageName = toImageName(id);
         try {
             rbd.remove(imageName);
-        } catch (RadosException e) {
-
+        } catch (RbdException e) {
             // ignore file-not-found error code (negative number).
-            if (Errno.valueOf(Math.abs(e.getErrorCode())) == Errno.ENOENT) {
+            if (Math.abs(e.getReturnValue()) == 2) {
                 return;
             }
 
@@ -243,7 +248,7 @@ public class CephFileStore implements FileStore {
         String imageName = toImageName(id);
         try {
             return new CephRepositoryChannel(rbd, imageName, ioMode);
-        } catch (RadosException e) {
+        } catch (RbdException e) {
             throwIfMappable(e, "Failed to open file: " + imageName);
             throw e;
         }
@@ -252,11 +257,10 @@ public class CephFileStore implements FileStore {
     @Override
     public Set<PnfsId> index() throws IOException {
         try {
-            return rbd.list()
-                    .stream()
+            return Stream.of(rbd.list())
                     .map(this::toPnfsId)
                     .collect(Collectors.toSet());
-        } catch (RadosException e) {
+        } catch (RbdException e) {
             throwIfMappable(e, "Failed to get list of images");
             throw e;
         }
@@ -265,8 +269,8 @@ public class CephFileStore implements FileStore {
     @Override
     public long getFreeSpace() throws IOException {
         try {
-            RadosClusterInfo clusterInfo = rados.statCluster();
-            return KiB.toBytes(clusterInfo.kb_avail.get());
+            RadosClusterInfo clusterInfo = rados.clusterStat();
+            return KiB.toBytes(clusterInfo.kb_avail);
         } catch (RadosException e) {
             throwIfMappable(e, "Failed to get cluster info");
             throw e;
@@ -276,8 +280,8 @@ public class CephFileStore implements FileStore {
     @Override
     public long getTotalSpace() throws IOException {
         try {
-            RadosClusterInfo clusterInfo = rados.statCluster();
-            return KiB.toBytes(clusterInfo.kb.get());
+            RadosClusterInfo clusterInfo = rados.clusterStat();
+            return KiB.toBytes(clusterInfo.kb);
         } catch (RadosException e) {
             throwIfMappable(e, "Failed to get cluster info");
             throw e;
@@ -287,7 +291,7 @@ public class CephFileStore implements FileStore {
     @Override
     public boolean isOk() {
         try {
-            rados.statPool(ctx);
+            ctx.poolStat();
         } catch (RadosException e) {
             LOGGER.error("Repository health check failed: {}", e.toString());
             return false;
@@ -320,23 +324,29 @@ public class CephFileStore implements FileStore {
         }
     }
 
-    public void shutdown() throws RadosException {
+    public void shutdown() throws IOException {
         try {
-            ctx.destroy();
+            ctx.close();
         } finally {
-            rados.shutdown();
+            rados.shutDown();
         }
     }
 
-    private void throwIfMappable(RadosException e, String msg) throws IOException {
+    private void throwIfMappable(RbdException e, String msg) throws IOException {
         // try to map CEPH errors to dCache/java.io alternatives
-        // the errcodes are negative numbers :)
-
-        Errno err = Errno.valueOf(Math.abs(e.getErrorCode()));
-
-        switch(err) {
+        ErrorCode err = ErrorCode.getEnum(e.getReturnValue());
+        switch (err) {
             case ENOENT:
                 throw new NoSuchFileException(msg + " : " + e.getMessage());
         }
     }
+    private void throwIfMappable(RadosException e, String msg) throws IOException {
+        // try to map CEPH errors to dCache/java.io alternatives
+        ErrorCode err = ErrorCode.getEnum(e.getReturnValue());
+        switch (err) {
+            case ENOENT:
+                throw new NoSuchFileException(msg + " : " + e.getMessage());
+        }
+    }
+
 }

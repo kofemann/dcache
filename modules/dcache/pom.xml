@@ -293,8 +293,8 @@
         <scope>test</scope>
     </dependency>
     <dependency>
-        <groupId>org.dcache</groupId>
-        <artifactId>rados4j</artifactId>
+        <groupId>com.ceph</groupId>
+        <artifactId>rados</artifactId>
     </dependency>
 
     <!-- used by alarms, needs to be deployed -->
