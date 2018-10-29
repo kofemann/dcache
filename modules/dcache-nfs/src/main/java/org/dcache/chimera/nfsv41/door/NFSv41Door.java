@@ -362,6 +362,13 @@ public class NFSv41Door extends AbstractCellComponent implements
         _vfsCache = new VfsCache(_chimeraVfs, _vfsCacheConfig);
         _vfs = _eventNotifier == null ? _vfsCache : wrapWithMonitoring(_vfsCache);
 
+        ExecutorService workerThradExecutor = Executors.newFixedThreadPool(
+                Runtime.getRuntime().availableProcessors()*2,
+                new ThreadFactoryBuilder()
+                .setNameFormat("nfs-door-" + _port + "-%d")
+                .build()
+        );
+
         MountServer ms = new MountServer(_exportFile, _vfs);
 
         OncRpcSvcBuilder oncRpcSvcBuilder = new OncRpcSvcBuilder()
@@ -369,6 +376,7 @@ public class NFSv41Door extends AbstractCellComponent implements
                 .withTCP()
                 .withAutoPublish()
                 .withWorkerThreadIoStrategy()
+                .withWorkerThreadExecutionService(workerThradExecutor)
                 .withRpcService(new OncRpcProgram(mount_prot.MOUNT_PROGRAM, mount_prot.MOUNT_V3), ms);
 
         if (_enableRpcsecGss) {
