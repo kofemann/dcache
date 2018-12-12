@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2016 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2016 - 2018 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -146,7 +146,9 @@ public class CephRepositoryChannel implements RepositoryChannel {
     @Override
     public synchronized int write(ByteBuffer src) throws IOException {
         int n = this.write(src, offset);
-        offset += n;
+        if (n > 0) {
+            offset += n;
+        }
         return n;
     }
 
@@ -175,10 +177,9 @@ public class CephRepositoryChannel implements RepositoryChannel {
     public synchronized int read(ByteBuffer dst) throws IOException {
 
         int n = this.read(dst, offset);
-        if (n < 0) {
-            return n;
+        if (n > 0) {
+            offset += n;
         }
-        offset += n;
         return n;
     }
 
