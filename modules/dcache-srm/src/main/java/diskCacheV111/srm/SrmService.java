@@ -90,11 +90,11 @@ import dmg.cells.nucleus.CellAddressCore;
 import dmg.cells.nucleus.CellIdentityAware;
 import dmg.cells.nucleus.CellLifeCycleAware;
 import dmg.cells.nucleus.CellMessageReceiver;
+import dmg.cells.zookeeper.CuratorFrameworkAware;
 
 import org.dcache.auth.FQAN;
 import org.dcache.auth.LoginReply;
 import org.dcache.auth.Subjects;
-import org.dcache.cells.CuratorFrameworkAware;
 import org.dcache.srm.AbstractStorageElement;
 import org.dcache.srm.SRM;
 import org.dcache.srm.SrmRequest;

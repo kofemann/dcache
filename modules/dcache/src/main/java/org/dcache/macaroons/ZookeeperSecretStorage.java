@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2017 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2017 - 2019 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -37,9 +37,8 @@ import java.time.format.DateTimeParseException;
 import java.util.Optional;
 
 import dmg.cells.nucleus.CellLifeCycleAware;
+import dmg.cells.zookeeper.CuratorFrameworkAware;
 import dmg.cells.zookeeper.PathChildrenCache;
-
-import org.dcache.cells.CuratorFrameworkAware;
 
 import static org.dcache.macaroons.ZookeeperSecretHandler.ZK_MACAROONS;
 

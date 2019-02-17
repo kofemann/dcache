@@ -24,9 +24,9 @@ import dmg.cells.nucleus.CellAddressCore;
 import dmg.cells.nucleus.CellIdentityAware;
 import dmg.cells.nucleus.CellLifeCycleAware;
 import dmg.cells.nucleus.CellMessageReceiver;
+import dmg.cells.zookeeper.CuratorFrameworkAware;
 
 import org.dcache.cells.CellStub;
-import org.dcache.cells.CuratorFrameworkAware;
 import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.util.FireAndForgetTask;
 

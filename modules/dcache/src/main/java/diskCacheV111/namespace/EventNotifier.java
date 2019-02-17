@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2018 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2018 - 2019 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -60,9 +60,9 @@ import dmg.cells.nucleus.CellAddressCore;
 import dmg.cells.nucleus.CellLifeCycleAware;
 import dmg.cells.nucleus.CellMessageReceiver;
 import dmg.cells.nucleus.CellPath;
+import dmg.cells.zookeeper.CuratorFrameworkAware;
 
 import org.dcache.cells.CellStub;
-import org.dcache.cells.CuratorFrameworkAware;
 import org.dcache.events.Event;
 import org.dcache.events.NotificationMessage;
 import org.dcache.events.SystemEvent;

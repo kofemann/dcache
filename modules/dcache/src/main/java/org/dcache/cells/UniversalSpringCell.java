@@ -83,6 +83,7 @@ import dmg.cells.nucleus.CellSetupProvider;
 import dmg.cells.nucleus.DelayedReply;
 import dmg.cells.nucleus.DomainContextAware;
 import dmg.cells.nucleus.EnvironmentAware;
+import dmg.cells.zookeeper.CuratorFrameworkAware;
 import dmg.util.CommandException;
 import dmg.util.CommandExitException;
 import dmg.util.CommandInterpreter;
