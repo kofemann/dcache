@@ -9,10 +9,6 @@
         <property name="hazelcast.phone.home.enabled">false</property>
     </properties>
 
-    <group>
-        <name>dcache-namespace</name>
-    </group>
-
     <!-- explicit disable all networking option: single node mode -->
     <network>
         <join>
