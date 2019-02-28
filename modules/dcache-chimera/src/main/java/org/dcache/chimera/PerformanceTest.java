@@ -18,6 +18,8 @@
 package org.dcache.chimera;
 
 import com.google.common.base.Stopwatch;
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
 import org.springframework.transaction.PlatformTransactionManager;
@@ -196,7 +198,8 @@ public class PerformanceTest extends Thread
         System.out.println("Starting chimera... ");
         HikariDataSource dataSource = FsFactory.getDataSource(jdbc, user, password);
         PlatformTransactionManager txManager = new DataSourceTransactionManager(dataSource);
-        FileSystemProvider fileSystem = new JdbcFs(dataSource, txManager);
+        HazelcastInstance hz = Hazelcast.newHazelcastInstance();
+        FileSystemProvider fileSystem = new JdbcFs(dataSource, txManager, hz);
         provider = new ChimeraNameSpaceProvider();
         provider.setAclEnabled(false);
         provider.setExtractor(new ChimeraOsmStorageInfoExtractor(StorageInfo.DEFAULT_ACCESS_LATENCY,
@@ -248,6 +251,7 @@ public class PerformanceTest extends Thread
 
         fileSystem.close();
         dataSource.close();
+        Hazelcast.shutdownAll();
     }
 
     private PnfsId getPnfsid(String path) throws CacheException
