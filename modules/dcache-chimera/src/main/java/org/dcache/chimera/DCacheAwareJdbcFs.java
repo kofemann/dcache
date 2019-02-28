@@ -60,6 +60,7 @@ documents or software obtained from this server.
 package org.dcache.chimera;
 
 import com.google.common.base.Throwables;
+import com.hazelcast.core.HazelcastInstance;
 import org.springframework.beans.factory.annotation.Required;
 import org.springframework.transaction.PlatformTransactionManager;
 
@@ -118,14 +119,14 @@ public class DCacheAwareJdbcFs extends JdbcFs implements CellIdentityAware {
         queryPnfsManagerOnRename = yes;
     }
 
-    public DCacheAwareJdbcFs(DataSource dataSource, PlatformTransactionManager txManager) throws ChimeraFsException, SQLException
+    public DCacheAwareJdbcFs(DataSource dataSource, PlatformTransactionManager txManager, HazelcastInstance hz) throws ChimeraFsException, SQLException
     {
-        super(dataSource, txManager);
+        super(dataSource, txManager, hz);
     }
 
-    public DCacheAwareJdbcFs(DataSource dataSource, PlatformTransactionManager txManager, int id) throws ChimeraFsException, SQLException
+    public DCacheAwareJdbcFs(DataSource dataSource, PlatformTransactionManager txManager, HazelcastInstance hz, int id) throws ChimeraFsException, SQLException
     {
-        super(dataSource, txManager, id);
+        super(dataSource, txManager, hz, id);
     }
 
     public void setPnfsHandler(PnfsHandler pnfsHandler) {

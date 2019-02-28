@@ -16,6 +16,8 @@
  */
 package org.dcache.chimera;
 
+import com.hazelcast.core.Hazelcast;
+import com.hazelcast.core.HazelcastInstance;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
 import org.springframework.jdbc.datasource.DataSourceTransactionManager;
@@ -32,12 +34,14 @@ public class FsFactory
     {
         AlarmEnabledDataSource dataSource = new AlarmEnabledDataSource(url, FsFactory.class.getSimpleName(), getDataSource(url, user, password));
         PlatformTransactionManager txManager =  new DataSourceTransactionManager(dataSource);
-        return new JdbcFs(dataSource, txManager) {
+        HazelcastInstance hz = Hazelcast.newHazelcastInstance();
+        return new JdbcFs(dataSource, txManager, hz) {
             @Override
             public void close() throws IOException
             {
                 super.close();
                 dataSource.close();
+                hz.shutdown();
             }
         };
     }

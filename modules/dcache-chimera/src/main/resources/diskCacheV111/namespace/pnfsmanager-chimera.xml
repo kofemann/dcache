@@ -77,10 +77,18 @@
       <property name="shouldUpdate" value="${pnfsmanager.db.schema.auto}"/>
   </bean>
 
+  <bean name="hazelcastInstance" class="com.hazelcast.core.Hazelcast"
+          factory-method="newHazelcastInstance"/>
+
+  <bean id="hazelcastLifecycle" class="com.hazelcast.core.LifecycleService"
+        factory-bean="hazelcastInstance" factory-method="getLifecycleService"
+        destroy-method="shutdown" />
+
   <bean id="file-system" class="org.dcache.chimera.JdbcFs" depends-on="liquibase">
       <description>Chimera</description>
       <constructor-arg ref="data-source"/>
       <constructor-arg ref="tx-manager"/>
+      <constructor-arg ref="hazelcastInstance" />
   </bean>
 
   <bean id="extractor" class="${pnfsmanager.plugins.storage-info-extractor}">
