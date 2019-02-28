@@ -91,11 +91,19 @@
         <property name="shouldUpdate" value="${nfs.db.schema.auto}"/>
     </bean>
 
+    <bean name="hazelcastInstance" class="com.hazelcast.core.Hazelcast"
+        factory-method="newHazelcastInstance" />
+
+    <bean id="hazelcastLifecycle" class="com.hazelcast.core.LifecycleService"
+        factory-bean="hazelcastInstance" factory-method="getLifecycleService"
+        destroy-method="shutdown" />
+
     <bean id="fileSystem" class="org.dcache.chimera.DCacheAwareJdbcFs"
             depends-on="liquibase">
         <description>Chimera Filesystem</description>
         <constructor-arg ref="dataSource" />
         <constructor-arg ref="tx-manager" />
+        <constructor-arg ref="hazelcastInstance" />
         <property name="pnfsHandler" ref="pnfs"/>
         <property name="poolManagerStub" ref="poolManagerStub"/>
         <property name="pinManagerStub" ref="pinManagerStub"/>

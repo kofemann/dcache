@@ -33,7 +33,6 @@ import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.TransactionSystemException;
 import org.springframework.transaction.support.DefaultTransactionDefinition;
 import com.hazelcast.core.HazelcastInstance;
-import com.hazelcast.core.Hazelcast;
 import com.hazelcast.core.IMap;
 
 import javax.sql.DataSource;
@@ -136,7 +135,7 @@ public class JdbcFs implements FileSystemProvider {
                     }
             , _fsStatUpdateExecutor));
 
-    private HazelcastInstance hz;
+    private HazelcastInstance _hz;
 
     /* The PNFS ID to inode number mapping.
      */
@@ -164,12 +163,13 @@ public class JdbcFs implements FileSystemProvider {
      */
     private static final int MAX_NAME_LEN = 255;
 
-    public JdbcFs(DataSource dataSource, PlatformTransactionManager txManager) throws SQLException, ChimeraFsException
+    public JdbcFs(DataSource dataSource, PlatformTransactionManager txManager, HazelcastInstance hz) throws SQLException, ChimeraFsException
     {
-        this(dataSource, txManager, 0);
+        this(dataSource, txManager, hz, 0);
     }
 
-    public JdbcFs(DataSource dataSource, PlatformTransactionManager txManager, int id) throws SQLException, ChimeraFsException
+    public JdbcFs(DataSource dataSource, PlatformTransactionManager txManager,
+            HazelcastInstance hz, int id) throws SQLException, ChimeraFsException
     {
         _dbConnectionsPool = dataSource;
         _fsId = id;
@@ -179,10 +179,10 @@ public class JdbcFs implements FileSystemProvider {
         // try to get database dialect specific query engine
         _sqlDriver = FsSqlDriver.getDriverInstance(dataSource);
 
-        hz = Hazelcast.newHazelcastInstance();
+        _hz = hz;
 
-        _idCache = hz.getMap("inumber-to-pnfsid");
-        _inoCache = hz.getMap("pnfsid-to-inumber");
+        _idCache = _hz.getMap("inumber-to-pnfsid");
+        _inoCache = _hz.getMap("pnfsid-to-inumber");
     }
 
     private FsInode getWormID() throws ChimeraFsException {
@@ -1407,7 +1407,7 @@ public class JdbcFs implements FileSystemProvider {
      */
     @Override
     public void close() throws IOException {
-        hz.shutdown();
+
     }
 
     @Override
