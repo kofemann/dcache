@@ -86,8 +86,7 @@
         <version.jna>5.4.0</version.jna>
         <version.fst>2.56</version.fst>
 
-
-
+        <version.curator>4.2.0</version.curator>
 
         <version.spring-integration-kafka>3.2.1.RELEASE</version.spring-integration-kafka>
         <version.spring_kafka>2.4.0.RELEASE</version.spring_kafka>
@@ -198,7 +197,7 @@
             <dependency>
                 <groupId>org.apache.curator</groupId>
                 <artifactId>curator-recipes</artifactId>
-                <version>4.2.0</version>
+                <version>${version.curator}</version>
                 <exclusions>
                     <exclusion>
                         <groupId>org.slf4j</groupId>
@@ -987,6 +986,21 @@
                 <groupId>org.reflections</groupId>
                 <artifactId>reflections</artifactId>
                 <version>0.9.12</version>
+            </dependency>
+            <dependency>
+                <groupId>com.hazelcast</groupId>
+                <artifactId>hazelcast-spring</artifactId>
+                <version>${hazelcast.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.hazelcast</groupId>
+                <artifactId>hazelcast-zookeeper</artifactId>
+                <version>3.6.3</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.curator</groupId>
+                <artifactId>curator-x-discovery</artifactId>
+                <version>${version.curator}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
