@@ -324,6 +324,14 @@
           <groupId>org.apache.kafka</groupId>
           <artifactId>kafka-clients</artifactId>
       </dependency>
+      <dependency>
+          <groupId>com.hazelcast</groupId>
+          <artifactId>hazelcast-zookeeper</artifactId>
+      </dependency>
+      <dependency>
+          <groupId>org.apache.curator</groupId>
+          <artifactId>curator-x-discovery</artifactId>
+      </dependency>
   </dependencies>
 
   <build>

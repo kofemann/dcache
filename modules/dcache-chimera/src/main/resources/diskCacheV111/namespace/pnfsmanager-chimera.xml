@@ -2,8 +2,13 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
        xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
        xmlns:context="http://www.springframework.org/schema/context"
+       xmlns:hz="http://www.hazelcast.com/schema/spring"
        xsi:schemaLocation="http://www.springframework.org/schema/beans
-           http://www.springframework.org/schema/beans/spring-beans.xsd http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context.xsd">
+           http://www.springframework.org/schema/beans/spring-beans.xsd
+           http://www.springframework.org/schema/context
+           http://www.springframework.org/schema/context/spring-context.xsd
+           http://www.hazelcast.com/schema/spring
+           http://www.hazelcast.com/schema/spring/hazelcast-spring.xsd">
 
     <context:property-placeholder/>
 
@@ -77,12 +82,31 @@
       <property name="shouldUpdate" value="${pnfsmanager.db.schema.auto}"/>
   </bean>
 
-  <bean name="hazelcastInstance" class="com.hazelcast.core.Hazelcast"
-          factory-method="newHazelcastInstance"/>
-
-  <bean id="hazelcastLifecycle" class="com.hazelcast.core.LifecycleService"
-        factory-bean="hazelcastInstance" factory-method="getLifecycleService"
-        destroy-method="shutdown" />
+  <bean name="hazelcast-discovery-factory" class="com.hazelcast.zookeeper.ZookeeperDiscoveryStrategyFactory" />
+  <hz:hazelcast id="hazelcastInstance">
+      <hz:config>
+          <hz:group name="dcache-namespace"/>
+          <hz:properties>
+              <hz:property name="hazelcast.discovery.enabled">true</hz:property>
+          </hz:properties>
+          <hz:network port="5701" port-auto-increment="true">
+              <hz:join>
+                  <hz:multicast enabled="false"/>
+                  <hz:tcp-ip enabled="false"/>
+                  <hz:aws enabled="false"/>
+                  <hz:discovery-strategies>
+                      <hz:discovery-strategy discovery-strategy-factory="hazelcast-discovery-factory">
+                          <hz:properties>
+                              <hz:property name="zookeeper_url">${dcache.zookeeper.connection}</hz:property>
+                              <hz:property name="zookeeper_path">/discovery/hazelcast</hz:property>
+                              <hz:property name="group">dcache-namespace</hz:property>
+                          </hz:properties>
+                      </hz:discovery-strategy>
+                  </hz:discovery-strategies>
+              </hz:join>
+          </hz:network>
+      </hz:config>
+  </hz:hazelcast>
 
   <bean id="file-system" class="org.dcache.chimera.JdbcFs" depends-on="liquibase">
       <description>Chimera</description>
