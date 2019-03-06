@@ -42,6 +42,7 @@ import org.dcache.chimera.DirectoryStreamHelper;
 import org.dcache.chimera.FileExistsChimeraFsException;
 import org.dcache.chimera.FileNotFoundHimeraFsException;
 import org.dcache.chimera.FileSystemProvider;
+import org.dcache.chimera.FileState;
 import org.dcache.chimera.FsInode;
 import org.dcache.chimera.FsInodeType;
 import org.dcache.chimera.FsInode_CONST;
@@ -319,8 +320,10 @@ public class ChimeraVfs implements VirtualFileSystem, AclCheckable {
                     stat.undefine(Stat.StatAttribute.SIZE);
                 } else {
                     // allow set size only for empty files
-                    if (_fs.stat(fsInode).getSize() != 0) {
-                        throw new PermException("can not extend existing file");
+                    org.dcache.chimera.posix.Stat currentStat = _fs.stat(fsInode);
+                    if (currentStat.getSize() != 0) {
+                        if (currentStat.getState() != FileState.CREATED)
+                            throw new PermException("can not extend existing file");
                     }
                 }
             }
