@@ -46,10 +46,14 @@
         <property name="dataSource" ref="data-source"/>
     </bean>
 
+    <bean name="hazelcastInstance" class="com.hazelcast.core.Hazelcast"
+          factory-method="newHazelcastInstance"/>
+
     <bean id="file-system" class="org.dcache.chimera.JdbcFs" depends-on="liquibase">
       <description>Chimera</description>
       <constructor-arg ref="data-source"/>
       <constructor-arg ref="tx-manager"/>
+      <constructor-arg ref="hazelcastInstance" />
     </bean>
 
     <bean id="extractor" class="${resilience.plugins.storage-info-extractor}">
