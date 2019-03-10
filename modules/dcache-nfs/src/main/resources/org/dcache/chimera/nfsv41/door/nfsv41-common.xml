@@ -119,6 +119,9 @@
                     </hz:discovery-strategies>
                 </hz:join>
             </hz:network>
+            <hz:map name="default" time-to-live-seconds="0" max-idle-seconds="0"
+                    eviction-policy="LRU" max-size="10000" max-size-policy="PER_NODE"
+                    eviction-percentage="25"/>
         </hz:config>
     </hz:hazelcast>
 
