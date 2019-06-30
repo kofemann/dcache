@@ -39,7 +39,7 @@ import org.dcache.nfs.status.BadLayoutException;
 import org.dcache.nfs.status.NotSuppException;
 import org.dcache.nfs.v4.AbstractNFSv4Operation;
 import org.dcache.nfs.v4.CompoundContext;
-import org.dcache.nfs.v4.MDSOperationFactory;
+import org.dcache.nfs.v4.MDSOperationExecutor;
 import org.dcache.nfs.v4.OperationREMOVE;
 import org.dcache.nfs.v4.xdr.nfs_argop4;
 import org.dcache.nfs.v4.xdr.nfs_opnum4;
@@ -84,7 +84,7 @@ import org.dcache.chimera.nfsv41.door.proxy.ProxyIoWRITE;
  * operation which modify backend file system (CREATE, REMOVE, RENAME and
  * SETATTR).
  */
-public class DoorOperationFactory extends MDSOperationFactory {
+public class DoorOperationFactory extends MDSOperationExecutor {
 
     private static final Logger LOG = LoggerFactory.getLogger(DoorOperationFactory.class);
     private static final Logger ACCESS_LOGGER = LoggerFactory.getLogger("org.dcache.access.nfs");
@@ -191,7 +191,7 @@ public class DoorOperationFactory extends MDSOperationFactory {
     }
 
     @Override
-    public AbstractNFSv4Operation getOperation(nfs_argop4 op) {
+    protected AbstractNFSv4Operation getOperation(nfs_argop4 op) {
 
         final AbstractNFSv4Operation operation;
         switch (op.argop) {

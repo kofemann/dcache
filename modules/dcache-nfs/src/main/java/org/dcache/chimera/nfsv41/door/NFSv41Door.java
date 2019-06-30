@@ -83,6 +83,7 @@ import org.dcache.chimera.ChimeraFsException;
 import org.dcache.chimera.FsInode;
 import org.dcache.chimera.FsInodeType;
 import org.dcache.chimera.JdbcFs;
+import org.dcache.chimera.nfsv41.common.StatsDecoratedOperationExecutor;
 import org.dcache.chimera.nfsv41.door.proxy.NfsProxyIoFactory;
 import org.dcache.chimera.nfsv41.door.proxy.ProxyIoFactory;
 import org.dcache.chimera.nfsv41.mover.NFS4ProtocolInfo;
@@ -298,6 +299,11 @@ public class NFSv41Door extends AbstractCellComponent implements
      */
     private boolean _manageGids;
 
+    /**
+     * NFSv4 operation executer with requests statistics.
+     */
+    private StatsDecoratedOperationExecutor _nfs4OpExecutor;
+
     public void setEventNotifier(EventNotifier notifier) {
         _eventNotifier = notifier;
     }
@@ -408,19 +414,21 @@ public class NFSv41Door extends AbstractCellComponent implements
                 case V41:
                     final NFSv41DeviceManager _dm = this;
                     _proxyIoFactory = new NfsProxyIoFactory(_dm);
+                    _nfs4OpExecutor = new StatsDecoratedOperationExecutor(
+                            new DoorOperationFactory(
+                            _proxyIoFactory,
+                            _chimeraVfs,
+                            _fileFileSystemProvider,
+                            _manageGids ? Optional.of(_idMapper)
+                                    : Optional.empty(),
+                            _accessLogMode)
+                    );
+
                     _nfs4 = new NFSServerV41.Builder()
                             .withDeviceManager(_dm)
-                            .withExportFile(_exportFile)
+                            .withExportTable(_exportFile)
                             .withVfs(_vfs)
-                            .withOperationFactory(
-                                    new DoorOperationFactory(
-                                            _proxyIoFactory,
-                                            _chimeraVfs,
-                                            _fileFileSystemProvider,
-                                            _manageGids ? Optional.of(_idMapper)
-                                                    : Optional.empty(),
-                                            _accessLogMode)
-                            )
+                            .withOperationExecutor(_nfs4OpExecutor)
                             .build();
 
                     oncRpcSvcBuilder.withRpcService(new OncRpcProgram(nfs4_prot.NFS4_PROGRAM, nfs4_prot.NFS_V4), _nfs4);
@@ -727,7 +735,7 @@ public class NFSv41Door extends AbstractCellComponent implements
         return Lists.newArrayList(_poolDeviceMap.getDeviceIds());
     }
 
-    private void logLayoutErrors(ff_layoutreturn4 lr) {
+    private void logLayoutErrors(CompoundContext context, ff_layoutreturn4 lr) {
         for (ff_ioerr4 ioerr : lr.fflr_ioerr_report) {
             for (device_error4 de : ioerr.ffie_errors) {
                 PoolDS ds = _poolDeviceMap.getByDeviceId(de.de_deviceid);
@@ -765,7 +773,7 @@ public class NFSv41Door extends AbstractCellComponent implements
         _log.debug("Releasing layout by stateid: {}, open-state: {}", stateid,
                 openState.stateid());
 
-        getLayoutDriver(layoutType).acceptLayoutReturnData(body);
+        getLayoutDriver(layoutType).acceptLayoutReturnData(context, body);
 
         NfsTransfer transfer = _ioMessages.get(openState.stateid());
         if (transfer != null) {
@@ -848,9 +856,9 @@ public class NFSv41Door extends AbstractCellComponent implements
             Stream<FsExport> exports;
             if (host != null) {
                 InetAddress address = InetAddress.getByName(host);
-                exports = _exportFile.exportsFor(address);
+                exports = _exportFile.exports(address);
             } else {
-                exports = _exportFile.getExports();
+                exports = _exportFile.exports();
             }
             return exports
                     .map(Object::toString)
@@ -1443,7 +1451,7 @@ public class NFSv41Door extends AbstractCellComponent implements
 
         @Override
         public String call() {
-            RequestExecutionTimeGauges<String> gauges = _nfs4.getStatistics();
+            RequestExecutionTimeGauges<String> gauges = _nfs4OpExecutor.getStatistics();
             StringBuilder sb = new StringBuilder();
             sb.append("Stats:").append("\n").append(gauges.toString("ns"));
 
@@ -1569,7 +1577,7 @@ public class NFSv41Door extends AbstractCellComponent implements
     }
 
     private void updateLbPaths() {
-        List<String> exportPaths = _exportFile.getExports().map(FsExport::getPath).distinct().collect(toList());
+        List<String> exportPaths = _exportFile.exports().map(FsExport::getPath).distinct().collect(toList());
         _loginBrokerPublisher.setReadPaths(exportPaths);
         _loginBrokerPublisher.setWritePaths(exportPaths);
     }
