@@ -15,8 +15,6 @@ import org.slf4j.LoggerFactory;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.sql.Timestamp;
-import java.time.Instant;
 import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -375,8 +373,7 @@ public class HsmCleaner extends AbstractCleaner implements CellMessageReceiver, 
     @Override
     protected void runDelete() throws InterruptedException
     {
-        Timestamp graceTime = Timestamp.from(Instant.now().minusSeconds(_gracePeriod.getSeconds()));
-        _db.query("SELECT ilocation FROM t_locationinfo_trash WHERE itype=0 AND ictime<?",
+        _db.query("SELECT ilocation FROM t_locationinfo_trash WHERE itype=0",
                 rs -> {
                     try {
                         URI uri = new URI(rs.getString("ilocation"));
@@ -385,8 +382,7 @@ public class HsmCleaner extends AbstractCleaner implements CellMessageReceiver, 
                     } catch (URISyntaxException e) {
                         throw new DataIntegrityViolationException("Invalid URI in database: " + e.getMessage(), e);
                     }
-                },
-                graceTime);
+                });
 
     }
 
