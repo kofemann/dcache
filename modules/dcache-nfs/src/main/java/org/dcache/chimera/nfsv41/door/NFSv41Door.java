@@ -754,9 +754,8 @@ public class NFSv41Door extends AbstractCellComponent implements
                     NDC.push(context.getRpcCall().getTransport().getRemoteSocketAddress().toString());
                 }
 
-                layoutStateId = transfer.getStateid();
-
                 devices = transfer.getPoolDataServers(NFS_REQUEST_BLOCKING);
+                layoutStateId = transfer.getStateid();
             }
 
             //  -1 is special value, which means entire file
@@ -1285,6 +1284,7 @@ public class NFSv41Door extends AbstractCellComponent implements
                  * allow writes only into new files
                  */
                 if (!attr.getStorageInfo().isCreatedOnly()) {
+                    _ioMessages.remove(this._openStateid.stateid());
                     throw new PermException("Can't modify existing file");
                 }
 
@@ -1327,8 +1327,8 @@ public class NFSv41Door extends AbstractCellComponent implements
     abstract private class NfsTransfer extends RedirectedTransfer<PoolDS> {
 
         private final Inode _nfsInode;
-        private final NFS4State _stateid;
-        private final NFS4State _openStateid;
+        private NFS4State _stateid;
+        protected final NFS4State _openStateid;
         protected ListenableFuture<Void> _redirectFuture;
         protected AtomicReference<ChimeraNFSException> _errorHolder = new AtomicReference<>();
         private final NFS4Client _client;
@@ -1338,9 +1338,6 @@ public class NFSv41Door extends AbstractCellComponent implements
             super(pnfs, Subjects.ROOT, Restrictions.none(), ioSubject,  FsPath.ROOT);
 
             _nfsInode = nfsInode;
-
-            // layout, or a transfer in dCache language, must have a unique stateid
-            _stateid = client.createState(openStateId.getStateOwner(), openStateId);
             _openStateid = openStateId;
             _client = client;
         }
@@ -1537,8 +1534,14 @@ public class NFSv41Door extends AbstractCellComponent implements
             return _errorHolder.compareAndSet(null, e);
         }
 
-        NFS4State getStateid() {
-            return _stateid;
+        NFS4State getStateid() throws ChimeraNFSException {
+            synchronized (_openStateid) {
+                if (_stateid == null) {
+                    // layout, or a transfer in dCache language, must have a unique stateid
+                    _stateid = _client.createState(_openStateid.getStateOwner(), _openStateid);
+                }
+                return _stateid;
+            }
         }
 
         NFS4Client getClient() {
@@ -1575,7 +1578,11 @@ public class NFSv41Door extends AbstractCellComponent implements
             }
 
             // bump sequence as we do a new action on layout
-            _stateid.bumpSeqid();
+            try {
+                getStateid().bumpSeqid();
+            } catch (ChimeraNFSException ex) {
+                throw new RuntimeException(ex);
+            }
 
             _log.info("Recalling layout from {}", _client);
             executorService.submit(new FireAndForgetTask(new LayoutRecallTask(this, executorService)));
