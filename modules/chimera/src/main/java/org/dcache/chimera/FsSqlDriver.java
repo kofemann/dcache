@@ -307,12 +307,13 @@ public class FsSqlDriver {
     }
 
     private boolean removeDir(FsInode parent, FsInode inode, String name) throws ChimeraFsException {
-        if (!removeEntryInParent(parent, name, inode)) {
-            return false;
-        }
 
         // A directory contains two pseudo entries for '.' and '..'
         decNlink(inode, 2);
+
+        if (!removeEntryInParent(parent, name, inode)) {
+            return false;
+        }
 
         // ensure that t_inodes and t_tags_inodes updated in the same order as
         // in mkdir
@@ -328,10 +329,11 @@ public class FsSqlDriver {
 
     private boolean removeFile(FsInode parent, FsInode inode, String name) throws ChimeraFsException {
 
+        decNlink(inode);
+
         if (!removeEntryInParent(parent, name, inode)) {
             return false;
         }
-        decNlink(inode);
 
         removeInodeIfUnlinked(inode);
 
