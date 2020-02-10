@@ -1,6 +1,8 @@
 package org.dcache.cells;
 
 import java.io.Serializable;
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -135,11 +137,10 @@ public class CellMessageDispatcher
     private Collection<Receiver> findReceivers(Class<?> c) {
         Collection<Receiver> receivers = new ArrayList<>();
         for (CellMessageReceiver listener : _messageListeners) {
-            Method m = ReflectionUtils.resolve(listener.getClass(),
+            MethodHandle m = ReflectionUtils.resolve(listener.getClass(),
                     _receiverName,
                     CellMessage.class, c);
             if (m != null) {
-                m.setAccessible(true);
                 receivers.add(new LongReceiver(listener, m));
                 continue;
             }
@@ -148,7 +149,6 @@ public class CellMessageDispatcher
                     _receiverName,
                     c);
             if (m != null) {
-                m.setAccessible(true);
                 receivers.add(new ShortReceiver(listener, m));
             }
         }
@@ -205,36 +205,10 @@ public class CellMessageDispatcher
                     }
                     result = obj;
                 }
-            } catch (IllegalAccessException e) {
-                throw new RuntimeException("Cannot process message due to access error", e);
-            } catch (InvocationTargetException e) {
-                Throwable cause = e.getCause();
-                if (cause instanceof IllegalArgumentException ||
-                    cause instanceof IllegalStateException ||
-                    receiver.isDeclaredToThrow(cause.getClass())) {
-                    /* We recognize IllegalArgumentException,
-                     * IllegalStateException, and any exception
-                     * declared to be thrown by the method as part of
-                     * the public contract of the receiver and
-                     * propagate the exception back to the client.
-                     */
-                } else if (cause instanceof RuntimeException) {
-                    throw (RuntimeException) cause;
-                } else if (cause instanceof Error) {
-                    throw (Error) cause;
-                } else {
-                    /* Since any Throwable not a RuntimeException and
-                     * not an Error should have been declared to be
-                     * thrown by the method, this branch should be
-                     * unreachable.
-                     */
-                    throw new RuntimeException("Bug: This should have been unreachable. Please report to support@dcache.org.", cause);
-                }
-
-                if (result != null) {
-                    throw new RuntimeException(multipleRepliesError(receivers, message));
-                }
-                result = cause;
+            } catch (RuntimeException | Error e) {
+                throw e;
+            } catch (Throwable t) {
+                result = t;
             }
         }
 
@@ -247,43 +221,33 @@ public class CellMessageDispatcher
     abstract static class Receiver
     {
         protected final CellMessageReceiver _object;
-        protected final Method _method;
+        protected final MethodHandle _method;
 
-        public Receiver(CellMessageReceiver object, Method method)
+        public Receiver(CellMessageReceiver object, MethodHandle method)
         {
             _object = object;
             _method = method;
         }
 
         public abstract Object deliver(CellMessage envelope, Object message)
-            throws IllegalAccessException, InvocationTargetException;
+            throws Throwable;
 
         public String toString()
         {
             return String.format("Object: %1$s; Method: %2$s", _object, _method);
         }
-
-        public boolean isDeclaredToThrow(Class<?> exceptionClass)
-        {
-            for (Class<?> clazz: _method.getExceptionTypes()) {
-                if (clazz.isAssignableFrom(exceptionClass)) {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 
     static class ShortReceiver extends Receiver
     {
-        public ShortReceiver(CellMessageReceiver object, Method method)
+        public ShortReceiver(CellMessageReceiver object, MethodHandle method)
         {
             super(object, method);
         }
 
         @Override
         public Object deliver(CellMessage envelope, Object message)
-            throws IllegalAccessException, InvocationTargetException
+            throws Throwable
         {
             return _method.invoke(_object, message);
         }
@@ -292,14 +256,14 @@ public class CellMessageDispatcher
 
     static class LongReceiver extends Receiver
     {
-        public LongReceiver(CellMessageReceiver object, Method method)
+        public LongReceiver(CellMessageReceiver object, MethodHandle method)
         {
             super(object, method);
         }
 
         @Override
         public Object deliver(CellMessage envelope, Object message)
-            throws IllegalAccessException, InvocationTargetException
+            throws Throwable
         {
             return _method.invoke(_object, envelope, message);
         }
