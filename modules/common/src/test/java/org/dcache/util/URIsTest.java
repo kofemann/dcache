@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2017 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2017 - 2020 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -21,10 +21,15 @@ package org.dcache.util;
 import org.junit.Test;
 
 import java.net.URI;
+import java.util.Map;
 import java.util.Optional;
+
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.hamcrest.collection.IsMapWithSize.anEmptyMap;
+import static org.hamcrest.collection.IsMapWithSize.aMapWithSize;
+import static org.hamcrest.collection.IsMapContaining.hasEntry;
 import static org.junit.Assert.*;
 
 public class URIsTest
@@ -239,4 +244,33 @@ public class URIsTest
 
         assertThat(port.isPresent(), is(equalTo(false)));
     }
+
+    @Test
+    public void testXattrEmpty()
+    {
+        URI uri = URI.create("http://server.example.com/foo");
+
+        Map<String, String> xattrs = URIs.extractPrefixedAttributes(uri, "xattr");
+        assertThat(xattrs, anEmptyMap());
+    }
+
+    @Test
+    public void testXattrSingleValue() {
+        URI uri = URI.create("http://server.example.com/foo?xattr.key1=value1");
+
+        Map<String, String> xattrs = URIs.extractPrefixedAttributes(uri, "xattr");
+        assertThat(xattrs, aMapWithSize(1));
+        assertThat(xattrs, hasEntry("xattr.key1", "value1"));
+    }
+
+    @Test
+    public void testXattrMutipleValue() {
+        URI uri = URI.create("http://server.example.com/foo?xattr.key1=value1&xattr.key2=value2");
+
+        Map<String, String> xattrs = URIs.extractPrefixedAttributes(uri, "xattr");
+        assertThat(xattrs, aMapWithSize(2));
+        assertThat(xattrs, hasEntry("xattr.key1", "value1"));
+        assertThat(xattrs, hasEntry("xattr.key2", "value2"));
+    }
+
 }

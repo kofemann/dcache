@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2017 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2017 - 2020 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,12 +18,17 @@
  */
 package org.dcache.util;
 
+import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableMap;
 
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Collections;
 import java.util.Map;
 import java.util.Optional;
+
+import static java.util.Map.Entry;
+import static java.util.stream.Collectors.toMap;
 
 /**
  *  Utility methods for URI objects.
@@ -154,5 +159,29 @@ public class URIs
     public static URI createWithDefaultPort(String uri) throws URISyntaxException
     {
         return withDefaultPort(new URI(uri));
+    }
+
+
+    /**
+     * Extract attributes with given {@code prefix} from the {@code uri}.
+     * @param uri The URI to parse.
+     * @param prefix The filter to select attributes.
+     * @return a key-value map.
+     */
+    public static Map<String,String> extractPrefixedAttributes(URI uri, String prefix) {
+
+        String query = uri.getQuery();
+        if (com.google.common.base.Strings.isNullOrEmpty(query)) {
+            return Collections.emptyMap();
+        }
+
+        return Splitter.on('&')
+                .withKeyValueSeparator("=")
+                .split(query)
+                    .entrySet()
+                    .stream()
+                    .filter(e -> e.getKey().startsWith(prefix))
+                    .collect(toMap(Entry::getKey, Entry::getValue));
+
     }
 }
