@@ -1,7 +1,9 @@
 package diskCacheV111.util;
 
+import java.io.UnsupportedEncodingException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.URLDecoder;
 
 public class DCapUrl {
 
@@ -17,10 +19,10 @@ public class DCapUrl {
     public DCapUrl(String dCapUrl) throws IllegalArgumentException {
 
         try {
-            _uri = new URI(dCapUrl);
-        } catch (URISyntaxException ue) {
-            // be complaint with dCache API specification
-            throw new IllegalArgumentException("Invalid dCap URI: " + ue);
+            // TODO: java10+ supports StandardCharsets.UTF_8)
+           _uri = URI.create(URLDecoder.decode(dCapUrl, "UTF-8"));
+        } catch (UnsupportedEncodingException e) {
+            throw new RuntimeException(e);
         }
 
         if( !_uri.isAbsolute()) {

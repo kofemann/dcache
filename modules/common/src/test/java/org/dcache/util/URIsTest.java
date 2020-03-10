@@ -250,7 +250,7 @@ public class URIsTest
     {
         URI uri = URI.create("http://server.example.com/foo");
 
-        Map<String, String> xattrs = URIs.extractPrefixedAttributes(uri, "xattr");
+        Map<String, String> xattrs = URIs.extractXattrs(uri);
         assertThat(xattrs, anEmptyMap());
     }
 
@@ -258,19 +258,19 @@ public class URIsTest
     public void testXattrSingleValue() {
         URI uri = URI.create("http://server.example.com/foo?xattr.key1=value1");
 
-        Map<String, String> xattrs = URIs.extractPrefixedAttributes(uri, "xattr");
+        Map<String, String> xattrs = URIs.extractXattrs(uri);
         assertThat(xattrs, aMapWithSize(1));
-        assertThat(xattrs, hasEntry("xattr.key1", "value1"));
+        assertThat(xattrs, hasEntry("key1", "value1"));
     }
 
     @Test
     public void testXattrMutipleValue() {
         URI uri = URI.create("http://server.example.com/foo?xattr.key1=value1&xattr.key2=value2");
 
-        Map<String, String> xattrs = URIs.extractPrefixedAttributes(uri, "xattr");
+        Map<String, String> xattrs = URIs.extractXattrs(uri);
         assertThat(xattrs, aMapWithSize(2));
-        assertThat(xattrs, hasEntry("xattr.key1", "value1"));
-        assertThat(xattrs, hasEntry("xattr.key2", "value2"));
+        assertThat(xattrs, hasEntry("key1", "value1"));
+        assertThat(xattrs, hasEntry("key2", "value2"));
     }
 
 }

@@ -46,6 +46,8 @@ public class URIs
             .put("srm", 8443)
             .build();
 
+    private static final String XATTR_PREFIX = "xattr.";
+    private static final int XATTR_PREFIX_SIZE = XATTR_PREFIX.length();
     private URIs()
     {
         // It's a utility class!
@@ -163,25 +165,22 @@ public class URIs
 
 
     /**
-     * Extract attributes with given {@code prefix} from the {@code uri}.
+     * Extract extended attributes from the given {@code uri}.
      * @param uri The URI to parse.
-     * @param prefix The filter to select attributes.
      * @return a key-value map.
      */
-    public static Map<String,String> extractPrefixedAttributes(URI uri, String prefix) {
+    public static Map<String,String> extractXattrs(URI uri) {
 
         String query = uri.getQuery();
         if (com.google.common.base.Strings.isNullOrEmpty(query)) {
             return Collections.emptyMap();
         }
-
         return Splitter.on('&')
                 .withKeyValueSeparator("=")
                 .split(query)
                     .entrySet()
                     .stream()
-                    .filter(e -> e.getKey().startsWith(prefix))
-                    .collect(toMap(Entry::getKey, Entry::getValue));
-
+                    .filter(e -> e.getKey().startsWith(XATTR_PREFIX))
+                    .collect(toMap(e -> e.getKey().substring(XATTR_PREFIX_SIZE), Entry::getValue));
     }
 }

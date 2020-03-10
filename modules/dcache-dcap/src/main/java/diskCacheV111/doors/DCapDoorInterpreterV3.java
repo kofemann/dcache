@@ -7,6 +7,7 @@ import com.google.common.collect.Ordering;
 import com.google.common.net.InetAddresses;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
+import org.dcache.util.URIs;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -15,8 +16,12 @@ import javax.security.auth.Subject;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
+import java.net.URI;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Base64;
 import java.util.Date;
@@ -99,6 +104,8 @@ import org.dcache.util.Args;
 import org.dcache.vehicles.FileAttributes;
 import org.dcache.vehicles.PnfsGetFileAttributes;
 import org.dcache.vehicles.pool.CacheEntryInfoMessage;
+
+import static java.util.stream.Collectors.toMap;
 
 import static org.dcache.namespace.FileAttribute.*;
 import static org.dcache.namespace.FileType.DIR;
@@ -1729,6 +1736,7 @@ public class DCapDoorInterpreterV3
         private String            _retentionPolicy;
         private PoolMgrSelectReadPoolMsg.Context _readPoolSelectionContext;
         private InetSocketAddress _clientSocketAddress;
+        private Map<String, String> _xattr;
 
         private IoHandler(int sessionId, int commandId, VspArgs args)
             throws CacheException
@@ -1861,6 +1869,17 @@ public class DCapDoorInterpreterV3
                 attributes.setAcl(ACLParser.parseLinuxAcl(RsType.FILE, acl));
             }
 
+            if (_isUrl) {
+                // TODO: java10+ supports StandardCharsets.UTF_8)
+                try {
+                    _xattr = URIs.extractXattrs(URI.create(URLDecoder.decode(_vargs.argv(0), "UTF-8")));
+                } catch (UnsupportedEncodingException e) {
+                    throw new RuntimeException(e);
+                }
+            }
+            if (_xattr != null && !_xattr.isEmpty()) {
+                attributes.setXattrs(_xattr);
+            }
             PnfsCreateEntryMessage pnfsEntry = _pnfs.createPnfsEntry(path, attributes);
             _log.debug("storageInfoNotAvailable : created pnfsid: {} path: {}",
                        pnfsEntry.getPnfsId(), path);

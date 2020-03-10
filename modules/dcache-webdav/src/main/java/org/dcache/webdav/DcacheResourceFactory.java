@@ -13,10 +13,7 @@ import com.google.common.collect.Range;
 import com.google.common.collect.Sets;
 import com.google.common.io.ByteStreams;
 import com.google.common.net.InetAddresses;
-import io.milton.http.HttpManager;
-import io.milton.http.Request;
-import io.milton.http.ResourceFactory;
-import io.milton.http.ResponseStatus;
+import io.milton.http.*;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.resource.Resource;
 import io.milton.servlet.ServletRequest;
@@ -26,7 +23,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Required;
-import org.springframework.http.HttpStatus;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.stringtemplate.v4.AutoIndentWriter;
 import org.stringtemplate.v4.ST;
@@ -49,16 +45,7 @@ import java.net.URL;
 import java.net.UnknownHostException;
 import java.security.AccessController;
 import java.time.Instant;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Date;
-import java.util.EnumSet;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.OptionalLong;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -99,7 +86,6 @@ import org.dcache.auth.SubjectWrapper;
 import org.dcache.auth.Subjects;
 import org.dcache.auth.attributes.LoginAttribute;
 import org.dcache.auth.attributes.LoginAttributes;
-import org.dcache.auth.attributes.MaxUploadSize;
 import org.dcache.auth.attributes.Restriction;
 import org.dcache.auth.attributes.Restrictions;
 import org.dcache.cells.CellStub;
@@ -120,6 +106,7 @@ import org.dcache.util.RedirectedTransfer;
 import org.dcache.util.Transfer;
 import org.dcache.util.TransferRetryPolicies;
 import org.dcache.util.TransferRetryPolicy;
+import org.dcache.util.URIs;
 import org.dcache.util.list.DirectoryEntry;
 import org.dcache.util.list.DirectoryListPrinter;
 import org.dcache.util.list.ListDirectoryHandler;
@@ -131,6 +118,7 @@ import static com.google.common.collect.Iterables.cycle;
 import static com.google.common.collect.Iterables.limit;
 import static java.util.Arrays.asList;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.stream.Collectors.toMap;
 import static org.dcache.namespace.FileAttribute.*;
 import static org.dcache.namespace.FileType.*;
 import static org.dcache.util.ByteUnit.KiB;
@@ -1297,6 +1285,26 @@ public class DcacheResourceFactory
         return isAdmin() ? Restrictions.none() : getRestriction();
     }
 
+    private static final String XATTR_PREFIX = "xattr.";
+    private static final int XATTR_PREFIX_SIZE = XATTR_PREFIX.length();
+
+    /**
+     * Returns request params.
+     */
+    private static  Map<String, String> getXattrsFromRequest() {
+        Map<String, String> m = new HashMap<>();
+        try {
+            HttpManager.request().parseRequestParameters(m, null);
+        } catch (Exception e) {
+
+        }
+
+        return m.entrySet()
+                .stream()
+                .filter(e -> e.getKey().startsWith(XATTR_PREFIX))
+                .collect(toMap(e -> e.getKey().substring(XATTR_PREFIX_SIZE), Map.Entry::getValue));
+    }
+
     /**
      * Returns the location URI of the current request. This is the
      * full request URI excluding user information, query and fragments.
@@ -1657,6 +1665,15 @@ public class DcacheResourceFactory
         {
             FileAttributes attributes = super.fileAttributesForNameSpace();
             _mtime.map(Instant::toEpochMilli).ifPresent(attributes::setModificationTime);
+
+            /**
+             * Add user provided extended attributes, which will be sent to the pool.
+             */
+            Map<String, String> xattr = getXattrsFromRequest();
+            if (!xattr.isEmpty()) {
+                attributes.setXattrs(xattr);
+            }
+
             return attributes;
         }
 

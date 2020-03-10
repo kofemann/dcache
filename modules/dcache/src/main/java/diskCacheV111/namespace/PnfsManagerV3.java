@@ -1231,6 +1231,9 @@ public class PnfsManagerV3
                 }
                 info.setKey("uid", Integer.toString(assign.getOwnerIfPresent().orElse(-1)));
                 info.setKey("gid", Integer.toString(assign.getGroupIfPresent().orElse(-1)));
+                if (assign.isDefined(XATTR)) {
+                    info.getMap().putAll(assign.getXattrs());
+                }
 
                 pnfsMessage.setPnfsId(attrs.getPnfsId());
                 break;
