@@ -1878,4 +1878,15 @@ public class FsSqlDriver {
         preparedStatement.setLong(idx++, inode.ino());
         return preparedStatement;
     }
+
+    Map<String, FsInode> topDirs(FsInode root) {
+        Map<String, FsInode> topDirs = new HashMap<>();
+
+        List<Long> dirs = _jdbc.queryForList("SELECT inumber FROM t_tags where isorign = 1 and itagname = 'OSMTemplate'", Long.class);
+
+        return dirs.stream()
+                .collect(Collectors
+                        .toMap(d -> inode2path(d.longValue(), root.ino()), d -> new FsInode(root.getFs(), d.longValue()))
+                );
+    }
 }

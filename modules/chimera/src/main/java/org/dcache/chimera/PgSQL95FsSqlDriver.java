@@ -20,6 +20,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DuplicateKeyException;
 
+import java.io.File;
+import java.sql.ResultSet;
+import java.sql.Timestamp;
+import java.util.*;
 import javax.sql.DataSource;
 
 import java.sql.Timestamp;
@@ -111,5 +115,17 @@ public class PgSQL95FsSqlDriver extends PgSQLFsSqlDriver {
                          ps.setInt(2, type);
                          ps.setString(3, value);
                      });
+    }
+
+    @Override
+    Map<String, FsInode> topDirs(FsInode root) {
+        Map<String, FsInode> topDirs = new HashMap<>();
+        _jdbc.query("select t_inodes.inumber as inumber, inumber2path(t_tags.inumber) as path from t_tags, t_inodes  " +
+                        "where t_tags.isorign = 1 and itagname = 'OSMTemplate' and t_tags.inumber = t_inodes.inumber",
+                rs -> {
+                    topDirs.put(rs.getString("path"), new FsInode(root.getFs(), rs.getLong("inumber")));
+                }
+        );
+        return topDirs;
     }
 }

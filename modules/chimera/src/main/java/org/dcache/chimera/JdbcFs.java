@@ -1427,6 +1427,10 @@ public class JdbcFs implements FileSystemProvider {
        throw new ChimeraFsException(NOT_IMPL);
     }
 
+    public Map<String, FsInode> getTopDirs()  {
+        return _sqlDriver.topDirs(new RootInode(this, _sqlDriver.getRootInumber()));
+    }
+
     private interface FallibleTransactionCallback<T>
     {
         T doInTransaction(TransactionStatus status) throws ChimeraFsException;

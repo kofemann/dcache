@@ -381,4 +381,6 @@ public interface FileSystemProvider extends Closeable {
     {
         STAT, NO_STAT
     }
+
+    Map<String, FsInode> getTopDirs();
 }

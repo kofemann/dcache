@@ -21,15 +21,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.UncheckedIOException;
 import java.lang.reflect.Method;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.regex.Pattern;
@@ -124,6 +116,12 @@ public class ChimeraNameSpaceProvider
             EnumSet.of(ACCESS_LATENCY, CACHECLASS, CHECKSUM, CREATION_TIME,
                     FLAGS, HSM, LOCATIONS, NLINK, PNFSID, RETENTION_POLICY,
                     SIZE, STORAGECLASS, STORAGEINFO, SIMPLE_TYPE, TYPE);
+
+    /**
+     * Attributes required for directories that are origin of a storage group tag.
+     */
+    private final static Set<FileAttribute> TOP_DIR_ATTRS =
+            EnumSet.of(STORAGEINFO, ACCESS_LATENCY, RETENTION_POLICY, OWNER, OWNER_GROUP);
 
     private FileSystemProvider       _fs;
     private ChimeraStorageInfoExtractable _extractor;
@@ -1561,8 +1559,33 @@ public class ChimeraNameSpaceProvider
         return deleted;
     }
 
+    @Override
+    public Map<String, FileAttributes> topDirectories() throws CacheException {
+
+        try {
+
+            Map<String, FsInode> topDirs = _fs.getTopDirs();
+            Map<String, FileAttributes> topSi = new HashMap<>();
+
+            for (Map.Entry<String, FsInode> d : topDirs.entrySet()) {
+                // temporary transfers
+                if (d.getKey().startsWith(_uploadDirectory)) {
+                    continue;
+                }
+
+                ExtendedInode inode = new ExtendedInode(_fs, d.getValue());
+                FileAttributes fileAttributes = getFileAttributes(inode, TOP_DIR_ATTRS);
+                topSi.put(d.getKey(), fileAttributes);
+            }
+
+            return topSi;
+        } catch (ChimeraFsException e) {
+            throw new CacheException(CacheException.UNEXPECTED_SYSTEM_EXCEPTION, e.getMessage());
+        }
+    }
+
     private void removeRecursively(ExtendedInode parent, String name, ExtendedInode inode,
-            Consumer<ExtendedInode> deleted) throws ChimeraFsException, CacheException
+                                   Consumer<ExtendedInode> deleted) throws ChimeraFsException, CacheException
     {
         try {
             if (inode.isDirectory() && inode.stat().getNlink() > 2) {

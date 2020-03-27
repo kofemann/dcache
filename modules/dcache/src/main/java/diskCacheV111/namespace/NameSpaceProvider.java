@@ -7,6 +7,7 @@ import javax.security.auth.Subject;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import diskCacheV111.util.AccessLatency;
@@ -328,4 +329,6 @@ public interface NameSpaceProvider
      */
     Collection<FileAttributes> cancelUpload(Subject subject, FsPath uploadPath, FsPath path,
             Set<FileAttribute> attr, String explanation) throws CacheException;
+
+    Map<String, FileAttributes> topDirectories() throws CacheException;
 }

@@ -4,9 +4,7 @@ import com.google.common.collect.Range;
 
 import javax.security.auth.Subject;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
+import java.util.*;
 
 import diskCacheV111.namespace.NameSpaceProvider;
 import diskCacheV111.util.AccessLatency;
@@ -248,5 +246,10 @@ public class RemoteNameSpaceProvider implements NameSpaceProvider
     {
         return _pnfs.request(new PnfsCancelUpload(subject, Restrictions.none(),
                 uploadPath, path, requested, explanation)).getDeletedFiles();
+    }
+
+    @Override
+    public Map<String, FileAttributes> topDirectories() throws CacheException {
+        return Collections.emptyMap();
     }
 }

@@ -24,6 +24,7 @@ import javax.security.auth.Subject;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import diskCacheV111.util.AccessLatency;
@@ -200,5 +201,10 @@ public abstract class ForwardingNameSpaceProvider implements NameSpaceProvider
             String explanation) throws CacheException
     {
         return delegate().cancelUpload(subject, uploadPath, path, attr, explanation);
+    }
+
+    @Override
+    public Map<String, FileAttributes> topDirectories() throws CacheException {
+        return delegate().topDirectories();
     }
 }

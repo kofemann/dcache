@@ -93,6 +93,7 @@ import org.dcache.namespace.FileAttribute;
 import org.dcache.namespace.FileType;
 import org.dcache.namespace.ListHandler;
 import org.dcache.namespace.PermissionHandler;
+import org.dcache.namespace.PnfsTopDirectoriesMessage;
 import org.dcache.util.Args;
 import org.dcache.util.Checksum;
 import org.dcache.util.ChecksumType;
@@ -210,6 +211,7 @@ public class PnfsManagerV3
         _gauges.addGauge(PnfsCreateUploadPath.class);
         _gauges.addGauge(PnfsCommitUpload.class);
         _gauges.addGauge(PnfsCancelUpload.class);
+        _gauges.addGauge(PnfsTopDirectoriesMessage.class);
     }
 
     public PnfsManagerV3()
@@ -1740,12 +1742,25 @@ public class PnfsManagerV3
             setFileAttributes((PnfsSetFileAttributes) pnfsMessage);
         } else if (pnfsMessage instanceof PnfsRemoveChecksumMessage) {
             removeChecksum((PnfsRemoveChecksumMessage) pnfsMessage);
+        } else if (pnfsMessage instanceof PnfsTopDirectoriesMessage) {
+            getTopDirectories((PnfsTopDirectoriesMessage) pnfsMessage);
         } else {
             _log.warn("Unexpected message class [{}] from source [{}]",
                       pnfsMessage.getClass(), message.getSourcePath());
             return false;
         }
         return true;
+    }
+
+    private void getTopDirectories(PnfsTopDirectoriesMessage pnfsMessage) {
+
+        try {
+            pnfsMessage.setTopDirs(_nameSpaceProvider.topDirectories());
+            pnfsMessage.setSucceeded();
+        } catch (CacheException e) {
+            pnfsMessage.setFailed(e.getRc(), e);
+        }
+
     }
 
     private void postProcessMessage(CellMessage envelope, PnfsMessage message)
