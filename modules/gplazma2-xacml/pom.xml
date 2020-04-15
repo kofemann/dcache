@@ -4,7 +4,7 @@
     <parent>
         <artifactId>dcache-parent</artifactId>
         <groupId>org.dcache</groupId>
-        <version>5.2.5</version>
+        <version>5.2.5s3</version>
         <relativePath>../../pom.xml</relativePath>
     </parent>
 
