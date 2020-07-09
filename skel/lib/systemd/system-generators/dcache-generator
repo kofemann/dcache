@@ -19,6 +19,11 @@ for domain in $(getProperty dcache.domains); do
     HOME="$(getProperty dcache.home)"
     CLASSPATH="$(printClassPath "$domain")"
     JAVA_LIBRARY_PATH="$(getProperty dcache.java.library.path "$domain")"
+	OUTPUT="$(getProperty dcache.systemd.output)"
+	if [ "$OUTPUT" = "file" ]; then
+		LOG_FILE="$(getProperty dcache.log.file)"
+		OUTPUT="append:$LOG_FILE"
+	fi
 
     cat <<-EOF > "$1/dcache@$domain.service"
 	[Unit]
@@ -41,6 +46,8 @@ for domain in $(getProperty dcache.domains); do
 	ExecStart=${JAVA} ${JAVA_OPTIONS} "-Ddcache.home=$HOME" "-Ddcache.paths.defaults=${DCACHE_DEFAULTS}" org.dcache.boot.BootLoader start ${domain}
 	LimitNOFILE=65535
 	LimitNPROC=infinity
+	StandardOutput=${OUTPUT}
+	StandardError=inherit
 
 	[Install]
 	WantedBy=dcache.target
