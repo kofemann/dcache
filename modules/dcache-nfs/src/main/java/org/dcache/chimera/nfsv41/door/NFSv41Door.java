@@ -596,8 +596,10 @@ public class NFSv41Door extends AbstractCellComponent implements
 
     public void messageArrived(PoolStatusChangedMessage message) {
         if (message.getPoolState() == PoolStatusChangedMessage.DOWN) {
-            _log.info("Pool disabled: {}", message.getPoolName());
-            recallLayouts(message.getPoolName());
+            String poolName = message.getPoolName();
+            _log.info("Pool disabled: {}", poolName);
+            recallLayouts(poolName);
+            deletePnfsDevice(poolName);
         }
     }
 
@@ -1786,6 +1788,30 @@ public class NFSv41Door extends AbstractCellComponent implements
                 .filter(t -> t.getClient().getMinorVersion() > 0)
                 .peek(t -> t.recallLayout(_callbackExecutor))
                 .count();
+    }
+
+    /**
+     * Notify clients that the pool ()pNFS data server) is gone.
+     * @param poolName
+     */
+    private void deletePnfsDevice(String poolName) {
+        PoolDS ds = _poolDeviceMap.remove(poolName);
+        if (ds != null) {
+            deviceid4 dev = ds.getDeviceId();
+            // no need to check is nfs4 null, as mapping can exist only if v4.1 is running.
+            _nfs4.getStateHandler().getClients()
+                    .stream()
+                    .filter(c -> c.getMinorVersion() > 0)
+                    .map(NFS4Client::getCB)
+                    .filter(Objects::nonNull)
+                    .forEach(cb -> {
+                        try {
+                            cb.cbDeleteDevice(dev);
+                        } catch (IOException e) {
+                            _log.error("Failed to delete device by id: {}", e.getMessage());
+                        }
+                    });
+        }
     }
 
     private void updateLbPaths() {
