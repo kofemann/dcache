@@ -7,6 +7,7 @@ import com.google.common.base.Supplier;
 import com.google.common.base.Suppliers;
 import com.google.common.collect.Collections2;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Ordering;
@@ -34,11 +35,14 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Optional;
 import java.util.concurrent.TimeUnit;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Predicates.and;
+import static com.google.common.base.Strings.isNullOrEmpty;
 import static com.google.common.base.Strings.nullToEmpty;
 import static com.google.common.collect.Iterables.filter;
 import static com.google.common.collect.Iterators.*;
@@ -194,6 +198,7 @@ public abstract class NetworkUtils {
     private static final int RANDOM_PORT = 23241;
 
     private static final List<InetAddress> FAKED_ADDRESSES;
+    private static final Map<Subnet,InetAddress> INTERFACE_SUBNETS = buildInterfaceSubnets();
 
     private static final Supplier<List<InetAddress>> LOCAL_ADDRESS_SUPPLIER =
             Suppliers.memoizeWithExpiration(new LocalAddressSupplier(), 5, TimeUnit.SECONDS);
@@ -294,6 +299,16 @@ public abstract class NetworkUtils {
     public static InetAddress getLocalAddress(InetAddress expectedSource, ProtocolFamily protocolFamily)
             throws SocketException
     {
+        Optional<InetAddress> configuredAddress = INTERFACE_SUBNETS.entrySet().stream()
+                .filter(e -> e.getKey().contains(expectedSource))
+                .map(Map.Entry::getValue)
+                .filter(addr -> getProtocolFamily(addr) == protocolFamily)
+                .findFirst();
+
+        if (configuredAddress.isPresent()) {
+            return configuredAddress.get();
+        }
+
         if (!FAKED_ADDRESSES.isEmpty()) {
             for (InetAddress address : FAKED_ADDRESSES) {
                 if (getProtocolFamily(address) == protocolFamily) {
@@ -350,6 +365,75 @@ public abstract class NetworkUtils {
             }
             return localAddress;
         }
+    }
+
+    /**
+     * Build an explicit list of subnets along with the interface to which those
+     * clients may connect.  If the client is connecting from one of the
+     * subnets then the selected interface is used.
+     * <p>
+     * The format for the system properties is:
+     * <pre>
+     * org.dcache.net.interface-reachability.&amp;n>.subnet = &amp;CIDR>
+     * org.dcache.net.interface-reachability.&amp;n>.interface = &amp;address>
+     * </pre>
+     * Where &amp;n> is an integer, &amp;CIDR> is the subnet from which the
+     * client is connecting, and &amp;address> is the network interface
+     * address.  Both the &amp;CIDR> and the &amp;address> values may be
+     * (independently) IPv4 or IPv6 addresses.  The values on &amp;n> must be
+     * consecutive, starting with 1.
+     * <p>
+     * Here is an example:
+     * <pre>
+     * org.dcache.net.interface-reachability.1.subnet = 198.51.100.0/24
+     * org.dcache.net.interface-reachability.1.interface = 2001:db8::206
+     * org.dcache.net.interface-reachability.2.subnet = 203.0.113.0/24
+     * org.dcache.net.interface-reachability.2.interface = 2001:db8::208
+     * org.dcache.net.interface-reachability.3.subnet = 2001:db8::/32
+     * org.dcache.net.interface-reachability.3.interface = 192.0.2.25
+     * </pre>
+     * @param remote The IP address of the remote client
+     * @param desiredFamily The desired IP address family of the interface
+     * @return A Map containing subnets and their corresponding interface.
+     */
+    private static Map<Subnet,InetAddress> buildInterfaceSubnets()
+    {
+        ImmutableMap.Builder<Subnet,InetAddress> rules = ImmutableMap.<Subnet,InetAddress>builder();
+
+        for (int rule = 1; ;rule++) {
+            String prefix = "org.dcache.net.interface-reachability." + rule;
+            String clientSubnetKey = prefix + ".subnet";
+            String interfaceAddressKey = prefix + ".interface";
+            String clientSubnetValue = System.getProperty(clientSubnetKey);
+            String interfaceAddressValue = System.getProperty(interfaceAddressKey);
+            if (isNullOrEmpty(clientSubnetValue)) {
+                break;
+            }
+            if (isNullOrEmpty(interfaceAddressValue)) {
+                logger.warn("Missing system property {}", interfaceAddressKey);
+                continue;
+            }
+
+            if (!Subnet.isValid(clientSubnetValue)) {
+                logger.warn("Invalid system property {}: subnet value \"{}\" is not valid",
+                        clientSubnetKey, clientSubnetValue);
+                continue;
+            }
+
+            InetAddress interfaceAddress;
+            try {
+                interfaceAddress = InetAddresses.forString(interfaceAddressValue);
+            } catch (IllegalArgumentException ignored) {
+                logger.warn("Invalid system property {}: IP address \"{}\" is not valid",
+                        interfaceAddressKey, interfaceAddressValue);
+                continue;
+            }
+
+            Subnet clientSubnet = Subnet.create(clientSubnetValue);
+            rules.put(clientSubnet, interfaceAddress);
+        }
+
+        return rules.build();
     }
 
     private static Predicate<InetAddress> isNotMulticast()
