@@ -455,6 +455,14 @@ public class Transfer implements Comparable<Transfer>
     }
 
     /**
+     * Clear selected pool and enforce re-selection during retry procedure in {@link #selectPoolAndStartMoverAsync(TransferRetryPolicy)}.
+     */
+    private synchronized void clearPoolSelection()
+    {
+        _pool = null;
+    }
+
+    /**
      * Restrict pool selection to only online files, e.g. no stage or p2p
      * are allowed. Has no effect on upload.
      *
@@ -1088,6 +1096,13 @@ public class Transfer implements Comparable<Transfer>
         message.setSubject(_subject);
 
         ListenableFuture<PoolIoFileMessage> reply = _poolManager.startAsync(pool.getAddress(), message, timeout);
+
+        reply = catchingAsync(reply, NoRouteToCellException.class, x -> {
+            // invalidate pool selection to let the door to start over
+            clearPoolSelection();
+            return immediateFailedFuture(x);
+        });
+
         setStatusUntil("Pool " + pool + ": Creating mover", reply);
         return CellStub.transformAsync(reply, msg -> {
             setMoverId(msg.getMoverId());
@@ -1309,6 +1324,8 @@ public class Transfer implements Comparable<Transfer>
                         case CacheException.POOL_DISABLED:
                         case CacheException.FILE_NOT_IN_REPOSITORY:
                             _log.info("Retrying pool selection: {}", t.getMessage());
+                            // enforce new selection in during retry
+                            clearPoolSelection();
                             return retryWhen(immediateFuture(null));
                         case CacheException.FILE_IN_CACHE:
                         case CacheException.INVALID_ARGS:
@@ -1352,11 +1369,15 @@ public class Transfer implements Comparable<Transfer>
 
                     public ListenableFuture<Void> retryWhen(ListenableFuture<Void> future)
                     {
-                        if (!isWrite()) {
-                            future = transformAsync(future, readNameSpaceEntry);
+                        if (getPool() == null) {
+                            if (!isWrite()) {
+                                future = transformAsync(future, readNameSpaceEntry);
+                            }
+                            future = transformAsync(future, selectPool);
                         }
+
                         start = System.currentTimeMillis();
-                        return catchingAsync(transformAsync(transformAsync(future, selectPool), startMover), CacheException.class, this);
+                        return catchingAsync(transformAsync(future, startMover), CacheException.class, this);
                     }
                 };
 
