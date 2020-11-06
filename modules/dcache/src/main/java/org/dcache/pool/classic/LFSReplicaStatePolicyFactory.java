@@ -1,5 +1,6 @@
 package org.dcache.pool.classic;
 
+@Deprecated
 public class LFSReplicaStatePolicyFactory
 {
     /**
@@ -8,10 +9,7 @@ public class LFSReplicaStatePolicyFactory
      */
     public static ReplicaStatePolicy createInstance(String lfs)
     {
-        if (lfs == null || !lfs.equals("volatile") && !lfs.equals("transient")) {
-            return new ALRPReplicaStatePolicy();
-        } else {
-            return new VolatileReplicaStatePolicy();
-        }
+	// the all cases handled by sine implementation
+        return new ALRPReplicaStatePolicy();
     }
 }

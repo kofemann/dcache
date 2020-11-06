@@ -186,7 +186,6 @@ public class PoolV4
     private int _p2pFileMode = P2P_CACHED;
     private P2PClient _p2pClient;
 
-    private boolean _isVolatile;
     private boolean _hasTapeBackend = true;
 
     private final Object _hybridInventoryLock = new Object();
@@ -269,17 +268,6 @@ public class PoolV4
 
             }
         }
-    }
-
-    @Required
-    public void setVolatile(boolean isVolatile)
-    {
-        _isVolatile = isVolatile;
-    }
-
-    public boolean isVolatile()
-    {
-        return _isVolatile;
     }
 
     @Required
@@ -452,8 +440,6 @@ public class PoolV4
     public void init()
     {
         assertNotRunning("Cannot initialize several times");
-        checkState(!_isVolatile || !_hasTapeBackend, "Volatile pool cannot have a tape backend");
-
         LOGGER.info("Pool {} starting", _poolName);
 
         _repository.addFaultListener(this);
@@ -698,8 +684,6 @@ public class PoolV4
 
         if (_hasTapeBackend) {
             info.setLargeFileStore(Lsf.NONE);
-        } else if (_isVolatile) {
-            info.setLargeFileStore(Lsf.VOLATILE);
         } else {
             info.setLargeFileStore(Lsf.PRECIOUS);
         }
@@ -1033,8 +1017,7 @@ public class PoolV4
             if (fileMode == Pool2PoolTransferMsg.PRECIOUS) {
                 targetState = ReplicaState.PRECIOUS;
             }
-        } else if (!_hasTapeBackend && !_isVolatile
-                   && (_p2pFileMode == P2P_PRECIOUS)) {
+        } else if (!_hasTapeBackend && (_p2pFileMode == P2P_PRECIOUS)) {
             targetState = ReplicaState.PRECIOUS;
         }
 

@@ -44,6 +44,7 @@ import diskCacheV111.util.FileNotInCacheException;
 import diskCacheV111.util.LockedCacheException;
 import diskCacheV111.util.PnfsHandler;
 import diskCacheV111.util.PnfsId;
+import diskCacheV111.util.RetentionPolicy;
 import diskCacheV111.vehicles.PnfsAddCacheLocationMessage;
 
 import dmg.cells.nucleus.CellAddressCore;
@@ -212,9 +213,6 @@ public class ReplicaRepository
     @GuardedBy("_stateLock")
     private PnfsHandler _pnfs;
 
-    @GuardedBy("_stateLock")
-    private boolean _volatile;
-
     /**
      * Pool size configured through the 'max disk space' command.
      */
@@ -336,32 +334,6 @@ public class ReplicaRepository
         }
     }
 
-    public boolean getVolatile()
-    {
-        _stateLock.readLock().lock();
-        try {
-            return _volatile;
-        } finally {
-            _stateLock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Sets whether pool is volatile. On volatile pools
-     * ClearCacheLocation messages are flagged to trigger deletion of
-     * the namespace entry when the last known replica is deleted.
-     */
-    public void setVolatile(boolean value)
-    {
-        _stateLock.readLock().lock();
-        try {
-            checkUninitialized();
-            _volatile = value;
-        } finally {
-            _stateLock.readLock().unlock();
-        }
-    }
-
     /**
      * The account keeps track of available space.
      */
@@ -418,7 +390,7 @@ public class ReplicaRepository
                             LOGGER.info("remove entry {}: {}", id, event.getWhy());
                         }
 
-                        _pnfs.clearCacheLocation(id, _volatile);
+                        _pnfs.clearCacheLocation(id, event.getOldEntry().getFileAttributes().getRetentionPolicy().equals(RetentionPolicy.TRANSIENT));
 
                         ScheduledFuture<?> oldTask = _tasks.remove(id);
                         if (oldTask != null) {

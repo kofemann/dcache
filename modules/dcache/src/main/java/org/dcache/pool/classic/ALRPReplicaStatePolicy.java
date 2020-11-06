@@ -30,7 +30,7 @@ public class ALRPReplicaStatePolicy implements ReplicaStatePolicy
     @Override
     public List<StickyRecord> getStickyRecords(FileAttributes fileAttributes)
     {
-        if (fileAttributes.getAccessLatency().equals(AccessLatency.ONLINE)) {
+        if (fileAttributes.getAccessLatency().equals(AccessLatency.ONLINE) && !fileAttributes.getRetentionPolicy().equals(RetentionPolicy.TRANSIENT)) {
             return Collections.singletonList(new StickyRecord("system", -1));
         } else {
             return Collections.emptyList();

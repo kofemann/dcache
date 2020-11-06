@@ -83,8 +83,6 @@
     <property name="PPClient" ref="p2p"/>
     <property name="account" ref="account"/>
     <property name="replicaStatePolicy" ref="replica-state-policy"/>
-    <property name="volatile"
-              value="#{ '${pool.lfs}' == 'volatile' or '${pool.lfs}' == 'transient' }"/>
     <property name="hasTapeBackend"
               value="#{ '${pool.lfs}' == 'none' }"/>
     <property name="transferServices" ref="transfer-services" />
@@ -143,8 +141,6 @@
     <property name="pnfsHandler" ref="pnfs"/>
     <property name="account" ref="account"/>
     <property name="spaceSweeperPolicy" ref="sweeper"/>
-    <property name="volatile"
-              value="#{ '${pool.lfs}' == 'volatile' or '${pool.lfs}' == 'transient' }"/>
     <property name="maxDiskSpaceString" value="${pool.size}"/>
     <property name="replicaStore" ref="replica-store"/>
     <property name="scanThreads" value="${pool.limits.scan-threads}"/>
