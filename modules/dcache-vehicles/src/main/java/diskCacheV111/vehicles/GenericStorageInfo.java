@@ -30,7 +30,9 @@ public class GenericStorageInfo
     private RetentionPolicy _retentionPolicy = StorageInfo.DEFAULT_RETENTION_POLICY;
 
     private Map<String, String> _keyHash = new HashMap<>();
-    private List<URI> _locations = new ArrayList<>();
+    // as storage info is re-read on pool startup from meta db and readObject will replace an empty List with a singleton
+    // don't initialize the field.
+    private List<URI> _locations;
     private boolean _setHsm;
     private boolean _setStorageClass;
     private boolean _setBitFileId;
@@ -67,6 +69,9 @@ public class GenericStorageInfo
 
     @Override
     public void addLocation(URI newLocation) {
+        if (_locations == null) {
+            _locations = new ArrayList<>();
+        }
         _locations.add(newLocation);
     }
 
@@ -165,7 +170,7 @@ public class GenericStorageInfo
 
     @Override
     public List<URI> locations() {
-        return _locations;
+        return _locations == null ? List.of() : _locations;
     }
 
     @Override
