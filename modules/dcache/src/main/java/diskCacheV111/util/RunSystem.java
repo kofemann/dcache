@@ -8,27 +8,23 @@ import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.io.InterruptedIOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
-public class RunSystem implements Runnable {
+public class RunSystem {
     private static final Logger _log = LoggerFactory.getLogger(RunSystem.class);
     private static final Runtime __runtime = Runtime.getRuntime() ;
     private final String[] _exec ;
     private final int    _maxLines ;
     private final long   _timeout ;
-    private final Thread _readErrorThread ;
-    private final Thread _readOutputThread ;
-    private final Thread _processThread ;
     private final int     _id            = nextId() ;
     private Process _process ;
-    private int     _stoppedReader;
-    private boolean _processDone;
-    private boolean _linesExceeded;
-    private boolean _interrupted;
-    private BufferedReader _stdout;
-    private BufferedReader _stderr;
+    private volatile boolean _processDone;
+    private volatile boolean _interrupted;
     private final PrintWriter _errorPrintWriter   ;
     private final PrintWriter _outputPrintWriter  ;
     private final StringWriter _errorStringWriter ;
@@ -42,112 +38,55 @@ public class RunSystem implements Runnable {
         _exec     = exec ;
         _maxLines = maxLines ;
         _timeout  = timeout ;
-        _readErrorThread    = new Thread( this , "error" ) ;
-        _readOutputThread   = new Thread( this , "output" ) ;
-        _processThread      = new Thread( this , "process" ) ;
 
         _outputStringWriter = new StringWriter() ;
         _errorStringWriter  = new StringWriter() ;
         _outputPrintWriter  = new PrintWriter( _outputStringWriter ) ;
         _errorPrintWriter   = new PrintWriter( _errorStringWriter ) ;
-
     }
 
     private void say(String str) {
         _log.debug("[{}] {}", _id, str);
     }
 
-    private void interruptReaders(){
-       _readOutputThread.interrupt() ;
-       _readErrorThread.interrupt() ;
-    }
     public void go() throws IOException {
-       _process = __runtime.exec( _exec ) ;
-       _stdout = new BufferedReader(
-                    new InputStreamReader( _process.getInputStream() ) );
-       _stderr  = new BufferedReader(
-                    new InputStreamReader( _process.getErrorStream() ) );
+        _process = __runtime.exec(_exec);
+        BufferedReader stdout = new BufferedReader(
+                new InputStreamReader(_process.getInputStream()));
+        BufferedReader stderr = new BufferedReader(
+                new InputStreamReader(_process.getErrorStream()));
 
-       /*
-        * we do not need stdin of the process. To avoid file descriptor leaking close it.
-        */
-       _process.getOutputStream().close();
-       synchronized( this ){
-          _readErrorThread.start() ;
-          _readOutputThread.start() ;
-          _processThread.start() ;
+        /*
+         * we do not need stdin of the process. To avoid file descriptor leaking close it.
+         */
+        _process.getOutputStream().close();
 
-          try{
-             long end = System.currentTimeMillis() + _timeout ;
-             while( ( _stoppedReader < 2 ) || ( ! _processDone )  ){
-                long rest = end - System.currentTimeMillis() ;
-                if( rest <= 0 ) {
-                    break;
-                }
-                wait( rest ) ;
-                say( "Master : Wait returned : "+statusPrintout() ) ;
-             }
-          }catch(InterruptedException ie ){
-//             say("Master : interrupted (interrupting the others)
-//             interruptAll() ;
-             if( ! _processDone ){
-                say( "Master : Destroying process" ) ;
-                _process.destroy() ;
-             }
-          }
-          say( "Master : Wait stopped : "+statusPrintout() ) ;
-          //
-          // now wait some time for a regular shutdown condition
-          // ( we have to do it 2 times because, on a regular
-          //   job finish, the interruptAll had not been called.
-          //
-          for( int l = 0 ; l < 20000 ; l++ ){
-             say( "Master : Wait loop "+l+" started" ) ;
-             try{
-                long end = System.currentTimeMillis() + 5 * 1000 ;
-                while( ( _stoppedReader < 2 ) || ( ! _processDone )  ){
-                   long rest = end - System.currentTimeMillis() ;
-                   if( rest <= 0 ) {
-                       break;
-                   }
-                   wait( rest ) ;
-                   say( "Master : Wait 2 returned : "+statusPrintout() ) ;
-                }
-             }catch(InterruptedException ie ){
-                say("Master : wait2 interrupted" ) ;
-             }
-             say( "Master : Wait2 loop : "+l+" : "+statusPrintout() ) ;
-             if(  ( _stoppedReader > 1 ) && _processDone ) {
-                 break;
-             }
-             if( ! _processDone ){
-                say( "Master : Wait 2 loop : Destroying process" ) ;
-                _process.destroy() ;
-             }
-             if( ( l > 2 ) && ( _stoppedReader < 2 ) ){
-                 say( "Master : Wait 2 loop : Interrupting readers" ) ;
-                 interruptReaders() ;
-             }
-          }
-       }
+        try(stderr; stdout) {
+            CompletableFuture<Void> readStdErr = CompletableFuture.runAsync(() -> runReader(stderr, _errorPrintWriter));
+            CompletableFuture<Void> readStdOut = CompletableFuture.runAsync(() -> runReader(stdout, _outputPrintWriter));
+
+            CompletableFuture<Void> process = CompletableFuture.runAsync(this::runProcess);
+
+            CompletableFuture
+                    .allOf(process, readStdErr, readStdOut)
+                    .get(_timeout, TimeUnit.MILLISECONDS);
+        } catch (InterruptedException | ExecutionException | TimeoutException ie) {
+            if (!_processDone) {
+                say("Master : Destroying process");
+                _process.destroy();
+            }
+        }
+        say("Master : Wait stopped : " + statusPrintout());
+        if (!_processDone) {
+            say("Master : Wait 2 loop : Destroying process");
+            _process.destroy();
+        }
     }
     private String statusPrintout(){
         return    ";interrupt="+_interrupted+
-                  ";done="+_processDone+
-                  ";count="+_stoppedReader ;
-
+                  ";done="+_processDone;
     }
-    @Override
-    public void run(){
-       if( Thread.currentThread() == _readErrorThread ){
-           runReader( _stderr , _errorPrintWriter  ) ;
-       }else if( Thread.currentThread() == _readOutputThread ){
-           runReader( _stdout , _outputPrintWriter ) ;
-       }else if( Thread.currentThread() == _processThread ){
-           runProcess() ;
-       }
 
-    }
     public String getErrorString(){
        return _errorStringWriter.getBuffer().toString() ;
     }
@@ -157,56 +96,32 @@ public class RunSystem implements Runnable {
     public int getExitValue() throws IllegalThreadStateException {
        return _process.exitValue() ;
     }
-    private void runProcess(){
 
-       try{
-           say( "Process : waitFor called" ) ;
-           int rr = _process.waitFor() ;
-           say( "Process : waitFor returned ="+rr+"; waiting for sync" ) ;
-       }catch( InterruptedException ie ){
-           synchronized(this){
-              _interrupted = true ;
-              say( "Process : waitFor was interrupted " ) ;
-           }
-       }finally{
-           synchronized(this){
-              _processDone = true ;
-              say("Process : done" ) ;
-              notifyAll() ;
-           }
-       }
+    private void runProcess() {
+
+        try {
+            say("Process : waitFor called");
+            int rr = _process.waitFor();
+            say("Process : waitFor returned =" + rr + "; waiting for sync");
+        } catch (InterruptedException ie) {
+            _interrupted = true;
+            say("Process : waitFor was interrupted ");
+        } finally {
+            _processDone = true;
+            say("Process : done");
+        }
     }
     private void runReader( BufferedReader in , PrintWriter out ){
-        int lines = 0 ;
-        String line;
-        try{
-           say( "Reader started" ) ;
-           while( ( ! Thread.interrupted() ) &&
-                  (  ( line = in.readLine() ) != null     )    ){
-
-                if( (lines++) < _maxLines ) {
-                    out.println(line);
-                }
-
-           }
-        }catch( InterruptedIOException  iioe ){
-           say( "Reader interruptedIoException" ) ;
+        try {
+            say("Reader started");
+            in.lines().limit(_maxLines).forEach(out::println);
         }catch( Exception ioe ){
            say( "Reader Exception : "+ioe ) ;
         }finally{
            say( "Reader closing streams" ) ;
            try{ in.close() ; }catch(IOException e){}
            out.close() ;
-           synchronized(this){
-              say("Reader finished" ) ;
-              if( lines >= _maxLines ) {
-                  say("Lines (" + lines + ") have been truncated after " + _maxLines);
-              }
-              _stoppedReader++ ;
-              notifyAll() ;
-           }
         }
-
     }
     public static void main( String [] args ) throws Exception {
         if( args.length < 3 ){
