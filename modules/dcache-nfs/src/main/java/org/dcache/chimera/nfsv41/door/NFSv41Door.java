@@ -281,11 +281,10 @@ public class NFSv41Door extends AbstractCellComponent implements
         new TransferRetryPolicy(Integer.MAX_VALUE, NFS_RETRY_PERIOD, STAGE_REQUEST_TIMEOUT);
 
     /**
-     * Retry policy used selecting write pools. Effectively, we don't retry
-     * write request and propagate error to the clients, who decide retry of fail.
+     * Retry policy used selecting write pools.
      */
-    private static final TransferRetryPolicy WRITE_POOL_SELECTION_RETRY_POLICY
-            = new TransferRetryPolicy(1, NFS_REQUEST_BLOCKING, NFS_REQUEST_BLOCKING);
+    private static final TransferRetryPolicy WRITE_POOL_SELECTION_RETRY_POLICY =
+            READ_POOL_SELECTION_RETRY_POLICY;
 
     private VfsCacheConfig _vfsCacheConfig;
 
