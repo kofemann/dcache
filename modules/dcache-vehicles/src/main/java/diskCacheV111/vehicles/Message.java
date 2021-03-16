@@ -129,6 +129,7 @@ public class Message
      * messages as long as it is not invalidated by any intermediate
      * messages.
      */
+    @Deprecated
     public boolean invalidates(Message message)
     {
         return true;
@@ -155,6 +156,7 @@ public class Message
      * @return true if the operation succeeded, false otherwise
      * @see invalidates
      */
+    @Deprecated
     public boolean fold(Message message)
     {
         return false;

@@ -163,11 +163,6 @@ public class PnfsManagerV3
     private long _logSlowThreshold;
 
     /**
-     * Whether to use folding.
-     */
-    private boolean _canFold;
-
-    /**
      * Queues for list operations. There is one queue per thread
      * group.
      */
@@ -298,12 +293,6 @@ public class PnfsManagerV3
     public void setQueueMaxSize(int maxSize)
     {
         _queueMaxSize = maxSize;
-    }
-
-    @Required
-    public void setFolding(boolean folding)
-    {
-        _canFold = folding;
     }
 
     @Required
@@ -1889,7 +1878,6 @@ public class PnfsManagerV3
                         }
 
                         processPnfsMessage(message, pnfs);
-                        fold(pnfs);
                     } catch (Throwable e) {
                         _log.warn("processPnfsMessage: {} : {}", Thread.currentThread().getName(), e);
                     } finally {
@@ -1899,32 +1887,6 @@ public class PnfsManagerV3
                 }
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
-            }
-        }
-
-        protected void fold(PnfsMessage message)
-        {
-            if (_canFold && message.getReturnCode() == 0) {
-                Iterator<CellMessage> i = _fifo.iterator();
-                while (i.hasNext()) {
-                    CellMessage envelope = i.next();
-                    PnfsMessage other =
-                        (PnfsMessage) envelope.getMessageObject();
-
-                    if (other.invalidates(message)) {
-                        break;
-                    }
-
-                    if (other.fold(message)) {
-                        _log.info("Folded {}", other.getClass().getSimpleName());
-                        _foldedCounters.incrementRequests(message.getClass());
-
-                        i.remove();
-                        envelope.revertDirection();
-
-                        sendMessage(envelope);
-                    }
-                }
             }
         }
     }

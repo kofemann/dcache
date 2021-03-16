@@ -133,7 +133,6 @@ public class PnfsManagerTest
         _pnfsManager.setLogSlowThreshold(0);
         _pnfsManager.setNameSpaceProvider(chimera);
         _pnfsManager.setQueueMaxSize(0);
-        _pnfsManager.setFolding(true);
         _pnfsManager.setDirectoryListLimit(100);
         _pnfsManager.init();
 
