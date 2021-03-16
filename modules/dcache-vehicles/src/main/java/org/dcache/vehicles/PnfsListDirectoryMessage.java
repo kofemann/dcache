@@ -8,7 +8,6 @@ import java.util.Collection;
 import java.util.Set;
 import java.util.UUID;
 
-import diskCacheV111.vehicles.Message;
 import diskCacheV111.vehicles.PnfsMessage;
 
 import org.dcache.namespace.FileAttribute;
@@ -145,11 +144,5 @@ public class PnfsListDirectoryMessage extends PnfsMessage
     public int getMessageCount()
     {
         return _messageCount;
-    }
-
-    @Override
-    public boolean invalidates(Message message)
-    {
-        return false;
     }
 }

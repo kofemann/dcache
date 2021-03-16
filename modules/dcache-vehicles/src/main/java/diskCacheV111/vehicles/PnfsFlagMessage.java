@@ -34,9 +34,4 @@ public class PnfsFlagMessage extends PnfsMessage {
    public void setValue( String value ){ _value = value  ; }
    public String getValue(){ return _value ; }
 
-    @Override
-    public boolean invalidates(Message message)
-    {
-        return super.invalidates(message) && _operation != FlagOperation.GET;
-    }
 }

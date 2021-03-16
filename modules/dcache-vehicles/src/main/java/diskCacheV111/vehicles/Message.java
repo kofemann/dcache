@@ -121,45 +121,5 @@ public class Message
         return getMessageName();
     }
 
-    /**
-     * Returns true if this message could possibly change the effect
-     * or result of <code>message</code>.
-     *
-     * In a message queue, a message can be used to fold other
-     * messages as long as it is not invalidated by any intermediate
-     * messages.
-     */
-    @Deprecated
-    public boolean invalidates(Message message)
-    {
-        return true;
-    }
-
-    /**
-     * Folds the reply of another Messages into this Message.
-     *
-     * For some Messages the correct reply can be derived from the
-     * reply of another Message. In those cases processing of this
-     * Message can be skipped and instead the reply of the other
-     * Message can be folded into this Message.
-     *
-     * A prerequiste for folding to succeed is that this Message is
-     * side effect free. It does however not matter whether the other
-     * Message has side effects.
-     *
-     * This method updates this Message by extracting the correct
-     * reply from the Message given as an argument. If successfull,
-     * this Message can be send as a valid reply back to the
-     * requestor. If not successful, this Message is unmodified.
-     *
-     * @param message Another Message to fold into this Message
-     * @return true if the operation succeeded, false otherwise
-     * @see invalidates
-     */
-    @Deprecated
-    public boolean fold(Message message)
-    {
-        return false;
-    }
 }
 

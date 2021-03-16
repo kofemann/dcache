@@ -20,10 +20,4 @@ public class PnfsMapPathMessage extends PnfsMessage {
       _globalPath = globalPath ;
       setPnfsPath(globalPath);
    }
-
-    @Override
-    public boolean invalidates(Message message)
-    {
-        return false;
-    }
 }

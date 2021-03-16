@@ -49,9 +49,4 @@ public class PnfsGetParentMessage extends PnfsMessage
         return names == null ? Collections.emptyList() : names;
     }
 
-    @Override
-    public boolean invalidates(Message message)
-    {
-        return false;
-    }
 }

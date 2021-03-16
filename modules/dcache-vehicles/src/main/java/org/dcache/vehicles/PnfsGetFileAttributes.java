@@ -3,7 +3,6 @@ package org.dcache.vehicles;
 import java.util.Set;
 
 import diskCacheV111.util.PnfsId;
-import diskCacheV111.vehicles.Message;
 import diskCacheV111.vehicles.PnfsMessage;
 
 import org.dcache.namespace.FileAttribute;
@@ -75,35 +74,6 @@ public class PnfsGetFileAttributes extends PnfsMessage {
      */
     public Set<FileAttribute> getRequestedAttributes() {
         return _attributes;
-    }
-
-    @Override
-    public boolean invalidates(Message message)
-    {
-        return false;
-    }
-
-    @Override
-    public boolean fold(Message message)
-    {
-        if (message instanceof PnfsGetFileAttributes) {
-            PnfsId pnfsId = getPnfsId();
-            String path = getPnfsPath();
-            Set<FileAttribute> requested = getRequestedAttributes();
-            PnfsGetFileAttributes other =
-                (PnfsGetFileAttributes) message;
-            if ((pnfsId == null || pnfsId.equals(other.getPnfsId())) &&
-                (path == null || path.equals(other.getPnfsPath())) &&
-                (getSubject().equals(other.getSubject())) &&
-                (other.getRequestedAttributes().containsAll(requested))) {
-                setPnfsId(other.getPnfsId());
-                setPnfsPath(other.getPnfsPath());
-                setFileAttributes(other.getFileAttributes());
-                return true;
-            }
-        }
-
-        return false;
     }
 
     /**

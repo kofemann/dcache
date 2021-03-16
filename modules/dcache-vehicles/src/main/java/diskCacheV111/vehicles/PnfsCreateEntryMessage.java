@@ -7,7 +7,6 @@ import java.util.EnumSet;
 import java.util.Set;
 
 import org.dcache.namespace.FileAttribute;
-import org.dcache.namespace.FileType;
 import org.dcache.vehicles.FileAttributes;
 import org.dcache.vehicles.PnfsSetFileAttributes;
 
@@ -63,17 +62,5 @@ public class PnfsCreateEntryMessage extends PnfsSetFileAttributes
         default:
             throw new IllegalArgumentException("Unsupported type " + attributes.getFileType());
         }
-    }
-
-    @Override
-    public boolean invalidates(Message message)
-    {
-        return genericInvalidatesForPnfsMessage(message);
-    }
-
-    @Override
-    public boolean fold(Message message)
-    {
-        return false;
     }
 }

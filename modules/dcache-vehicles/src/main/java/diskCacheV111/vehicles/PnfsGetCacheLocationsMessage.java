@@ -39,31 +39,4 @@ public class PnfsGetCacheLocationsMessage extends PnfsMessage {
        }
        return sb.toString() ;
     }
-
-    @Override
-    public boolean invalidates(Message message)
-    {
-        return false;
-    }
-
-    @Override
-    public boolean fold(Message message)
-    {
-        if (message.getClass().equals(PnfsGetCacheLocationsMessage.class)) {
-            PnfsId pnfsId = getPnfsId();
-            String path = getPnfsPath();
-            PnfsGetCacheLocationsMessage msg =
-                (PnfsGetCacheLocationsMessage) message;
-            if ((pnfsId == null || pnfsId.equals(msg.getPnfsId())) &&
-                (path == null || path.equals(msg.getPnfsPath())) &&
-                (getSubject().equals(msg.getSubject()))) {
-                setPnfsId(msg.getPnfsId());
-                setPnfsPath(msg.getPnfsPath());
-                setCacheLocations(msg.getCacheLocations());
-                return true;
-            }
-        }
-
-        return false;
-    }
 }
