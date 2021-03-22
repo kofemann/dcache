@@ -310,9 +310,11 @@ public class Ssh2Admin implements CellCommandListener, CellLifeCycleAware
                 successful = true;
             } catch (PermissionDeniedCacheException e) {
                 _log.warn("Login for {} denied: {}", userName, e.getMessage());
+                pauseOnWrongPassword();
             } catch (CacheException e) {
                 reason = e.toString();
                 _log.warn("Login for {} failed: {}", userName, e.toString());
+                pauseOnWrongPassword();
             }
 
             logLoginTry(userName, session, "Password", successful, reason);
@@ -496,4 +498,12 @@ public class Ssh2Admin implements CellCommandListener, CellLifeCycleAware
             return successful;
         }
     }
+
+    private static void pauseOnWrongPassword() {
+        // delay the reply to make brute force attacks harder
+        try {
+            TimeUnit.SECONDS.sleep(3);
+        } catch (InterruptedException e) {}
+    }
+
 }
