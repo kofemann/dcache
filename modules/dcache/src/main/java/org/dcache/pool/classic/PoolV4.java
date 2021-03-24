@@ -819,7 +819,7 @@ public class PoolV4
 
     private int queueIoRequest(CellMessage envelope, PoolIoFileMessage message) throws CacheException
     {
-        message.getAssumption().check(_poolInfo);
+        //message.getAssumption().check(_poolInfo);
 
         String queueName = message.getIoQueueName();
         String doorUniqueId = envelope.getSourceAddress().toString() + message.getId();
