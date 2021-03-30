@@ -7,6 +7,8 @@ import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.SocketException;
+import java.time.Instant;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.Arrays;
@@ -80,6 +82,7 @@ public class NFSv4MoverHandler {
      */
     private final CellStub _door;
 
+    private final NfsTransferService _nfsTransferService;
     /**
      * A time window in millis during which we accept idle movers.
      */
@@ -88,10 +91,11 @@ public class NFSv4MoverHandler {
     private final ScheduledExecutorService _cleanerExecutor;
     private final long _bootVerifier;
 
-    public NFSv4MoverHandler(PortRange portRange, IoStrategy ioStrategy,
+    public NFSv4MoverHandler(NfsTransferService nfsTransferService, PortRange portRange, IoStrategy ioStrategy,
             boolean withGss, String serverId, CellStub door, long bootVerifier)
             throws IOException , GSSException, OncRpcException {
 
+        _nfsTransferService = nfsTransferService;
         _embededDS = new NFSServerV41.Builder()
                 .withOperationExecutor(_operationFactory)
                 .build();
@@ -126,6 +130,7 @@ public class NFSv4MoverHandler {
                 .build()
         );
         _cleanerExecutor.scheduleAtFixedRate(new MoverValidator(), IDLE_PERIOD, IDLE_PERIOD, TimeUnit.MILLISECONDS);
+        _cleanerExecutor.scheduleAtFixedRate(new MoverResendRedirect(), 30, 30, TimeUnit.SECONDS);
     }
 
     /**
@@ -259,6 +264,30 @@ public class NFSv4MoverHandler {
                                     _cleanerExecutor);
                     });
         }
-
     }
+
+    /**
+     * Scans active transfers to find movers that wasn't connected by a client and re-sent the redirect information.
+     */
+    class MoverResendRedirect implements Runnable {
+        @Override
+        public void run() {
+            Instant now = Instant.now();
+
+            // mover is not attached to a session (no connection from client)
+            _activeIO.values()
+                    .stream()
+                    .filter(m -> !m.hasSession())
+                    .filter(mover -> Instant.ofEpochMilli(mover.getLastTransferred()).plusSeconds(5).isBefore(now))
+                    .forEach( mover -> {
+                        _log.warn("Re-sending mover redirect {}", mover);
+                        try {
+                            _nfsTransferService.notifyDoorWithRedirect(mover);
+                        } catch (SocketException e) {
+                            _log.warn("Failed to send re-direct notification", e);
+                        }
+                    });
+        }
+    }
+
 }
