@@ -333,7 +333,13 @@ public class UniversalSpringCell
     private void testSetup(String source, byte[] data)
             throws CommandException
     {
-        CommandInterpreter mockInterpreter = new CommandInterpreter();
+        CommandInterpreter mockInterpreter = new CommandInterpreter() {
+            @Override
+            protected Serializable doExecute(CommandEntry entry, Args args, String[] acls) throws CommandException {
+                // do nothing. Just check that command exists without executing it.
+                return "";
+            }
+        };
         _setupProviders.values().stream().map(CellSetupProvider::mock).forEach(mockInterpreter::addCommandListener);
         executeSetup(mockInterpreter, source, data);
     }
