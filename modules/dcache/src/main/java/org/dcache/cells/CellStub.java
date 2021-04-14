@@ -9,6 +9,7 @@ import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.RateLimiter;
 
 import java.io.Serializable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
@@ -21,6 +22,7 @@ import diskCacheV111.vehicles.Message;
 
 import dmg.cells.nucleus.CellEndpoint;
 import dmg.cells.nucleus.CellMessage;
+import dmg.cells.nucleus.CellMessageAnswerable;
 import dmg.cells.nucleus.CellMessageSender;
 import dmg.cells.nucleus.CellPath;
 import dmg.cells.nucleus.NoRouteToCellException;
@@ -417,6 +419,73 @@ public class CellStub
         _rateLimiter.acquire();
         _endpoint.sendMessage(envelope, future, MoreExecutors.directExecutor(), timeout, mergeFlags(_flags, flags));
         return future;
+    }
+
+    // java 8/11 alternatives
+    public <T extends Message> CompletableFuture<T> sendAsync(T message, long timeout, CellEndpoint.SendFlag... flags)
+    {
+        return sendAsync(_destination, message, timeout, flags);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends Message> CompletableFuture<T> sendAsync(CellPath destination, T message, long timeout, CellEndpoint.SendFlag... flags)
+    {
+        message.setReplyRequired(true);
+        return sendAsync(destination, message, (Class<T>) message.getClass(), timeout, flags);
+    }
+
+    public <T> CompletableFuture<T> sendAsync(
+            CellPath destination, Serializable message, Class<T> type, long timeout, CellEndpoint.SendFlag... flags)
+    {
+        CellMessage envelope = new CellMessage(requireNonNull(destination), requireNonNull(message));
+        Semaphore concurrency = _concurrency;
+        CompletableFuture<T> cf = new CompletableFuture<>();
+
+        CellMessageAnswerable callback = new CellMessageAnswerable() {
+            @Override
+            public void answerArrived(CellMessage request, CellMessage answer) {
+                Object o = answer.getMessageObject();
+                boolean release;
+                if (type.isInstance(o)) {
+                    release = cf.complete(type.cast(o));
+                } else if (o instanceof Exception) {
+                    exceptionArrived(request, (Exception) o);
+                    release = false;
+                } else {
+                    release = cf.completeExceptionally(
+                            new CacheException(CacheException.UNEXPECTED_SYSTEM_EXCEPTION, "Unexpected reply: " + o));
+                }
+                if (release) {
+                    concurrency.release();
+                }
+            }
+
+            @Override
+            public void exceptionArrived(CellMessage request, Exception exception) {
+                if (exception.getClass() == CacheException.class) {
+                    CacheException e = (CacheException) exception;
+                    exception = CacheExceptionFactory.exceptionOf(e.getRc(), e.getMessage(), e);
+                }
+                boolean release = cf.completeExceptionally(exception);
+                if (release) {
+                    concurrency.release();
+                }
+            }
+
+            @Override
+            public void answerTimedOut(CellMessage request) {
+                boolean release = cf.completeExceptionally(
+                        new TimeoutCacheException("Request to " + request.getDestinationPath() + " timed out."));
+                if (release) {
+                    concurrency.release();
+                }
+            }
+        };
+
+        concurrency.acquireUninterruptibly();
+        _rateLimiter.acquire();
+        _endpoint.sendMessage(envelope, callback, MoreExecutors.directExecutor(), timeout, mergeFlags(_flags, flags));
+        return cf;
     }
 
     private CellEndpoint.SendFlag[] mergeFlags(CellEndpoint.SendFlag[] a, CellEndpoint.SendFlag[] b)
