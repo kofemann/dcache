@@ -1,6 +1,5 @@
 package diskCacheV111.util ;
 
-import com.google.common.util.concurrent.ListenableFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +12,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import diskCacheV111.namespace.NameSpaceProvider.Link;
@@ -265,7 +265,7 @@ public class PnfsHandler implements CellMessageSender
     /**
      * Sends a message to the pnfs manager and returns a promise of a future reply.
      */
-    public <T extends PnfsMessage> ListenableFuture<T> requestAsync(T msg)
+    public <T extends PnfsMessage> CompletableFuture<T> requestAsync(T msg)
     {
         checkState(_cellStub != null, "Missing endpoint");
         return requestAsync(msg, _cellStub.getTimeoutInMillis());
@@ -274,7 +274,7 @@ public class PnfsHandler implements CellMessageSender
     /**
      * Sends a message to the pnfs manager and returns a promise of a future reply.
      */
-    public <T extends PnfsMessage> ListenableFuture<T> requestAsync(T msg, long timeout)
+    public <T extends PnfsMessage> CompletableFuture<T> requestAsync(T msg, long timeout)
     {
         checkState(_cellStub != null, "Missing endpoint");
 
@@ -285,7 +285,7 @@ public class PnfsHandler implements CellMessageSender
         if (_restriction != null) {
             msg.setRestriction(_restriction);
         }
-        return _cellStub.send(msg, timeout);
+        return _cellStub.sendAsync(msg, timeout);
     }
 
     public PnfsCreateEntryMessage createPnfsDirectory(String path)

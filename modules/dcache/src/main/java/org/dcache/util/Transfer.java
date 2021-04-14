@@ -25,6 +25,8 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
@@ -322,6 +324,11 @@ public class Transfer implements Comparable<Transfer>
     {
         setStatus(status);
         future.addListener(() -> setStatus(null), MoreExecutors.directExecutor());
+    }
+    public void setStatusUntil(String status, CompletableFuture<?> future)
+    {
+        setStatus(status);
+        future.thenRun(() -> setStatus(null));
     }
 
     /**
@@ -825,12 +832,12 @@ public class Transfer implements Comparable<Transfer>
      *
      * @param allowWrite whether the file may be opened for writing
      */
-    public ListenableFuture<Void> readNameSpaceEntryAsync(boolean allowWrite)
+    public CompletableFuture<Void> readNameSpaceEntryAsync(boolean allowWrite)
     {
         return readNameSpaceEntryAsync(allowWrite, _pnfs.getPnfsTimeout());
     }
 
-    private ListenableFuture<Void> readNameSpaceEntryAsync(boolean allowWrite, long timeout)
+    private CompletableFuture<Void> readNameSpaceEntryAsync(boolean allowWrite, long timeout)
     {
         Set<FileAttribute> attr = EnumSet.of(PNFSID, TYPE, STORAGEINFO, SIZE);
         attr.addAll(_additionalAttributes);
@@ -854,33 +861,36 @@ public class Transfer implements Comparable<Transfer>
         }
         request.setAccessMask(mask);
         request.setUpdateAtime(true);
-        ListenableFuture<PnfsGetFileAttributes> reply = _pnfs.requestAsync(request, timeout);
+        CompletableFuture<PnfsGetFileAttributes> reply = _pnfs.requestAsync(request, timeout);
 
         setStatusUntil("PnfsManager: Fetching storage info", reply);
 
-        return CellStub.transformAsync(reply,
-                                       msg -> {
-                                           FileAttributes attributes = msg.getFileAttributes();
-                                           /* We can only transfer regular files.
-                                            */
-                                           FileType type = attributes.getFileType();
-                                           if (type == FileType.DIR || type == FileType.SPECIAL) {
-                                               throw new NotFileCacheException("Not a regular file");
-                                           }
+        return reply.thenAcceptAsync(m -> {
 
-                                           /* I/O mode must match completeness of the file.
-                                            */
-                                           if (!attributes.getStorageInfo().isCreatedOnly()) {
-                                               setWrite(false);
-                                           } else if (allowWrite) {
-                                               setWrite(true);
-                                           } else {
-                                               throw new FileIsNewCacheException();
-                                           }
+            if (m.getReturnCode() != 0) {
+                throw new CompletionException(CacheExceptionFactory.exceptionOf(m));
+            }
 
-                                           setFileAttributes(attributes);
-                                           return immediateFuture(null);
-                                       });
+            FileAttributes attributes = m.getFileAttributes();
+            /* We can only transfer regular files.
+             */
+            FileType type = attributes.getFileType();
+            if (type == FileType.DIR || type == FileType.SPECIAL) {
+                throw new CompletionException(new NotFileCacheException("Not a regular file"));
+            }
+
+            /* I/O mode must match completeness of the file.
+             */
+            if (!attributes.getStorageInfo().isCreatedOnly()) {
+                setWrite(false);
+            } else if (allowWrite) {
+                setWrite(true);
+            } else {
+                throw new CompletionException(new FileIsNewCacheException());
+            }
+
+            setFileAttributes(attributes);
+        });
     }
 
     /**
@@ -1331,7 +1341,7 @@ public class Transfer implements Comparable<Transfer>
         AsyncFunction<Void, Void> startMover =
                 ignored -> startMoverAsync(getTimeoutFor(deadLine));
         AsyncFunction<Void, Void> readNameSpaceEntry =
-                ignored -> readNameSpaceEntryAsync(false, getTimeoutFor(_pnfs, deadLine));
+                ignored -> CompletableFutures.fromCompletableFuture(readNameSpaceEntryAsync(false, getTimeoutFor(_pnfs, deadLine)));
 
         AsyncFunction<CacheException,Void> retry =
                 new AsyncFunction<CacheException, Void>()
@@ -1422,7 +1432,7 @@ public class Transfer implements Comparable<Transfer>
      * Returns the result of {@link Future#get()} as if by {@link CellStub#get}, but
      * cancels {@code future} if the calling thread is interrupted.
      */
-    protected static <T> T getCancellable(ListenableFuture<T> future) throws CacheException, InterruptedException, NoRouteToCellException
+    protected static <T> T getCancellable(Future<T> future) throws CacheException, InterruptedException, NoRouteToCellException
     {
         try {
             return CellStub.get(future);

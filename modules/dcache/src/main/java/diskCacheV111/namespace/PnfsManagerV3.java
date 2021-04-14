@@ -3,9 +3,6 @@ package diskCacheV111.namespace;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Splitter;
 import com.google.common.base.Strings;
-import com.google.common.util.concurrent.FutureCallback;
-import com.google.common.util.concurrent.Futures;
-import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import org.slf4j.Logger;
@@ -34,6 +31,7 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.LinkedBlockingQueue;
@@ -121,6 +119,8 @@ import static org.dcache.acl.enums.AccessType.*;
 import static org.dcache.auth.Subjects.ROOT;
 import static org.dcache.auth.attributes.Activity.*;
 import static org.dcache.namespace.FileAttribute.*;
+
+import static org.dcache.util.CompletableFutures.fromListenableFuture;
 
 public class PnfsManagerV3
     extends AbstractCellComponent
@@ -2059,37 +2059,24 @@ public class PnfsManagerV3
         PoolFileFlushedMessage notification =
                 new PoolFileFlushedMessage(pnfsMessage.getPoolName(), pnfsMessage.getPnfsId(),
                                            pnfsMessage.getFileAttributes());
-        List<ListenableFuture<PoolFileFlushedMessage>> futures = new ArrayList<>();
+        List<CompletableFuture<PoolFileFlushedMessage>> futures = new ArrayList<>();
         for (String address : _flushNotificationTargets) {
-            futures.add(_stub.send(new CellPath(address), notification, timeout));
+            futures.add(fromListenableFuture(_stub.send(new CellPath(address), notification, timeout)));
         }
 
         /* Only generate positive reply if all notifications succeeded. */
-        Futures.addCallback(Futures.allAsList(futures),
-                            new FutureCallback<List<PoolFileFlushedMessage>>()
-                            {
-                                @Override
-                                public void onSuccess(List<PoolFileFlushedMessage> result)
-                                {
-                                    pnfsMessage.setSucceeded();
-                                    reply();
-                                }
-
-                                @Override
-                                public void onFailure(Throwable t)
-                                {
-                                    pnfsMessage.setFailed(CacheException.DEFAULT_ERROR_CODE,
-                                                          "PNFS manager failed while notifying other " +
-                                                          "components about the flush: " + t.getMessage());
-                                    reply();
-                                }
-
-                                private void reply()
-                                {
-                                    envelope.revertDirection();
-                                    sendMessage(envelope);
-                                }
-                            });
+        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new))
+                .whenComplete((r, t) -> {
+                    if (t == null) {
+                        pnfsMessage.setSucceeded();
+                    } else {
+                        pnfsMessage.setFailed(CacheException.DEFAULT_ERROR_CODE,
+                                "PNFS manager failed while notifying other " +
+                                        "components about the flush: " + t.getMessage());
+                    }
+                    envelope.revertDirection();
+                    sendMessage(envelope);
+                });
     }
 
     public void processFlushMessage(PoolFileFlushedMessage pnfsMessage)

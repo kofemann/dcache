@@ -73,6 +73,7 @@ import com.google.common.util.concurrent.SettableFuture;
 
 import diskCacheV111.services.space.Space;
 
+import org.dcache.util.CompletableFutures;
 import org.slf4j.LoggerFactory;
 import org.slf4j.Logger;
 
@@ -302,21 +303,12 @@ public class ReservationCaches
                                 {
                                     PnfsGetFileAttributes message = new PnfsGetFileAttributes(path.toString(), EnumSet.of(FileAttribute.STORAGEINFO));
                                     SettableFuture<java.util.Optional<String>> future = SettableFuture.create();
-                                    CellStub.addCallback(pnfs.requestAsync(message),
-                                            new AbstractMessageCallback<PnfsGetFileAttributes>()
-                                            {
-                                                @Override
-                                                public void success(PnfsGetFileAttributes message)
-                                                {
+                                    pnfs.requestAsync(message)
+                                            .thenAcceptAsync(m -> {
+                                                if (m.getReturnCode() != 0) {
+                                                    future.setException(CacheExceptionFactory.exceptionOf(m));
+                                                } else {
                                                     future.set(writeToken(message.getFileAttributes()));
-                                                }
-
-                                                @Override
-                                                public void failure(int rc, Object error)
-                                                {
-                                                    CacheException exception = CacheExceptionFactory.exceptionOf(
-                                                            rc, Objects.toString(error, null));
-                                                    future.setException(exception);
                                                 }
                                             }, executor);
                                     return future;
