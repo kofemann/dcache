@@ -17,6 +17,8 @@ import java.nio.channels.UnresolvedAddressException;
 import java.nio.channels.UnsupportedAddressTypeException;
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 import dmg.cells.nucleus.CellAdapter;
 import dmg.util.DummyStreamEngine;
@@ -92,7 +94,7 @@ public class LocationManagerConnector
          */
         Args args = getArgs();
         String name = getCellName() + '*';
-        Random random = new Random();
+        Random random = ThreadLocalRandom.current();
         NDC.push(_address.toString());
         try {
             while (_isRunning) {
@@ -120,9 +122,9 @@ public class LocationManagerConnector
                 }
 
                 _status = "Sleeping";
-                long sleep = random.nextInt(16000) + 4000;
-                _log.warn("Sleeping {} seconds", sleep / 1000);
-                Thread.sleep(sleep);
+                long sleep = random.nextInt(16) + 4;
+                _log.warn("Sleeping {} seconds", sleep);
+                TimeUnit.SECONDS.sleep(sleep);
             }
         } catch (InterruptedIOException | InterruptedException | ClosedByInterruptException ignored) {
         } finally {
