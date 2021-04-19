@@ -10,6 +10,8 @@ import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
 import com.google.common.util.concurrent.RateLimiter;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import org.dcache.util.CDCScheduledExecutorServiceDecorator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,7 +42,11 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.Callable;
 import java.util.concurrent.Executor;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ScheduledExecutorService;
+import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -178,7 +184,7 @@ public class PoolV4
     private final Map<String, String> _tags = new HashMap<>();
     private String _baseDir;
 
-    private final PoolManagerPingThread _pingThread = new PoolManagerPingThread();
+    private final PoolManagerPingTask _pingThread = new PoolManagerPingTask();
     private HsmFlushController _flushingThread;
     private IoQueueManager _ioQueue ;
     private HsmSet _hsmSet;
@@ -216,6 +222,17 @@ public class PoolV4
 
     private ThreadFactory _threadFactory;
 
+    /**
+     * Scheduler to run periodic maintenance tasks.
+     */
+    private final ScheduledExecutorService _poolMaintenanceScheduler =
+            new CDCScheduledExecutorServiceDecorator(
+                    Executors.newSingleThreadScheduledExecutor(
+                            new ThreadFactoryBuilder()
+                                    .setNameFormat("pool-maintenance-%d")
+                            .build()
+                    )
+            );
 
     protected void assertNotRunning(String error)
     {
@@ -499,7 +516,7 @@ public class PoolV4
     public void beforeStop()
     {
         _flushingThread.stop();
-        _pingThread.stop();
+        _poolMaintenanceScheduler.shutdown();
 
         /*
          * No need for alarm here.
@@ -1324,48 +1341,32 @@ public class PoolV4
         LOGGER.warn("Pool mode changed to {}", _poolMode);
     }
 
-    private class PoolManagerPingThread implements Runnable
+    private class PoolManagerPingTask
     {
-        private final Thread _worker;
+        private ScheduledFuture<?> _task;
         private int _heartbeat = HEARTBEAT;
 
-        private PoolManagerPingThread()
+        public synchronized void start()
         {
-            _worker = new Thread(this, "ping");
+            stop();
+            LOGGER.debug("Scheduling pool heartbeat every {} second(s)", _heartbeat);
+            _task = _poolMaintenanceScheduler.scheduleAtFixedRate(this::sendPoolManagerMessage, _heartbeat, _heartbeat, TimeUnit.SECONDS);
         }
 
-        public void start()
+        public synchronized void stop()
         {
-            _worker.start();
-        }
-
-        public void stop()
-        {
-            _worker.interrupt();
-        }
-
-        @Override
-        public void run()
-        {
-            LOGGER.debug("Ping thread started");
-            try {
-                while (!Thread.interrupted()) {
-                    sendPoolManagerMessage();
-                    Thread.sleep(_heartbeat * 1000);
-                }
-            } catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            } finally {
-                LOGGER.debug("Ping Thread finished");
+            if (_task != null) {
+                LOGGER.debug("Canceling periodic pool heartbeat");
+                _task.cancel(false);
             }
         }
 
-        public void setHeartbeat(int seconds)
+        public synchronized void setHeartbeat(int seconds)
         {
             _heartbeat = seconds;
         }
 
-        public int getHeartbeat()
+        public synchronized int getHeartbeat()
         {
             return _heartbeat;
         }
