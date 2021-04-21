@@ -27,7 +27,7 @@ import static com.google.common.base.Preconditions.checkState;
  * the native Java Object Serialization.
  */
 public final class MsgSerializerJos {
-    private static final int INITIAL_BUFFER_SIZE = 256;
+    private static final int INITIAL_BUFFER_SIZE = 2048;
 
     private MsgSerializerJos() {}
 

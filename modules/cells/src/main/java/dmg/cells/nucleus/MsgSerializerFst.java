@@ -31,7 +31,7 @@ import static com.google.common.base.Preconditions.checkState;
  */
 public final class MsgSerializerFst {
 
-    private static final int INITIAL_BUFFER_SIZE = 256;
+    private static final int INITIAL_BUFFER_SIZE = 1024;
     private static final FSTConfiguration fstConf = FSTConfiguration.createDefaultConfiguration();
     static {
         fstConf.setPreferSpeed(true);
