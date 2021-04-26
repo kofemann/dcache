@@ -5,6 +5,7 @@ import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
+import java.lang.reflect.InvocationTargetException;
 
 /**
  * Classes implementing this interface can participate in the creation
@@ -53,8 +54,8 @@ public interface CellSetupProvider
     default CellSetupProvider mock()
     {
         try {
-            return getClass().newInstance();
-        } catch (InstantiationException | IllegalAccessException e){
+            return getClass().getDeclaredConstructor().newInstance();
+        } catch (InvocationTargetException | IllegalAccessException | NoSuchMethodException | InstantiationException e){
             throw new RuntimeException(
                     "Bug detected: CellSetupProviders must provide a public default constructor: " + e, e);
         }
