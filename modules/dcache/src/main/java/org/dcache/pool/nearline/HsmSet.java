@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014 - 2021 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -31,6 +31,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.ServiceLoader;
 import java.util.Set;
+import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ConcurrentMap;
 
@@ -46,8 +47,11 @@ import dmg.util.command.Argument;
 import dmg.util.command.Command;
 import dmg.util.command.CommandLine;
 
+import org.dcache.pool.nearline.spi.FlushRequest;
 import org.dcache.pool.nearline.spi.NearlineStorage;
 import org.dcache.pool.nearline.spi.NearlineStorageProvider;
+import org.dcache.pool.nearline.spi.RemoveRequest;
+import org.dcache.pool.nearline.spi.StageRequest;
 import org.dcache.util.Args;
 import org.dcache.util.ColumnWriter;
 import org.dcache.vehicles.FileAttributes;
@@ -84,6 +88,11 @@ public class HsmSet
     private final ConcurrentMap<String, HsmInfo> _hsm = Maps.newConcurrentMap();
     private boolean _isReadingSetup;
 
+    /**
+     * When {@code true}, then hsm instance is not really initialized.
+     */
+    private final boolean _dryRun;
+
     private NearlineStorageProvider findProvider(String name)
     {
         for (NearlineStorageProvider provider : PROVIDERS) {
@@ -92,6 +101,14 @@ public class HsmSet
             }
         }
         throw new IllegalArgumentException("No such nearline storage provider: " + name);
+    }
+
+    public HsmSet() {
+        this(false);
+    }
+
+    private HsmSet(boolean dryRun) {
+        this._dryRun = dryRun;
     }
 
     /**
@@ -117,7 +134,28 @@ public class HsmSet
             _instance = instance;
             _type = type.toLowerCase();
             _provider = findProvider(provider);
-            _nearlineStorage = _provider.createNearlineStorage(_type, _instance);
+            _nearlineStorage = _dryRun ?
+                    new NearlineStorage() {
+
+                        @Override
+                        public void flush(Iterable<FlushRequest> requests) {}
+
+                        @Override
+                        public void stage(Iterable<StageRequest> requests) {}
+
+                        @Override
+                        public void remove(Iterable<RemoveRequest> requests) {}
+
+                        @Override
+                        public void cancel(UUID uuid) {}
+
+                        @Override
+                        public void configure(Map<String, String> properties) throws IllegalArgumentException {}
+
+                        @Override
+                        public void shutdown() {}
+                    } :
+                    _provider.createNearlineStorage(_type, _instance);
         }
 
         /**
@@ -539,5 +577,10 @@ public class HsmSet
                     append('\n');
             }
         }
+    }
+
+    @Override
+    public CellSetupProvider mock() {
+        return new HsmSet(true);
     }
 }
