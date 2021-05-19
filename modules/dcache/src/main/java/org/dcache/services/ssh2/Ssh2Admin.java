@@ -9,7 +9,6 @@ import org.apache.sshd.common.keyprovider.FileKeyPairProvider;
 import org.apache.sshd.common.keyprovider.KeyPairProvider;
 import org.apache.sshd.common.session.Session;
 import org.apache.sshd.common.session.SessionListener;
-import org.apache.sshd.common.util.security.SecurityUtils;
 import org.apache.sshd.core.CoreModuleProperties;
 import org.apache.sshd.server.command.CommandFactory;
 import org.apache.sshd.server.SshServer;
@@ -62,7 +61,6 @@ import diskCacheV111.util.PermissionDeniedCacheException;
 import dmg.cells.nucleus.CellCommandListener;
 import dmg.cells.nucleus.CellLifeCycleAware;
 
-import org.dcache.util.Files;
 import org.dcache.util.NetLoggerBuilder;
 
 /**
@@ -138,7 +136,6 @@ public class Ssh2Admin implements CellCommandListener, CellLifeCycleAware
     }
 
     public void setHostKeys(String key) throws IOException {
-        Files.checkFile(key);
         _hostKey = Paths.get(key);
     }
 
@@ -228,10 +225,10 @@ public class Ssh2Admin implements CellCommandListener, CellLifeCycleAware
     }
 
     private void startServer() {
-        Duration effectiveTimeout = Duration.of(_idleTimeout, _idleTimeoutUnit.toChronoUnit());
+        Duration effectiveTimeout = Duration.ofMillis(_idleTimeoutUnit.toMillis(_idleTimeout));
         CoreModuleProperties.IDLE_TIMEOUT.set(_server, effectiveTimeout);
         // ensure, that read timeout is longer than idle timeout
-        CoreModuleProperties.NIO2_READ_TIMEOUT.set(_server, effectiveTimeout.multipliedBy(2));
+        CoreModuleProperties.NIO2_READ_TIMEOUT.set(_server, effectiveTimeout);
 
         _server.setPort(_port);
         _server.setHost(_host);
@@ -337,7 +334,7 @@ public class Ssh2Admin implements CellCommandListener, CellLifeCycleAware
                     userName, key);
             try {
                 for(AuthorizedKeyEntry ke: AuthorizedKeyEntry.readAuthorizedKeys(_authorizedKeyList.toPath())) {
-                    PublicKey publicKey = ke.resolvePublicKey(null);
+                    PublicKey publicKey = ke.resolvePublicKey(null, null);
 
                     String hostspec = ke.getLoginOptions().getOrDefault("from", "");
                     if (!isValidHost(hostspec, session)) {
