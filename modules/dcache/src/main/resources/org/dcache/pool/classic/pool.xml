@@ -281,7 +281,7 @@
   </bean>
 
 
-    <bean id="ssl-context-builder" class="org.dcache.http.SslContextFactoryBean">
+    <bean id="ssl-context-builder" class="org.dcache.http.OpenSslContextFactoryBean">
         <description>SSL Context factory</description>
         <property name="serverCertificatePath" value="${pool.mover.https.hostcert.cert}"/>
         <property name="serverKeyPath" value="${pool.mover.https.hostcert.key}"/>

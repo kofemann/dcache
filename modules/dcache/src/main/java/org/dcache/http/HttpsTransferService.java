@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2017-2020 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2017 - 2021 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,14 +25,15 @@ import diskCacheV111.vehicles.HttpProtocolInfo;
 
 import eu.emi.security.authn.x509.CrlCheckingMode;
 import eu.emi.security.authn.x509.OCSPCheckingMode;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.cors.CorsConfigBuilder;
+import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
 
-import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 
 import java.io.IOException;
@@ -51,9 +52,9 @@ public class HttpsTransferService extends HttpTransferService
 
     private static final String PROTOCOL_HTTPS = "https";
 
-    private SSLContext _sslContext;
+    private SslContext _sslContext;
 
-    public void setSslContext(SSLContext sslContext)
+    public void setSslContext(SslContext sslContext)
     {
         _sslContext = sslContext;
     }
@@ -110,7 +111,7 @@ public class HttpsTransferService extends HttpTransferService
     @Override
     protected void addChannelHandlers(ChannelPipeline pipeline)
     {
-        SSLEngine engine = _sslContext.createSSLEngine();
+        SSLEngine engine = _sslContext.newEngine(pipeline.channel().alloc());
         engine.setUseClientMode(false);
         engine.setWantClientAuth(false);
         pipeline.addLast("ssl", new SslHandler(engine));

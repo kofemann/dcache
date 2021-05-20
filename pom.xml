@@ -574,6 +574,11 @@
 	      <artifactId>sshd-core</artifactId>
 	      <version>2.6.0</version>
 	    </dependency>
+        <dependency>
+            <groupId>io.netty</groupId>
+            <artifactId>netty-tcnative-boringssl-static</artifactId>
+            <version>2.0.39.Final</version>
+        </dependency>
             <dependency>
                 <!-- Newer versions have two problems. A performance regression causes it to block on non-responding network
                      interfaces (https://liquibase.jira.com/browse/CORE-2549). There is also an as of yet unreported regression
