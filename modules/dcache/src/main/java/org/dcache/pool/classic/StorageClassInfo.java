@@ -25,7 +25,7 @@ import org.slf4j.LoggerFactory;
 /**
  * Holds the files to flush for a particular storage class.
  */
-public class StorageClassInfo implements CompletionHandler<Void, PnfsId> {
+public class StorageClassInfo implements CompletionHandler<Void, PnfsId>, Comparable<StorageClassInfo> {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StorageClassInfo.class);
 
@@ -46,6 +46,24 @@ public class StorageClassInfo implements CompletionHandler<Void, PnfsId> {
         @Override
         public int compareTo(Entry entry) {
             return Long.compare(timeStamp, entry.timeStamp);
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            Entry entry = (Entry) o;
+            return timeStamp == entry.timeStamp && size == entry.size;
+        }
+
+        @Override
+        public int hashCode() {
+            // same as Arrays.hashCode(long[] a)
+            return 31*Long.hashCode(timeStamp) + Long.hashCode(size);
         }
     }
 
@@ -70,7 +88,10 @@ public class StorageClassInfo implements CompletionHandler<Void, PnfsId> {
      */
     private boolean _isDraining;
 
-    private long _time; // creation time of oldest file or 0L.
+    /**
+     * The creation time of the oldest entry in this storage class.
+     */
+    private long _time;
     private long _totalSize;
     private int _activeCounter;
     private boolean _isSuspended;
@@ -157,6 +178,11 @@ public class StorageClassInfo implements CompletionHandler<Void, PnfsId> {
 
         _maxRequests = maxCount;
 
+        /*
+         * REVISIT:
+         * if requests.size() returns zero when maxCount will be equals to 0 then no requests will be submitted.
+         */
+
         maxCount = Math.min(_requests.size(), maxCount);
 
         _isDraining = false;
@@ -211,6 +237,23 @@ public class StorageClassInfo implements CompletionHandler<Void, PnfsId> {
         StorageClassInfo info = (StorageClassInfo) obj;
         return info._storageClass.equals(_storageClass) && info._hsmName.equals(_hsmName);
     }
+
+
+
+    @Override
+    /**
+     * Compares two storage classes by oldest entry.
+     * @param anotherClass the {@code StorageClassInfo} to be compared.
+     * @return the value 0 if oldest entry in this and {@code anotherClass}
+     *         storage classes have the same creation time; a value less than zero if
+     *         oldest entry in this storage class created before the oldest entry in
+     *         {@code anotherClass}; and value greater than zero in other cases.
+     */
+    public int compareTo(StorageClassInfo anotherClass) {
+        return _time == 0L ?
+              1 : Long.compare(_time, anotherClass._time);
+    }
+
 
     private synchronized void addRequest(PnfsId pnfsId, Entry entry) {
         _requests.put(pnfsId, entry);
