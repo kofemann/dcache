@@ -21,7 +21,7 @@
 
 	<!-- Directory that has RPMS, SPECS, BUILD, etc -->
 	<rpm.baseDirectory>${project.build.directory}/rpmbuild</rpm.baseDirectory>
-        <build.id>4</build.id>
+        <build.id>5</build.id>
     </properties>
 
     <build>
