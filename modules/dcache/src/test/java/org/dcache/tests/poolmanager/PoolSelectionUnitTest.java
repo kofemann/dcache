@@ -1,6 +1,7 @@
 package org.dcache.tests.poolmanager;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
@@ -12,12 +13,14 @@ import diskCacheV111.pools.PoolV2Mode;
 import diskCacheV111.vehicles.GenericStorageInfo;
 import diskCacheV111.vehicles.StorageInfo;
 import diskCacheV111.vehicles.StorageInfos;
+import dmg.cells.nucleus.CellAddressCore;
 import dmg.util.CommandException;
 import dmg.util.CommandInterpreter;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.dcache.util.Args;
@@ -852,4 +855,35 @@ public class PoolSelectionUnitTest {
                     defaultExclude);
         assertEquals(0, preference.length);
     }
+
+    @Test
+    public void testPoolDeactivation() {
+
+        var name = "pool-foo";
+        var addr = new CellAddressCore(name);
+        long bootTime = 1;
+
+        _psu.createPoolGroup("default", false);
+
+        var updated = _psu.updatePool(name, addr, "some.host", 1, new PoolV2Mode(), Set.of(), Map.of());
+        assertTrue("new pool is not recognised", updated);
+
+        updated = _psu.updatePool(name, addr, "some.host", 1, new PoolV2Mode(), Set.of(), Map.of());
+
+        assertFalse("heartbeat of active pool triggered update ", updated);
+
+        updated = _psu.updatePool(name, addr, "some.host", 2, new PoolV2Mode(), Set.of(), Map.of());
+        assertTrue("pool reboot not recognised", updated);
+
+        updated = _psu.updatePool(name, addr, "some.host", 2, new PoolV2Mode(PoolV2Mode.DISABLED), Set.of(), Map.of());
+        assertTrue("pool disable not recognised", updated);
+
+        updated = _psu.updatePool(name, addr, "some.host", 2, new PoolV2Mode(), Set.of(), Map.of());
+        assertTrue("pool enable after disable not recognised", updated);
+
+        _psu.getPool(name).setActive(false);
+        updated = _psu.updatePool(name, addr, "some.host", 2, new PoolV2Mode(), Set.of(), Map.of());
+        assertTrue("pool re-activation not recognised", updated);
+    }
+
 }
