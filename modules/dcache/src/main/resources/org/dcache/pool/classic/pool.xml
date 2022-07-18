@@ -362,6 +362,7 @@
       <property name="maxTcpPort" value="${pool.mover.nfs.port.max}"/>
       <property name="tcpPortFile" value="${pool.path}/mover-tcp-port.nfs"/>
       <property name="ioStrategy" value="${pool.mover.nfs.thread-policy}" />
+      <property name="rateLimiter" ref="client-rate-limiter" />
 
   </bean>
 
@@ -392,6 +393,7 @@
       <property name="maxWriteBufferSize" value="#{ byteSizeParser.parse('${pool.mover.xrootd.write-buffer-size}') }"/>
       <property name="readReconnectTimeout" value="${pool.mover.xrootd.read-reconnect-timeout}"/>
       <property name="readReconnectTimeoutUnit" value="${pool.mover.xrootd.read-reconnect-timeout.unit}"/>
+      <property name="rateLimiter" ref="client-rate-limiter" />
       <property name="accessLogPlugins">
         <bean class="org.dcache.xrootd.spring.ChannelHandlerFactoryFactoryBean">
           <property name="plugins" value="access-log"/>
@@ -624,6 +626,10 @@
     <property name="transferServices" ref="transfer-services"/>
     <property name="statisticsListener" ref="pool-info-statistics-listener"/>
   </bean>
+
+    <bean id="client-rate-limiter" class="org.dcache.pool.movers.PoolRateLimiterFactory">
+        <description>Client request rate limiter</description>
+    </bean>
 
   <beans profile="healthcheck-true">
     <bean id="healthcheck" class="org.dcache.pool.repository.v5.CheckHealthTask">

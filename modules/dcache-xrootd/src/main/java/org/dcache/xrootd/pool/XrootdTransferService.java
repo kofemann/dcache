@@ -25,6 +25,7 @@ import static org.dcache.xrootd.plugins.tls.SSLHandlerFactory.CLIENT_TLS;
 import static org.dcache.xrootd.plugins.tls.SSLHandlerFactory.SERVER_TLS;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.netflix.concurrency.limits.Limiter;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.FsPath;
 import diskCacheV111.vehicles.PnfsCancelUpload;
@@ -333,6 +334,16 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
 
     public int getTpcClientChunkSize() {
         return tpcClientChunkSize;
+    }
+
+    private Limiter<String> rateLimiter;
+
+    public Limiter<String> getRateLimiter() {
+        return rateLimiter;
+    }
+
+    public void setRateLimiter(Limiter<String> rateLimiter) {
+        this.rateLimiter = rateLimiter;
     }
 
     public Map<String, String> getQueryConfig() {

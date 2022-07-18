@@ -32,5 +32,9 @@
 	<groupId>org.dcache</groupId>
 	<artifactId>nfs4j-core</artifactId>
     </dependency>
+    <dependency>
+      <groupId>com.netflix.concurrency-limits</groupId>
+      <artifactId>concurrency-limits-core</artifactId>
+    </dependency>
   </dependencies>
 </project>

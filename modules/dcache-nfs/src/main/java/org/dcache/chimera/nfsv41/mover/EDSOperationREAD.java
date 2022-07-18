@@ -49,6 +49,15 @@ public class EDSOperationREAD extends AbstractNFSv4Operation {
     public void process(CompoundContext context, nfs_resop4 result) {
         final READ4res res = result.opread;
 
+        final var rateLimiter = nfsTransferService.getRateLimiter();
+        var limit = rateLimiter.acquire("nfs");
+        if (limit.isEmpty()) {
+            _log.warn("Request limit reached!");
+            res.status = nfsstat.NFSERR_DELAY;
+            return;
+        }
+
+        var limiterListener = limit.get();
         try {
 
             long offset = _args.opread.offset.value;
@@ -118,7 +127,14 @@ public class EDSOperationREAD extends AbstractNFSv4Operation {
         } catch (Exception e) {
             _log.error("DSREAD: ", e);
             res.status = nfsstat.NFSERR_SERVERFAULT;
+        } finally {
+            if (res.status == nfsstat.NFS_OK) {
+                limiterListener.onSuccess();
+            } else {
+                limiterListener.onIgnore();
+            }
         }
+
     }
 
     // version of READ4resok that uses shallow encoding to avoid extra copy

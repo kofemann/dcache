@@ -39,6 +39,8 @@ import com.google.common.base.Throwables;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.MoreExecutors;
 import com.google.common.util.concurrent.Uninterruptibles;
+import com.netflix.concurrency.limits.Limit;
+import com.netflix.concurrency.limits.Limiter;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.FileCorruptedCacheException;
 import io.netty.channel.ChannelHandlerContext;
@@ -51,6 +53,7 @@ import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
@@ -612,10 +615,27 @@ public class XrootdPoolRequestHandler extends AbstractXrootdRequestHandler {
           throws XrootdException {
         int fd = msg.getFileHandle();
 
+        var rateLimiter = _server.getRateLimiter();
+        Optional<Limiter.Listener> limit;
+        while(true) {
+            limit = rateLimiter.acquire("xrootd");
+            if (limit.isPresent()) {
+                break;
+            }
+        }
+
+        var limitListener = limit.get();
         if (msg.bytesToRead() == 0) {
+            limitListener.onIgnore();
             return withOk(msg);
         } else {
-            return new ChunkedFileDescriptorReadResponse(msg, _maxFrameSize, getDescriptor(fd));
+            return new ChunkedFileDescriptorReadResponse(msg, _maxFrameSize, getDescriptor(fd)) {
+                @Override
+                public void close() throws Exception {
+                    super.close();
+                    limitListener.onSuccess();
+                }
+            };
         }
     }
 
@@ -669,6 +689,16 @@ public class XrootdPoolRequestHandler extends AbstractXrootdRequestHandler {
           throws XrootdException {
         int fd = msg.getFileHandle();
 
+        var rateLimiter = _server.getRateLimiter();
+        Optional<Limiter.Listener> limit;
+        while(true) {
+            limit = rateLimiter.acquire("xrootd");
+            if (limit.isPresent()) {
+                break;
+            }
+        }
+
+        var limitListener = limit.get();
         writeLock.lock();
         try {
             FileDescriptor descriptor = getDescriptorAtomically(fd);
@@ -694,6 +724,7 @@ public class XrootdPoolRequestHandler extends AbstractXrootdRequestHandler {
         } catch (IOException e) {
             throw new XrootdException(kXR_IOError, e.getMessage());
         } finally {
+            limitListener.onSuccess();
             writeLock.unlock();
         }
     }

@@ -36,6 +36,14 @@ public class EDSOperationWRITE extends AbstractNFSv4Operation {
 
         final WRITE4res res = result.opwrite;
 
+        final var rateLimiter = nfsTransferService.getRateLimiter();
+        var limit = rateLimiter.acquire("nfs");
+        if (limit.isEmpty()) {
+            res.status = nfsstat.NFSERR_DELAY;
+            return;
+        }
+
+        var limiterListener = limit.get();
         try {
 
             NfsMover mover = nfsTransferService.getMoverByStateId(context, _args.opwrite.stateid);
@@ -82,6 +90,12 @@ public class EDSOperationWRITE extends AbstractNFSv4Operation {
         } catch (Exception e) {
             _log.error("DSWRITE: ", e);
             res.status = nfsstat.NFSERR_SERVERFAULT;
+        } finally {
+            if (res.status == nfsstat.NFS_OK) {
+                limiterListener.onSuccess();
+            } else {
+                limiterListener.onIgnore();
+            }
         }
     }
 }

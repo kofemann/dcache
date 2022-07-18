@@ -3,6 +3,7 @@ package org.dcache.chimera.nfsv41.mover;
 import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
+import com.netflix.concurrency.limits.Limiter;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.DiskErrorCacheException;
 import diskCacheV111.util.PnfsHandler;
@@ -13,8 +14,10 @@ import dmg.cells.nucleus.CellCommandListener;
 import dmg.cells.nucleus.CellIdentityAware;
 import dmg.cells.nucleus.CellInfoProvider;
 import dmg.cells.nucleus.CellPath;
+import dmg.util.command.Argument;
 import dmg.util.command.Command;
 import dmg.util.command.Option;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.InterruptedIOException;
@@ -40,6 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.dcache.auth.Subjects;
@@ -156,6 +160,16 @@ public class NfsTransferService
 
     private CellAddressCore _cellAddress;
 
+    private Limiter<String> rateLimiter;
+
+    public Limiter<String> getRateLimiter() {
+        return rateLimiter;
+    }
+
+    public void setRateLimiter(Limiter<String> rateLimiter) {
+        this.rateLimiter = rateLimiter;
+    }
+
     @Override
     public void setCellAddress(CellAddressCore address) {
         _cellAddress = address;
@@ -163,9 +177,9 @@ public class NfsTransferService
 
     public NfsTransferService() {
         _cleanerExecutor = Executors.newSingleThreadScheduledExecutor(
-              new ThreadFactoryBuilder()
-                    .setNameFormat("NFS mover validationthread")
-                    .build()
+                new ThreadFactoryBuilder()
+                        .setNameFormat("NFS mover validationthread")
+                        .build()
         );
     }
 
@@ -237,6 +251,7 @@ public class NfsTransferService
                     oncRpcSvcBuilder.withSameThreadIoStrategy();
                 } else {
                     oncRpcSvcBuilder.withWorkerThreadIoStrategy();
+                    oncRpcSvcBuilder.withWorkerThreadExecutionService(Executors.newWorkStealingPool(Runtime.getRuntime().availableProcessors()*4));
                 }
 
                 if (_withGss) {
