@@ -12,6 +12,10 @@ import org.dcache.nfs.v4.xdr.READ4resok;
 import org.dcache.nfs.v4.xdr.nfs_argop4;
 import org.dcache.nfs.v4.xdr.nfs_opnum4;
 import org.dcache.nfs.v4.xdr.nfs_resop4;
+import org.dcache.oncrpc4j.rpc.IoStrategy;
+import org.dcache.oncrpc4j.rpc.OncRpcException;
+import org.dcache.oncrpc4j.xdr.Xdr;
+import org.dcache.oncrpc4j.xdr.XdrEncodingStream;
 import org.dcache.pool.repository.RepositoryChannel;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -57,10 +61,11 @@ public class EDSOperationREAD extends AbstractNFSv4Operation {
 
             bb.rewind();
             int bytesRead = fc.read(bb, offset);
+            bb.flip();
 
             res.status = nfsstat.NFS_OK;
-            res.resok4 = new READ4resok();
-            bb.flip();
+            // if SAME_THREAD strategy is used, then it's safe to use shallow encoding, as only the one thread accesses the buffer.
+            res.resok4 = nfsTransferService.getIoStrategy() == IoStrategy.SAME_THREAD? new ShallowREAD4resok() : new READ4resok();
             res.resok4.data = bb;
             if (bytesRead == -1 || offset + bytesRead == fc.size()) {
                 res.resok4.eof = true;
@@ -76,5 +81,19 @@ public class EDSOperationREAD extends AbstractNFSv4Operation {
             _log.error("DSREAD: ", e);
             res.status = nfsstat.NFSERR_SERVERFAULT;
         }
+    }
+
+    // version of READ4resok that uses shallow encoding to avoid extra copy
+    public static class ShallowREAD4resok extends READ4resok {
+
+        public ShallowREAD4resok() {
+        }
+
+        public void xdrEncode(XdrEncodingStream xdr)
+              throws OncRpcException, IOException {
+            xdr.xdrEncodeBoolean(eof);
+            ((Xdr)xdr).xdrEncodeShallowByteBuffer(data);
+        }
+
     }
 }

@@ -1016,6 +1016,11 @@
                 <artifactId>jmh-generator-annprocess</artifactId>
                 <version>${jmh.version}</version>
             </dependency>
+            <dependency>
+                <groupId>org.dcache</groupId>
+                <artifactId>oncrpc4j-core</artifactId>
+                <version>3.3.0-SNAPSHOT</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
