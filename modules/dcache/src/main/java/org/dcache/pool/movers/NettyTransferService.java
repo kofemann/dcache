@@ -172,6 +172,8 @@ public abstract class NettyTransferService<P extends ProtocolInfo>
 
     private final List<io.netty.util.concurrent.Future<?>> shutdownFutures = new ArrayList<>();
 
+    private TransferLifeCycle transferLifeCycle;
+
     public NettyTransferService(String name) {
         this.name = name;
     }
@@ -236,6 +238,14 @@ public abstract class NettyTransferService<P extends ProtocolInfo>
     @Required
     public void setPortRange(NettyPortRange portRange) {
         this.portRange = portRange;
+    }
+
+    public void setTransferLifeCycle(TransferLifeCycle transferLifeCycle) {
+        this.transferLifeCycle = transferLifeCycle;
+    }
+
+    public TransferLifeCycle getTransferLifeCycle() {
+        return transferLifeCycle;
     }
 
     public NettyPortRange getPortRange() {
@@ -390,6 +400,9 @@ public abstract class NettyTransferService<P extends ProtocolInfo>
 
                 InetSocketAddress localEndpoint = new InetSocketAddress(localIP, getServerAddress().getPort());
                 mover.setLocalEndpoint(localEndpoint);
+                transferLifeCycle.onStart(((IpProtocolInfo)mover.getProtocolInfo()).getSocketAddress(),
+                        localEndpoint, mover.getProtocolInfo(), mover.getSubject());
+
                 sendAddressToDoor(mover, localEndpoint);
             }
 
