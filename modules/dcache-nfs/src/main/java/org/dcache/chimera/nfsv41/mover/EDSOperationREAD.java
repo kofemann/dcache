@@ -2,6 +2,7 @@ package org.dcache.chimera.nfsv41.mover;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritableByteChannel;
 import org.dcache.nfs.ChimeraNFSException;
 import org.dcache.nfs.nfsstat;
 import org.dcache.nfs.v4.AbstractNFSv4Operation;
@@ -12,11 +13,13 @@ import org.dcache.nfs.v4.xdr.READ4resok;
 import org.dcache.nfs.v4.xdr.nfs_argop4;
 import org.dcache.nfs.v4.xdr.nfs_opnum4;
 import org.dcache.nfs.v4.xdr.nfs_resop4;
+import org.dcache.oncrpc4j.grizzly.FileChannelChunk;
 import org.dcache.oncrpc4j.rpc.IoStrategy;
 import org.dcache.oncrpc4j.rpc.OncRpcException;
 import org.dcache.oncrpc4j.xdr.Xdr;
 import org.dcache.oncrpc4j.xdr.XdrEncodingStream;
 import org.dcache.pool.repository.RepositoryChannel;
+import org.glassfish.grizzly.FileChunk;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,23 +58,21 @@ public class EDSOperationREAD extends AbstractNFSv4Operation {
                 return;
             }
 
-            ByteBuffer bb = BUFFERS.get();
-            bb.clear().limit(count);
             RepositoryChannel fc = mover.getMoverChannel();
-
-            bb.rewind();
-            int bytesRead = fc.read(bb, offset);
-            bb.flip();
+            count = (int)Math.min((long)count, fc.size() - offset);
 
             res.status = nfsstat.NFS_OK;
-            // if SAME_THREAD strategy is used, then it's safe to use shallow encoding, as only the one thread accesses the buffer.
-            res.resok4 = nfsTransferService.getIoStrategy() == IoStrategy.SAME_THREAD? new ShallowREAD4resok() : new READ4resok();
-            res.resok4.data = bb;
-            if (bytesRead == -1 || offset + bytesRead == fc.size()) {
+
+            var r1 = new ShallowREAD4resok();
+            r1.chunk = new RpositoryFileChunk(fc, offset, count);
+
+
+            res.resok4 = r1;
+            if (offset + count == fc.size()) {
                 res.resok4.eof = true;
             }
 
-            _log.debug("MOVER: {}@{} read, {} requested.", bytesRead, offset,
+            _log.debug("MOVER: {}@{} read, {} requested.", count, offset,
                   _args.opread.count.value);
 
         } catch (IOException ioe) {
@@ -86,14 +87,61 @@ public class EDSOperationREAD extends AbstractNFSv4Operation {
     // version of READ4resok that uses shallow encoding to avoid extra copy
     public static class ShallowREAD4resok extends READ4resok {
 
+        FileChunk chunk;
+
         public ShallowREAD4resok() {
         }
 
         public void xdrEncode(XdrEncodingStream xdr)
               throws OncRpcException, IOException {
             xdr.xdrEncodeBoolean(eof);
-            ((Xdr)xdr).xdrEncodeShallowByteBuffer(data);
+            ((Xdr) xdr).xdrEncodeFileChunk(chunk);
+        }
+    }
+
+
+    private static class RpositoryFileChunk implements FileChunk {
+
+        RepositoryChannel fc;
+        long position;
+        int len;
+
+        public RpositoryFileChunk(RepositoryChannel fc, long offset, int count) {
+            this.fc = fc;
+            this.position = offset;
+            this.len = count;
         }
 
+        @Override
+        public long writeTo(WritableByteChannel writableByteChannel) throws IOException {
+            long n = fc.transferTo(position, len, writableByteChannel);
+
+            if (n > 0) {
+                len -= n;
+            }
+
+            return n;
+        }
+
+        @Override
+        public boolean hasRemaining() {
+            return len > 0;
+        }
+
+        @Override
+        public int remaining() {
+            return len;
+        }
+
+        @Override
+        public boolean release() {
+            return true;
+        }
+
+        @Override
+        public boolean isExternal() {
+            return true;
+        }
     }
+
 }
