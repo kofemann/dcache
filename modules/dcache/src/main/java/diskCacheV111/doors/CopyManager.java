@@ -279,7 +279,9 @@ public class CopyManager extends AbstractCellComponent
                     copy(message.getSubject(),
                           message.getRestriction(),
                           FsPath.create(message.getSrcPnfsPath()),
-                          FsPath.create(message.getDstPnfsPath()));
+                          FsPath.create(message.getDstPnfsPath()),
+                          message.isCreate()
+                    );
                 } catch (CacheException e) {
                     int retries = message.getNumberOfRetries() - 1;
                     message.setNumberOfRetries(retries);
@@ -356,7 +358,8 @@ public class CopyManager extends AbstractCellComponent
         private void copy(Subject subject,
               Restriction restriction,
               FsPath srcPnfsFilePath,
-              FsPath dstPnfsFilePath)
+              FsPath dstPnfsFilePath,
+              boolean create)
               throws CacheException, InterruptedException {
             synchronized (this) {
                 _source = new RedirectedTransfer<>(_pnfsHandler, subject, restriction,
@@ -382,7 +385,11 @@ public class CopyManager extends AbstractCellComponent
             try {
                 try {
                     _source.readNameSpaceEntry(false);
-                    _target.createNameSpaceEntry();
+                    if (create) {
+                        _target.createNameSpaceEntry();
+                    } else {
+                        _target.readNameSpaceEntry(true);
+                    }
 
                     _source.setProtocolInfo(createSourceProtocolInfo());
                     _target.setLength(_source.getLength());

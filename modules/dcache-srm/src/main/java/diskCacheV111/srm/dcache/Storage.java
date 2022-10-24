@@ -1394,7 +1394,7 @@ public final class Storage
             CopyManagerMessage copyRequest =
                   new CopyManagerMessage(actualFromFilePath.toString(),
                         actualToFilePath.toString(),
-                        id);
+                        id, true);
             copyRequest.setSubject(user.getSubject());
             copyRequest.setRestriction(user.getRestriction());
             _transferManagerStub.sendAndWait(copyRequest);

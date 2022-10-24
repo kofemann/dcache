@@ -23,13 +23,16 @@ public class CopyManagerMessage extends Message {
     private String description;
     private Restriction restriction = Restrictions.none();
 
+    private final boolean create;
+
     private static final long serialVersionUID = -1490534904266183106L;
 
-    public CopyManagerMessage(String srcPnfsPath, String dstPnfsPath, long id) {
+    public CopyManagerMessage(String srcPnfsPath, String dstPnfsPath, long id, boolean create) {
         super();
         setId(id);
         this.srcPnfsPath = srcPnfsPath;
         this.dstPnfsPath = dstPnfsPath;
+        this.create = create;
     }
 
     public Restriction getRestriction() {
@@ -133,6 +136,9 @@ public class CopyManagerMessage extends Message {
         return this;
     }
 
+    public boolean isCreate() {
+        return create;
+    }
 }
 
 

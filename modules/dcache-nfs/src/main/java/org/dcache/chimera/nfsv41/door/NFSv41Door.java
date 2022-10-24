@@ -4,6 +4,7 @@ import static com.google.common.net.InetAddresses.toAddrString;
 import static dmg.util.CommandException.checkCommand;
 import static java.util.stream.Collectors.toList;
 import static org.dcache.chimera.nfsv41.door.ExceptionUtils.asNfsException;
+import static org.dcache.util.CompletableFutures.fromListenableFuture;
 import static org.dcache.util.TransferRetryPolicy.alwaysRetry;
 
 import com.google.common.collect.Sets;
@@ -19,6 +20,7 @@ import diskCacheV111.util.FsPath;
 import diskCacheV111.util.PermissionDeniedCacheException;
 import diskCacheV111.util.PnfsHandler;
 import diskCacheV111.util.PnfsId;
+import diskCacheV111.vehicles.CopyManagerMessage;
 import diskCacheV111.vehicles.DoorRequestInfoMessage;
 import diskCacheV111.vehicles.DoorTransferFinishedMessage;
 import diskCacheV111.vehicles.IoDoorEntry;
@@ -62,6 +64,7 @@ import java.util.Optional;
 import java.util.OptionalLong;
 import java.util.Set;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
@@ -69,6 +72,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.function.Consumer;
 import java.util.function.Predicate;
@@ -114,6 +118,7 @@ import org.dcache.nfs.status.LayoutTryLaterException;
 import org.dcache.nfs.status.LayoutUnavailableException;
 import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.status.NoMatchingLayoutException;
+import org.dcache.nfs.status.OffloadDeniedExeption;
 import org.dcache.nfs.status.PermException;
 import org.dcache.nfs.status.ServerFaultException;
 import org.dcache.nfs.status.StaleException;
@@ -177,6 +182,7 @@ import org.dcache.poolmanager.PoolManagerStub;
 import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.util.ByteUnit;
 import org.dcache.util.CDCScheduledExecutorServiceDecorator;
+import org.dcache.util.CacheExceptionFactory;
 import org.dcache.util.FireAndForgetTask;
 import org.dcache.util.Glob;
 import org.dcache.util.NDC;
@@ -472,7 +478,13 @@ public class NFSv41Door extends AbstractCellComponent implements
 
     public void init() throws Exception {
 
-        _chimeraVfs = new ChimeraVfs(_fileFileSystemProvider, _idMapper);
+        _chimeraVfs = new ChimeraVfs(_fileFileSystemProvider, _idMapper) {
+            @Override
+            public CompletableFuture<Long> copyFileRange(Inode src, long srcPos, Inode dst,
+                  long dstPos, long len) {
+                return internalCopy( src, srcPos, dst, dstPos, len);
+            }
+        };
         _vfsCache = new VfsCache(_chimeraVfs, _vfsCacheConfig);
         _vfs = _eventNotifier == null ? _vfsCache : wrapWithMonitoring(_vfsCache);
 
@@ -2008,5 +2020,65 @@ public class NFSv41Door extends AbstractCellComponent implements
                 _log.error("Failed to send call-back to the client: {}", e.getMessage());
             }
         }
+    }
+
+    private final AtomicLong copyId = new AtomicLong();
+
+    private CompletableFuture<Long> internalCopy(Inode src, long srcPos, Inode dst, long dstPos, long len) {
+
+        if (len < ByteUnit.MiB.toBytes(64L)) {
+            // not big enough :)
+            return CompletableFuture.failedFuture(new OffloadDeniedExeption());
+        }
+
+        try {
+            var srcStat = _vfsCache.getattr(src);
+            if (srcStat.getSize() != len) {
+                // only full copy is supported
+                return CompletableFuture.failedFuture(new OffloadDeniedExeption());
+            }
+
+            if (_transfers.values().stream().filter(Transfer::isWrite).map(t -> t._nfsInode).anyMatch(i -> i.equals(dst))) {
+                // REVISIT: SSC doesn't work with pNFS
+                return CompletableFuture.failedFuture(new OffloadDeniedExeption());
+            }
+
+            var dstStat = _vfsCache.getattr(dst);
+            // FIXME: check the file state
+
+            FsInode srcInode = _chimeraVfs.inodeFromBytes(src.getFileId());
+            PnfsId srcPnfsId = new PnfsId(srcInode.getId());
+
+            FsInode dstInode = _chimeraVfs.inodeFromBytes(dst.getFileId());
+            PnfsId dstPnfsId = new PnfsId(dstInode.getId());
+
+            var srcPath = _pnfsHandler.getPathByPnfsId(srcPnfsId).toString();
+            var dstPath = _pnfsHandler.getPathByPnfsId(dstPnfsId).toString();
+
+            var copyMessage = new CopyManagerMessage(srcPath, dstPath, copyId.incrementAndGet(), false);
+
+            CompletableFuture<Long> copyFuture = new CompletableFuture<>();
+
+            fromListenableFuture(_poolStub.send(new CellPath("RemoteTransferManager"), copyMessage, Long.MAX_VALUE))
+                  .whenComplete((m, t) -> {
+                      if (t != null) {
+                          copyFuture.completeExceptionally(t);
+                          return;
+                      }
+                      if (m.getReturnCode() == 0) {
+                          copyFuture.complete(len);
+                          return;
+                      }
+                      copyFuture.completeExceptionally(CacheExceptionFactory.exceptionOf(m));
+
+                  });
+
+            return copyFuture;
+
+        } catch (CacheException | IOException e) {
+            return CompletableFuture.failedFuture(e);
+        }
+
+
     }
 }
