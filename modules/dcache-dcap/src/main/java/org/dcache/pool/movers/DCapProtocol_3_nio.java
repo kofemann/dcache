@@ -859,7 +859,6 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover, CellArg
           SocketChannel socketChannel) throws Exception {
 
         int rest;
-        int size, rc;
 
         RequestBlock requestBlock = new RequestBlock();
         requestBlock.read(socketChannel);
@@ -890,7 +889,6 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover, CellArg
             // and at the end we tell'em that something went
             // terribly wrong.
             //
-            long bytesAdded = 0L;
             if (rest == 0) {
                 continue;
             }
@@ -898,45 +896,23 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover, CellArg
                 break;
             }
 
+            _status = "Moving data";
             while (rest > 0) {
-
-                size = _bigBuffer.capacity() > rest ?
-                      rest : _bigBuffer.capacity();
-
-                _status = "WaitingForInput";
-
-                _bigBuffer.clear().limit(size);
-
-                rc = socketChannel.read(_bigBuffer);
-
-                if (rc <= 0) {
-                    break;
-                }
-
-                if (_io_ok) {
-
-                    _status = "WaitingForWrite";
-
-                    try {
-
-                        _bigBuffer.flip();
-                        bytesAdded += fileChannel.write(_bigBuffer);
-                    } catch (ClosedByInterruptException ee) {
-                        // clear interrupted state
-                        Thread.interrupted();
-                        throw new InterruptedException(ee.getMessage());
-                    } catch (OutOfDiskException e) {
-                        _io_ok = false;
-                        ioException = e;
-                    } catch (IOException ioe) {
-                        _log.error("IOException in writing data to disk : {}", ioe.toString());
-                        _io_ok = false;
-                    }
-                }
-                rest -= rc;
-                _bytesTransferred += rc;
-                if ((_ioError > 0L) &&
-                      (_bytesTransferred > _ioError)) {
+                try {
+                    long pos = fileChannel.position();
+                    long n = fileChannel.transferFrom(socketChannel, pos, rest);
+                    fileChannel.position(pos + n);
+                    rest -= n;
+                    _bytesTransferred += n;
+                } catch (ClosedByInterruptException ee) {
+                    // clear interrupted state
+                    Thread.interrupted();
+                    throw new InterruptedException(ee.getMessage());
+                } catch (OutOfDiskException e) {
+                    _io_ok = false;
+                    ioException = e;
+                } catch (IOException ioe) {
+                    _log.error("IOException in writing data to disk : {}", ioe.toString());
                     _io_ok = false;
                 }
             }
@@ -964,42 +940,34 @@ public class DCapProtocol_3_nio implements MoverProtocol, ChecksumMover, CellArg
             socketChannel.write(cntOut.buffer());
             return;
         }
+        long size = fileChannel.size();
         long rest = blockSize;
-        int size, rc;
-
-        final int maxBuffer = _bigBuffer.capacity() - 4;
-
+        final int ioChunk = 256*1024;
         while (!Thread.currentThread().isInterrupted()) {
 
-            size = maxBuffer > rest ? (int) rest : maxBuffer;
+            if (rest == 0) {
+                break;
+            }
 
-            try {
-                _bigBuffer.clear().limit(size + 4);
-                _bigBuffer.position(4);
-                rc = fileChannel.read(_bigBuffer);
-                if (rc <= 0) {
-                    break;
-                }
-            } catch (ClosedByInterruptException ee) {
-                // clear interrupted state
-                Thread.interrupted();
-                throw new InterruptedException(ee.getMessage());
-            } catch (IOException ee) {
-                _io_ok = false;
+            long pos = fileChannel.position();
+            if (pos == size) {
                 break;
             }
+
+            int ioBlock = (int)Math.min(rest, ioChunk);
+            if (size - ioBlock <=  pos) {
+                ioBlock = (int)(size - pos);
+            }
+
+            _bigBuffer.clear().limit(4);
+            _bigBuffer.putInt(ioBlock);
             _bigBuffer.flip();
-            _bigBuffer.putInt(rc).rewind();
             socketChannel.write(_bigBuffer);
-            rest -= rc;
-            _bytesTransferred += rc;
-            if ((_ioError > 0L) && (_bytesTransferred > _ioError)) {
-                _io_ok = false;
-                break;
-            }
-            if (rest <= 0) {
-                break;
-            }
+
+            long n = fileChannel.transferTo(pos, ioBlock, socketChannel);
+            fileChannel.position(pos + n);
+            rest -= n;
+            _bytesTransferred += n;
         }
         //
         // data chain delimiter
