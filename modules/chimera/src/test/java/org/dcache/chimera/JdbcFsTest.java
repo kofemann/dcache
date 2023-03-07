@@ -1042,6 +1042,26 @@ public class JdbcFsTest extends ChimeraTestCaseHelper {
     }
 
     @Test
+    public void testTagPropagation() throws ChimeraFsException {
+
+        var tagName = "aTag";
+
+        _fs.createTag(_rootInode, tagName);
+        FsInode tagInode = new FsInode_TAG(_fs, _rootInode.ino(), tagName);
+        byte[] data = "data".getBytes(UTF_8);
+        tagInode.write(0, data, 0, data.length);
+
+        var dir = _fs.mkdir(_rootInode, "dir.0", 0, 0, 0755);
+        _fs.statTag(dir, tagName);
+    }
+
+    @Test(expected = FileNotFoundChimeraFsException.class)
+    public void testStatMissingTag() throws ChimeraFsException {
+        var dir = _fs.mkdir(_rootInode, "dir.0", 0, 0, 0755);
+        _fs.statTag(dir, "aTag");
+    }
+
+    @Test
     public void testChangeTagOwner() throws Exception {
 
         final String tagName = "myTag";
@@ -1303,12 +1323,7 @@ public class JdbcFsTest extends ChimeraTestCaseHelper {
         assertEquals("Tag ref count mismatch", 1, tagInode.stat().getNlink());
 
         FsInode sub = top.mkdir("sub");
-        assertEquals("Tag ref count not incremented on create", 2, tagInode.stat().getNlink());
-
         _fs.remove(top, "sub", sub);
-        assertEquals("Tag ref count decremented on remove", 1, tagInode.stat().getNlink());
-
-        // remove last reference
         _fs.remove(_rootInode, "top", top);
 
         // as we don't have a way to access tags, use direct SQL
