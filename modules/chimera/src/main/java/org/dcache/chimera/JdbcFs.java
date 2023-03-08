@@ -350,7 +350,7 @@ public class JdbcFs implements FileSystemProvider {
 
                 _sqlDriver.createEntryInParent(parent, name, inode);
                 _sqlDriver.incNlink(inode);
-                _sqlDriver.incNlink(parent);
+                _sqlDriver.incNlink(parent, 0);
             } catch (DuplicateKeyException e) {
                 throw new FileExistsChimeraFsException(e);
             }

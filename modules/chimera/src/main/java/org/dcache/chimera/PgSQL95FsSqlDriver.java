@@ -17,16 +17,19 @@
 package org.dcache.chimera;
 
 import com.google.common.base.Throwables;
+import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.net.SocketException;
 import java.sql.PreparedStatement;
-import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import org.dcache.acl.enums.AceFlags;
 import org.dcache.acl.enums.RsType;
@@ -51,12 +54,35 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
      */
     private static final Logger LOGGER = LoggerFactory.getLogger(PgSQL95FsSqlDriver.class);
 
+    private final String createProcedureName;
+
+    private final DataSource dataSource;
+
+    private final boolean enableLazyWcc;
+
     /**
      * this is a utility class which is issues SQL queries on database
      */
     public PgSQL95FsSqlDriver(DataSource dataSource) throws ChimeraFsException {
         super(dataSource);
         LOGGER.info("Running PostgreSQL >= 9.5 specific Driver");
+        this.dataSource = dataSource;
+
+        enableLazyWcc = System.getProperty("chimera_lazy_wcc") != null;
+
+        if (enableLazyWcc) {
+            createProcedureName = "f_create_inode95_lazy_wcc";
+            Executors.newSingleThreadScheduledExecutor(
+                  new ThreadFactoryBuilder()
+                        .setNameFormat("chimera-wcc-updater-%d")
+                        .setDaemon(true)
+                        .build()
+            ).scheduleWithFixedDelay(
+                  () -> push_wcc(), 10, 20, TimeUnit.SECONDS
+            );
+        } else {
+            createProcedureName = "f_create_inode95";
+        }
     }
 
 
@@ -66,7 +92,7 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
         Timestamp now = new Timestamp(System.currentTimeMillis());
 
         Long inumber =
-              _jdbc.query("SELECT f_create_inode95(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+              _jdbc.query("SELECT " + createProcedureName + "(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
                     cs -> {
                         cs.setLong(1, parent.ino());
                         cs.setString(2, name);
@@ -131,8 +157,8 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
     }
 
     @Override
-    boolean removeInodeIfUnlinked(FsInode inode) {
-        return _jdbc.update("DELETE FROM t_inodes WHERE inumber=? AND inlink = 0", inode.ino()) > 0;
+    void removeInodeIfUnlinked(FsInode inode) {
+        _jdbc.update("DELETE FROM t_inodes WHERE inumber=?", inode.ino());
     }
 
     /**
@@ -393,13 +419,17 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
 
     @Override
     void setInodeChecksum(FsInode inode, int type, String value) {
-        _jdbc.update("INSERT INTO t_inodes_checksum (inumber,itype,isum) VALUES (?,?,?) " +
+        int n = _jdbc.update("INSERT INTO t_inodes_checksum (inumber,itype,isum) VALUES (?,?,?) " +
                     "ON CONFLICT ON CONSTRAINT t_inodes_checksum_pkey DO NOTHING",
               ps -> {
                   ps.setLong(1, inode.ino());
                   ps.setInt(2, type);
                   ps.setString(3, value);
               });
+        if (n > 0) {
+            // trigger generation update
+            setInodeAttributes(inode, 0, new Stat());
+        }
     }
 
     @Override
@@ -454,5 +484,84 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
                 LOGGER.warn("FS stat update interrupted {}", e.getMessage());
             }
         }
+    }
+
+    // triggers weak attribute merge
+    private void push_wcc() {
+        try {
+            try (var conn = dataSource.getConnection()) {
+                conn.createStatement().execute("SELECT f_propagate_wcc()");
+            }
+        } catch (SQLException e) {
+            LOGGER.error("Failed to merge lazy wcc: {}", e.toString());
+        }
+    }
+
+
+    @Override
+    void decNlink(FsInode inode, int delta) {
+        if (delta > 0 || !enableLazyWcc) {
+            super.decNlink(inode, delta);
+            return;
+        }
+
+        // parent dir mtime update
+        _jdbc.update("INSERT INTO t_lazy_wcc (inumber, nlink, ts) VALUES (?, ?, ?)",
+              inode.ino(),
+              -delta,
+              new Timestamp(System.currentTimeMillis()));
+    }
+
+    @Override
+    void incNlink(FsInode inode, int delta) {
+        if (delta > 0 || !enableLazyWcc) {
+            super.incNlink(inode, delta);
+            return;
+        }
+        // parent dir mtime update
+        _jdbc.update("INSERT INTO t_lazy_wcc (inumber, nlink, ts) VALUES (?, ?, ?)",
+              inode.ino(),
+              delta,
+              new Timestamp(System.currentTimeMillis()));
+    }
+
+    /*
+        Benchmark                                 (dir)            (wcc)   Mode  Cnt     Score     Error  Units
+        CreateBenchmark.benchmarkCreateFile  all-in-one             weak  thrpt   10  1422.718 ± 198.879  ops/s
+        CreateBenchmark.benchmarkCreateFile  all-in-one           strong  thrpt    6   278.146 ± 210.123  ops/s
+        CreateBenchmark.benchmarkCreateFile  all-in-one  week_softupdate  thrpt   10   762.012 ± 281.987  ops/s
+     */
+    @Override
+    public Stat stat(FsInode inode, int level) {
+        var stat = super.stat(inode, level);
+        // inode not found
+        if (stat == null) {
+            return null;
+        }
+
+        if (level != 0) {
+            // skip the pnfs levels
+            return stat;
+        }
+
+        // if lazy cache consistency is used and client requests for directories attributes, then
+        // check for any pending updates and adjust the results.
+        // NOTE: we don't merge the updates into t_inodes to resist to create+stat bursts
+        if (enableLazyWcc && ((stat.getMode() & UnixPermission.S_TYPE) == UnixPermission.S_IFDIR)) {
+            _jdbc.query(
+                  "SELECT count(*) as count, sum(nlink) as nlink, max(ts) as ts FROM t_lazy_wcc WHERE inumber=?",
+                  r -> {
+                      var changeCount = r.getInt("count");
+                      if (changeCount > 0) {
+                          var ts = r.getTimestamp("ts");
+                          stat.setMTime(Math.max(stat.getMTime(), ts.getTime()));
+                          stat.setCTime(Math.max(stat.getCTime(), ts.getTime()));
+                          stat.setGeneration(stat.getGeneration() + changeCount);
+                          stat.setNlink(stat.getNlink() + r.getInt("nlink"));
+                      }
+                  },
+                  inode.ino());
+        }
+        return stat;
     }
 }
