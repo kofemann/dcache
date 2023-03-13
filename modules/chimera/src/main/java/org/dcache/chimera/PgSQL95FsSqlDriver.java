@@ -17,7 +17,6 @@
 package org.dcache.chimera;
 
 import com.google.common.base.Throwables;
-import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import java.io.File;
 import java.net.SocketException;
 import java.sql.PreparedStatement;
@@ -28,8 +27,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
 import javax.sql.DataSource;
 import org.dcache.acl.enums.AceFlags;
 import org.dcache.acl.enums.RsType;
@@ -69,20 +66,7 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
         this.dataSource = dataSource;
 
         enableLazyWcc = System.getProperty("chimera_lazy_wcc") != null;
-
-        if (enableLazyWcc) {
-            createProcedureName = "f_create_inode95_lazy_wcc";
-            Executors.newSingleThreadScheduledExecutor(
-                  new ThreadFactoryBuilder()
-                        .setNameFormat("chimera-wcc-updater-%d")
-                        .setDaemon(true)
-                        .build()
-            ).scheduleWithFixedDelay(
-                  () -> push_wcc(), 10, 20, TimeUnit.SECONDS
-            );
-        } else {
-            createProcedureName = "f_create_inode95";
-        }
+        createProcedureName = enableLazyWcc ? "f_create_inode95_lazy_wcc" : "f_create_inode95";
     }
 
 
@@ -487,7 +471,8 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
     }
 
     // triggers weak attribute merge
-    private void push_wcc() {
+    @Override
+    void performMaintenanceTask() {
         try {
             try (var conn = dataSource.getConnection()) {
                 conn.createStatement().execute("SELECT f_propagate_wcc()");

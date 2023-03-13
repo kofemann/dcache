@@ -2221,4 +2221,11 @@ public class FsSqlDriver {
         setInodeAttributes(inode, 0, new Stat());
     }
 
+
+    /**
+     * File system backend specific periodic maintenance task.
+     */
+    void performMaintenanceTask() {
+
+    }
 }
