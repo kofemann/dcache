@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.Serializable;
 import java.util.Objects;
+import org.dcache.cells.jfr.CellMessageSerializeEvent;
+import org.dcache.cells.jfr.CellMessageSerializeEvent.Type;
 
 /**
  * Do not subclass - otherwise raw encoding in LocationMgrTunnel will break.
@@ -236,7 +238,14 @@ public final class CellMessage implements Cloneable, Serializable {
         checkState(_mode == ORIGINAL_MODE);
         CellMessage encoded = clone();
         encoded._mode = STREAM_MODE;
+        CellMessageSerializeEvent event = new CellMessageSerializeEvent();
+        event.peyloadType = _message.getClass().getName();
+        event.source = _source.toAddressString();
+        event.destination = _destination.toAddressString();
+        event.type = Type.Serialize.name();
+        event.begin();
         encoded._messageStream = SerializationHandler.encode(this._message, serializer);
+        event.commit();
         return encoded;
     }
 
@@ -255,7 +264,15 @@ public final class CellMessage implements Cloneable, Serializable {
         CellMessage decoded = clone();
         decoded._mode = ORIGINAL_MODE;
         decoded._messageStream = null;
+
+        CellMessageSerializeEvent event = new CellMessageSerializeEvent();
+        event.peyloadType = _message.getClass().getName();
+        event.source = _source.toAddressString();
+        event.destination = _destination.toAddressString();
+        event.type = Type.Deserialize.name();
+        event.begin();
         decoded._message = SerializationHandler.decode(_messageStream);
+        event.commit();
         return decoded;
     }
 
