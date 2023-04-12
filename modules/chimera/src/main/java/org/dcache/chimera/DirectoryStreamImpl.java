@@ -36,6 +36,19 @@ public class DirectoryStreamImpl {
                 "UNION ALL " +
                 "SELECT i.*, '..' FROM t_inodes i JOIN t_dirs d ON i.inumber = d.iparent WHERE d.ichild=?";
 
+
+    private static final String QUERY_JSONB =
+          "SELECT i.*, jsonb_array_elements(irefs)-> 'name' AS iname FROM t_inodes i WHERE i.irefs @> ?::jsonb "
+                +
+                "UNION ALL " +
+                "SELECT i.*,jsonb_build_array(?::jsonb) FROM t_inodes i WHERE i.inumber=? "
+/*
+                +
+                "UNION ALL " +
+                "i.*, '..' from t_inodes i  where i.irefs @> '[{\"parent\": ?}]' ";
+*/
+    ;
+
     private final ResultSet _resultSet;
     private final JdbcTemplate _jdbc;
     private final Connection _connection;
@@ -49,16 +62,17 @@ public class DirectoryStreamImpl {
         ResultSet rs;
         try {
             connection = DataSourceUtils.getConnection(_jdbc.getDataSource());
-            ps = connection.prepareStatement(QUERY);
+            ps = connection.prepareStatement(QUERY_JSONB);
             ps.setFetchSize(50);
-            ps.setLong(1, dir.ino());
-            ps.setLong(2, dir.ino());
+            ps.setString(1, "[{\"parent\": " + dir.ino() + "}]");
+            ps.setString(2, "[{\"parent\": " + dir.ino() + ", \"name\" : \".\"}]");
             ps.setLong(3, dir.ino());
+            //ps.setLong(3, dir.ino());
             rs = ps.executeQuery();
         } catch (SQLException ex) {
             JdbcUtils.closeStatement(ps);
             DataSourceUtils.releaseConnection(connection, _jdbc.getDataSource());
-            throw _jdbc.getExceptionTranslator().translate("StatementExecution", QUERY, ex);
+            throw _jdbc.getExceptionTranslator().translate("StatementExecution", QUERY_JSONB, ex);
         }
         _connection = connection;
         _resultSet = rs;

@@ -488,7 +488,8 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
     void performMaintenanceTask() {
         try {
             try (var conn = dataSource.getConnection()) {
-                conn.createStatement().execute("SELECT f_propagate_wcc()");
+                conn.setAutoCommit(true);
+                conn.createStatement().executeQuery("SELECT f_propagate_wcc()");
             }
         } catch (SQLException e) {
             LOGGER.error("Failed to merge lazy wcc: {}", e.toString());
