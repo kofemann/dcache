@@ -39,6 +39,8 @@ public abstract class ChimeraTestCaseHelper {
               dbProperties.getProperty("chimera.db.password"));
 
         try (Connection conn = _dataSource.getConnection()) {
+            conn.createStatement().execute("DROP SCHEMA public CASCADE;");
+            conn.createStatement().execute("CREATE SCHEMA public;");
             conn.setTransactionIsolation(Connection.TRANSACTION_READ_COMMITTED);
 
             Database database = DatabaseFactory.getInstance()
@@ -56,8 +58,8 @@ public abstract class ChimeraTestCaseHelper {
 
     @After
     public void tearDown() throws Exception {
-        Connection conn = _dataSource.getConnection();
-        conn.createStatement().execute("SHUTDOWN;");
+//        Connection conn = _dataSource.getConnection();
+//        conn.createStatement().execute("SHUTDOWN;");
         _dataSource.close();
         _fs.close();
     }
