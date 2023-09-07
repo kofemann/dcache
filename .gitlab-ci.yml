@@ -41,6 +41,17 @@ variables:
   DCACHE_HELM_REPO: https://gitlab.desy.de/api/v4/projects/7648/packages/helm/test
 
 
+# let's debug nodes where job is running
+before_script:
+  - echo "============== GitLab Agent =============="
+  - uname -a
+  - echo "Runner           $CI_RUNNER_DESCRIPTION"
+  - echo "Runner id        $CI_RUNNER_ID"
+  - echo "Runner version   $CI_RUNNER_VERSION"
+  - echo "Runner reversion $CI_RUNNER_REVERSION"
+  - echo "Runner tgas      $CI_RUNNER_TAGS"
+  - echo "=========================================="
+
 #
 # default tags and image for testing stages/kubernetes/helm 
 #
