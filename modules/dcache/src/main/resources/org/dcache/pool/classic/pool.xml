@@ -342,6 +342,9 @@
   <bean id="io-queue-manager" class="org.dcache.pool.classic.IoQueueManager"
           destroy-method="shutdown" depends-on="transfer-services">
     <description>Requests IO manager</description>
+    <constructor-arg name="poolName" value="${pool.name}"/>
+    <constructor-arg name="billing" ref="billing-stub"/>
+    <constructor-arg name="kafkaTemplate" ref="billing-template-transfer-startup"/>
     <property name="queues" value="${pool.queues}"/>
   </bean>
 
@@ -737,6 +740,33 @@
             <property name="defaultTopic" value="${pool.kafka.topic}"/>
             <property name="producerListener" ref="listener"/>
         </bean>
+
+
+        <bean id="kafka-configs-transfer-startup" class="org.dcache.util.configuration.ConfigurationMapFactoryBean">
+            <property name="prefix" value="pool.kafka.producer.configs"/>
+            <property name="staticEnvironment">
+                <map>
+                    <entry key="bootstrap.servers" value="${pool.kafka.producer.bootstrap.servers}"/>
+                    <entry key="key.serializer" value="org.apache.kafka.common.serialization.StringSerializer"/>
+                    <entry key="value.serializer" value="org.dcache.notification.BillingStartupMessageSerializer"/>
+                    <entry key="client.id" value="${pool.cell.name}@${dcache.domain.name}-transfer-startup"/>
+                </map>
+            </property>
+        </bean>
+
+        <bean id="billing-template-transfer-startup"  class="org.springframework.kafka.core.KafkaTemplate">
+            <qualifier value="transfer-startup"/>
+            <constructor-arg>
+                <bean class="org.springframework.kafka.core.DefaultKafkaProducerFactory">
+                    <constructor-arg name="configs" ref ="kafka-configs-transfer-startup"/>
+                </bean>
+            </constructor-arg>
+            <constructor-arg name="autoFlush" value="false" />
+            <property name="defaultTopic" value="${pool.kafka.topic}"/>
+            <property name="producerListener" ref="listener"/>
+        </bean>
+
+
 
     </beans>
 

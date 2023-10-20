@@ -9,15 +9,15 @@ import static org.dcache.pool.classic.IoRequestState.NEW;
 import static org.dcache.pool.classic.IoRequestState.QUEUED;
 import static org.dcache.pool.classic.IoRequestState.RUNNING;
 
+import com.google.common.base.Throwables;
 import diskCacheV111.pools.PoolCostInfo.NamedPoolQueueInfo;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.DiskErrorCacheException;
-import diskCacheV111.vehicles.IoJobInfo;
-import diskCacheV111.vehicles.JobInfo;
-import diskCacheV111.vehicles.ProtocolInfo;
+import diskCacheV111.vehicles.*;
 import dmg.cells.nucleus.CDC;
 import java.io.InterruptedIOException;
 import java.nio.channels.CompletionHandler;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,10 +31,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.PriorityBlockingQueue;
 import java.util.concurrent.TimeUnit;
+import java.util.function.Consumer;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.annotation.Nullable;
+
+import dmg.cells.nucleus.CellAddressCore;
+import org.dcache.cells.CellStub;
 import org.dcache.pool.FaultAction;
 import org.dcache.pool.FaultEvent;
 import org.dcache.pool.FaultListener;
@@ -44,8 +47,11 @@ import org.dcache.pool.repository.FileStore;
 import org.dcache.util.AdjustableSemaphore;
 import org.dcache.util.IoPrioritizable;
 import org.dcache.util.IoPriority;
+import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.kafka.KafkaException;
+import org.springframework.lang.Nullable;
 
 public class MoverRequestScheduler {
 
@@ -54,6 +60,8 @@ public class MoverRequestScheduler {
 
     private static final long DEFAULT_LAST_ACCESSED = 0;
     private static final long DEFAULT_TOTAL = 0;
+
+
 
     /**
      * A RuntimeException that wraps a CacheException.
@@ -135,12 +143,20 @@ public class MoverRequestScheduler {
         FIFO, LIFO
     }
 
-    public MoverRequestScheduler(String name, int queueId, Order order) {
+    private Consumer<MoverStartupInfoMessage> _kafkaSender;
+    private CellStub _billing;
+
+    private String _poolName;
+
+    public MoverRequestScheduler(String name, int queueId, Order order, @org.springframework.lang.Nullable Consumer<MoverStartupInfoMessage> kafkaSender, CellStub billing, String poolName) {
         _name = name;
         _queueId = queueId;
         _order = order;
         _queue = createQueue(order);
         _semaphore.setMaxPermits(2);
+        _kafkaSender = kafkaSender;
+        _billing = billing;
+        _poolName = poolName;
     }
 
     public void addFaultListener(FaultListener listener) {
@@ -555,6 +571,7 @@ public class MoverRequestScheduler {
                           }
                       }
                   });
+            sendBillingInfo(request.generateBillingMessage(_poolName));
         }
     }
 
@@ -597,6 +614,25 @@ public class MoverRequestScheduler {
 
     public boolean hasNonDefaultTotal() {
         return _total != DEFAULT_TOTAL;
+    }
+
+    private void sendBillingInfo(MoverStartupInfoMessage moverStartupInfoMessage) {
+
+        try {
+            _kafkaSender.accept(moverStartupInfoMessage);
+        } catch (Exception e) {
+            LOGGER.warn(Throwables.getRootCause(e).getMessage());
+        }
+
+/*
+        // fixme: breaks compatibility with dCache 9.2
+        try {
+             _billing.notify(moverStartupInfoMessage);
+        } catch (Exception e) {
+            LOGGER.warn(Throwables.getRootCause(e).getMessage());
+
+        }
+*/
     }
 
     static class PrioritizedRequest implements IoPrioritizable, Comparable<PrioritizedRequest> {
@@ -743,6 +779,24 @@ public class MoverRequestScheduler {
             } catch (RuntimeException e) {
                 completionHandler.failed(e, null);
             }
+        }
+
+        public MoverStartupInfoMessage generateBillingMessage(String poolName) {
+            FileAttributes fileAttributes = _mover.getFileAttributes();
+
+            MoverStartupInfoMessage info = new MoverStartupInfoMessage(new CellAddressCore(poolName), fileAttributes.getPnfsId());
+
+            info.setSubject(_mover.getSubject());
+            info.setInitiator(_mover.getInitiator());
+            info.setFileCreated(_mover.getIoMode().contains(StandardOpenOption.WRITE));
+            info.setStorageInfo(fileAttributes.getStorageInfo());
+            info.setP2P(_mover.isPoolToPoolTransfer());
+            info.setProtocolInfo(_mover.getProtocolInfo());
+            info.setBillingPath(_mover.getBillingPath());
+            info.setTransferPath(_mover.getTransferPath());
+
+            return info;
+
         }
 
         public synchronized void kill(@Nullable String explanation) {
