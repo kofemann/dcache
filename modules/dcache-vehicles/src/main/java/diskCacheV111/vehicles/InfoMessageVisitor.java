@@ -23,6 +23,8 @@ public interface InfoMessageVisitor {
 
     void visit(DoorRequestInfoMessage message);
 
+    void visit(MoverStartupInfoMessage message);
+
     void visit(MoverInfoMessage message);
 
     void visit(PoolHitInfoMessage message);

@@ -18,15 +18,8 @@
  */
 package org.dcache.services.billing.text;
 
-import diskCacheV111.vehicles.DoorRequestInfoMessage;
-import diskCacheV111.vehicles.InfoMessage;
-import diskCacheV111.vehicles.InfoMessageVisitor;
-import diskCacheV111.vehicles.MoverInfoMessage;
-import diskCacheV111.vehicles.PnfsFileInfoMessage;
-import diskCacheV111.vehicles.PoolHitInfoMessage;
-import diskCacheV111.vehicles.RemoveFileInfoMessage;
-import diskCacheV111.vehicles.StorageInfoMessage;
-import diskCacheV111.vehicles.WarningPnfsFileInfoMessage;
+import diskCacheV111.vehicles.*;
+
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Date;
@@ -80,6 +73,16 @@ public class StringTemplateInfoMessageVisitor implements InfoMessageVisitor {
         template.add("owner", message.getOwner());
         template.add("client", message.getClient());
         template.add("clientChain", message.getClientChain());
+        template.add("transferPath", message.getTransferPath());
+    }
+
+    @Override
+    public void visit(MoverStartupInfoMessage message) {
+        acceptFileInfoMessage(message);
+        template.add("created", message.isFileCreated());
+        template.add("protocol", message.getProtocolInfo());
+        template.add("initiator", message.getInitiator());
+        template.add("p2p", message.isP2P());
         template.add("transferPath", message.getTransferPath());
     }
 

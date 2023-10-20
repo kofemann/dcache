@@ -6,6 +6,7 @@ import static java.util.stream.Collectors.joining;
 
 import diskCacheV111.util.CacheException;
 import diskCacheV111.vehicles.IoJobInfo;
+import diskCacheV111.vehicles.MoverStartupInfoMessage;
 import dmg.cells.nucleus.CellCommandListener;
 import dmg.cells.nucleus.CellSetupProvider;
 import dmg.util.CommandException;
@@ -26,15 +27,22 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.Consumer;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
+
+import org.dcache.cells.CellStub;
 import org.dcache.pool.FaultEvent;
 import org.dcache.pool.FaultListener;
 import org.dcache.pool.classic.MoverRequestScheduler.Order;
 import org.dcache.util.IoPriority;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.kafka.core.KafkaTemplate;
+import org.springframework.lang.Nullable;
 
 public class IoQueueManager
       implements FaultListener, CellCommandListener, CellSetupProvider {
@@ -87,15 +95,27 @@ public class IoQueueManager
      */
     private String[] propertyQueues = new String[0];
 
+    private Consumer<MoverStartupInfoMessage> _kafkaSender = (s) -> {
+    };
 
-    public IoQueueManager() {
+    private final CellStub _billing;
+
+    private final String _poolName;
+
+    @Autowired
+    public IoQueueManager(String poolName, CellStub billing, @Nullable @Qualifier("transfer-startup") KafkaTemplate kafkaTemplate) {
+        if (kafkaTemplate != null) {
+            _kafkaSender = kafkaTemplate::sendDefault;
+        }
+        _billing = billing;
+        _poolName = poolName;
         defaultQueue = createQueue(DEFAULT_QUEUE, Order.LIFO);
         p2pQueue = createQueue(P2P_QUEUE_NAME, Order.LIFO);
     }
 
     @Override
     public CellSetupProvider mock() {
-        IoQueueManager mock = new IoQueueManager();
+        IoQueueManager mock = new IoQueueManager("mock_name", new CellStub(), null);
         mock.setQueues(propertyQueues);
         return mock;
     }
@@ -179,7 +199,7 @@ public class IoQueueManager
             LOGGER.info("Creating queue: {}", name);
 
             int id = counter.getAndIncrement();
-            queue = new MoverRequestScheduler(name, id, order);
+            queue = new MoverRequestScheduler(name, id, order, _kafkaSender, _billing, _poolName);
             queue.addFaultListener(this);
             queuesById.put(id, queue);
             queuesByName.put(name, queue);
