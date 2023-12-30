@@ -34,7 +34,6 @@ import org.dcache.alarms.AlarmMarkerFactory;
 import org.dcache.alarms.PredefinedAlarm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.remoting.RemoteProxyFailureException;
 
 /**
  * @author Patrick Fuhrmann
@@ -393,17 +392,6 @@ public class SystemCell
                         getCellDomainName(),
                         getCellName()),
                   "Restarting due to fatal JVM error: {}", e.toString());
-            return;
-        }
-
-        /*
-         *  The RemotePoolMonitor wraps interrupted exceptions in a
-         *  runtime exception.  These should not cause a stack trace to
-         *  be printed.
-         */
-        if (e instanceof RemoteProxyFailureException &&
-              e.getCause() instanceof InterruptedException) {
-            _log.warn("{} interrupted.", t.getName());
             return;
         }
 

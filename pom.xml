@@ -62,7 +62,7 @@
 
         <version.slf4j>1.7.32</version.slf4j>
         <version.milton>2.7.3.0-dcache-1</version.milton>
-        <version.spring>5.3.27</version.spring>
+        <version.spring>6.1.2</version.spring>
         <!-- Remember to sync aspectj version in dcache.properties -->
         <version.aspectj>1.9.9.1</version.aspectj>
         <version.smc>6.6.0</version.smc>
@@ -87,8 +87,8 @@
 
 
 
-        <version.spring-integration-kafka>5.5.11</version.spring-integration-kafka>
-        <version.spring_kafka>2.9.11</version.spring_kafka>
+        <version.spring-integration-kafka>6.1.2</version.spring-integration-kafka>
+        <version.spring_kafka>3.1.1</version.spring_kafka>
         <version.kafka>3.1.0</version.kafka>
 
         <!-- BouncyCastle seems to change the naming convention of
