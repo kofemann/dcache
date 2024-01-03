@@ -159,7 +159,7 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
     private ServerProtocolFlags serverProtocolFlags;
     private long tpcServerResponseTimeout;
     private TimeUnit tpcServerResponseTimeoutUnit;
-    private Map<String, Timer> reconnectTimers;
+    private Map<UUID, Timer> reconnectTimers;
     private long readReconnectTimeout;
     private TimeUnit readReconnectTimeoutUnit;
     private int tpcClientChunkSize;
@@ -206,7 +206,7 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
      * @param uuid of the mover (channel)
      */
     public synchronized void cancelReconnectTimeoutForMover(UUID uuid) {
-        Timer timer = reconnectTimers.remove(uuid.toString());
+        Timer timer = reconnectTimers.remove(uuid);
         if (timer != null) {
             timer.cancel();
             LOGGER.debug("cancelReconnectTimeoutForMover, timer cancelled for {}.", uuid);
@@ -239,7 +239,7 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
                           key);
                 }
             };
-            reconnectTimers.put(key.toString(), timer);
+            reconnectTimers.put(key, timer);
             timer.schedule(task, readReconnectTimeoutUnit.toMillis(readReconnectTimeout));
         } else {
             LOGGER.debug("setReconnectTimeoutForMover for {}; " +
@@ -502,6 +502,6 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
     }
 
     private synchronized void removeReadReconnectTimer(UUID key) {
-        reconnectTimers.remove(key.toString());
+        reconnectTimers.remove(key);
     }
 }
