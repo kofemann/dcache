@@ -70,7 +70,6 @@ default:
 .kubernetes_tags:
   tags:
     - kubernetes
-    - dcache-dev
   dependencies: []
 
 .kubernetes_image:
