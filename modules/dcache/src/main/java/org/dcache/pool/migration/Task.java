@@ -10,6 +10,7 @@ import diskCacheV111.vehicles.PnfsGetCacheLocationsMessage;
 import diskCacheV111.vehicles.PoolManagerPoolInformation;
 import dmg.cells.nucleus.CellPath;
 import java.io.PrintWriter;
+import java.lang.invoke.MethodHandle;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayDeque;
@@ -435,7 +436,7 @@ public class Task {
                 for (int i = 0; i < arguments.length; i++) {
                     parameterTypes[i] = arguments[i].getClass();
                 }
-                final Method m =
+                final MethodHandle m =
                       ReflectionUtils.resolve(_fsm.getClass(), _prefix + name,
                             parameterTypes);
                 if (m != null) {

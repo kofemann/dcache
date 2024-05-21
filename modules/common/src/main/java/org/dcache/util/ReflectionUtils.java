@@ -1,5 +1,8 @@
 package org.dcache.util;
 
+import java.lang.invoke.MethodHandle;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.MethodType;
 import java.lang.reflect.Method;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -10,7 +13,13 @@ import java.util.Map;
  */
 public class ReflectionUtils {
 
-    private static final Map<String, Method> methodCache =
+
+    /**
+     * A {@link MethodHandles.Lookup} object that allows access to all public methods.
+     */
+    private static final MethodHandles.Lookup MD_LOOKUP = MethodHandles.publicLookup();
+
+    private static final Map<String, MethodHandle> methodCache =
           new HashMap<>();
 
     /**
@@ -30,23 +39,28 @@ public class ReflectionUtils {
      *
      * @returns a matching method or null if no method is found
      */
-    public static Method resolve(Class<?> c, String name, Class<?>... parameters) {
+    public static MethodHandle resolve(Class<?> c, String name, Class<?>... parameters) {
         try {
             Object[] signature = {c, name, parameters};
             String key = Arrays.deepToString(signature);
 
             /* Cache lookup.
              */
-            Method m = methodCache.get(key);
+            MethodHandle m = methodCache.get(key);
             if (m != null) {
                 return m;
             }
 
             /* Lookup in class c.
              */
-            m = c.getMethod(name, parameters);
+
+            Method mm = c.getMethod(name, parameters);
+            m = MD_LOOKUP.findVirtual(c, name, MethodType.methodType(mm.getReturnType(), mm.getParameterTypes()));
+
             methodCache.put(key, m);
             return m;
+        } catch (IllegalAccessException e) {
+            throw new RuntimeException("Cannot access method " + name + " of class " + c.getCanonicalName(), e);
         } catch (NoSuchMethodException e) {
             /* Perform type widening on parameters to find a matching
              * method.
@@ -56,7 +70,7 @@ public class ReflectionUtils {
                 if (s != null) {
                     Class<?> old = parameters[i];
                     parameters[i] = s;
-                    Method m = resolve(c, name, parameters);
+                    MethodHandle m = resolve(c, name, parameters);
                     if (m != null) {
                         return m;
                     }
