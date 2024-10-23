@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2013 - 2023 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2013 - 2024 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,7 +25,6 @@ import dmg.cells.nucleus.CellPath;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.channels.CompletionHandler;
-import org.dcache.chimera.nfsv41.common.LegacyUtils;
 import org.dcache.nfs.ChimeraNFSException;
 import org.dcache.nfs.status.NfsIoException;
 import org.dcache.nfs.v4.NFS4State;
@@ -53,11 +52,7 @@ public class NfsMover extends MoverChannelMover<NFS4ProtocolInfo, NfsMover> {
         super(handle, message, pathToDoor, nfsTransferService);
         _nfsTransferService = nfsTransferService;
 
-        // REVISIT 11.0: remove drop legacy support
-        // stateid4 stateid = getProtocolInfo().stateId();
-        Object stateObject = getProtocolInfo().stateId();
-        stateid4 stateid = LegacyUtils.toStateid(stateObject);
-
+        stateid4 stateid = getProtocolInfo().stateId();
         _state = new MoverState(null, stateid);
         _namespace = pnfsHandler;
     }

@@ -2,8 +2,9 @@ package org.dcache.chimera.nfsv41.mover;
 
 import com.google.common.net.InetAddresses;
 import diskCacheV111.vehicles.IpProtocolInfo;
+import org.dcache.nfs.v4.xdr.stateid4;
+
 import java.net.InetSocketAddress;
-import org.dcache.chimera.nfs.v4.xdr.stateid4;
 
 public class NFS4ProtocolInfo implements IpProtocolInfo {
 

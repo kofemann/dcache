@@ -93,7 +93,6 @@ import org.dcache.chimera.ChimeraFsException;
 import org.dcache.chimera.FsInode;
 import org.dcache.chimera.FsInodeType;
 import org.dcache.chimera.JdbcFs;
-import org.dcache.chimera.nfsv41.common.LegacyUtils;
 import org.dcache.chimera.nfsv41.common.StatsDecoratedOperationExecutor;
 import org.dcache.chimera.nfsv41.door.proxy.NfsProxyIoFactory;
 import org.dcache.chimera.nfsv41.door.proxy.ProxyIoFactory;
@@ -627,11 +626,7 @@ public class NFSv41Door extends AbstractCellComponent implements
 
         PoolDS device = _poolDeviceMap.getOrCreateDS(poolName, verifier, poolAddresses);
 
-
-        // REVISIT 11.0: remove drop legacy support. Old polls will send legacy stateid.
-        // stateid4 stateid = message.challange();
-        Object stateObject = message.challange();
-        stateid4 stateid = LegacyUtils.toStateid(stateObject);
+        stateid4 stateid = (stateid4) message.challange();
         NfsTransfer transfer = _transfers.get(stateid);
 
         /*
@@ -649,14 +644,13 @@ public class NFSv41Door extends AbstractCellComponent implements
 
         NFS4ProtocolInfo protocolInfo = (NFS4ProtocolInfo) transferFinishedMessage.getProtocolInfo();
         _log.debug("Mover {} done.", protocolInfo.stateId());
-        org.dcache.chimera.nfs.v4.xdr.stateid4 legacyStateid = protocolInfo.stateId();
 
         /*
          * there are two cases when we can get DoorTransferFinishedMessage:
          *   - triggered by client with CLOSE
          *   - triggered by pool shutdown.
          */
-        stateid4 openStateId = new stateid4(legacyStateid.other, legacyStateid.seqid.value);
+        stateid4 openStateId = protocolInfo.stateId();
         NfsTransfer transfer = _transfers.get(openStateId);
         if (transfer == null) {
             return;
@@ -685,10 +679,7 @@ public class NFSv41Door extends AbstractCellComponent implements
 
     public DoorValidateMoverMessage<?> messageArrived(DoorValidateMoverMessage<?> message) {
 
-        // REVISIT 11.0: remove drop legacy support. Old polls will send legacy stateid.
-        // stateid4 stateid = message.getChallenge();
-        Object stateObject = message.getChallenge();
-        stateid4 stateid = LegacyUtils.toStateid(stateObject);
+        stateid4 stateid = (stateid4)message.getChallenge();
 
         boolean isValid = false;
         try {
@@ -808,7 +799,7 @@ public class NFSv41Door extends AbstractCellComponent implements
                 final InetSocketAddress remote = context.getRpcCall().getTransport()
                       .getRemoteSocketAddress();
                 final NFS4ProtocolInfo protocolInfo = new NFS4ProtocolInfo(remote,
-                      new org.dcache.chimera.nfs.v4.xdr.stateid4(openStateId.stateid()),
+                      openStateId.stateid(),
                       nfsInode.toNfsHandle()
                 );
 

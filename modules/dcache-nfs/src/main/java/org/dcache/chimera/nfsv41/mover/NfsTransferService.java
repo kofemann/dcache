@@ -49,7 +49,6 @@ import java.util.function.Predicate;
 import javax.annotation.Nullable;
 import org.dcache.auth.Subjects;
 import org.dcache.cells.CellStub;
-import org.dcache.chimera.nfsv41.common.LegacyUtils;
 import org.dcache.chimera.nfsv41.common.StatsDecoratedOperationExecutor;
 import org.dcache.commons.stats.RequestExecutionTimeGauges;
 import org.dcache.http.JdkSslContextFactory;
@@ -450,10 +449,7 @@ public class NfsTransferService
     public void notifyDoorWithRedirect(NfsMover mover) {
         CellPath directDoorPath = new CellPath(mover.getPathToDoor().getDestinationAddress());
 
-        // REVISIT 11.0: remove drop legacy support
-        // stateid4 stateid = mover.getProtocolInfo().stateId();
-        Object stateObject = mover.getProtocolInfo().stateId();
-        stateid4 stateid = LegacyUtils.toStateid(stateObject);
+        stateid4 stateid = mover.getProtocolInfo().stateId();
 
         // never send legacy stateid.
         _door.notify(directDoorPath,
@@ -642,12 +638,10 @@ public class NfsTransferService
                         .plus(deadMoverIdleTime).isBefore(now))
                   .forEach(mover -> {
                       _log.debug("Verifying inactive mover {}", mover);
-                      final org.dcache.chimera.nfs.v4.xdr.stateid4 legacyStateId = mover.getProtocolInfo()
-                            .stateId();
                       CellStub.addCallback(_door.send(mover.getPathToDoor(),
                                   new DoorValidateMoverMessage<>(-1,
                                         mover.getFileAttributes().getPnfsId(), _bootVerifier,
-                                        legacyStateId)),
+                                          mover.getProtocolInfo().stateId())),
                             new NfsMoverValidationCallback(mover),
                             _cleanerExecutor);
                   });

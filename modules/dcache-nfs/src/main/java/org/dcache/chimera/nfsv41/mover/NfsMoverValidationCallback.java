@@ -4,7 +4,7 @@ import diskCacheV111.util.CacheException;
 import dmg.cells.nucleus.CellPath;
 import java.lang.ref.WeakReference;
 import org.dcache.cells.AbstractMessageCallback;
-import org.dcache.chimera.nfs.v4.xdr.stateid4;
+import org.dcache.nfs.v4.xdr.stateid4;
 import org.dcache.vehicles.DoorValidateMoverMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
  * A {@code DoorValidateMoverMessage} callback handler for NFS transfer service.
  */
 public class NfsMoverValidationCallback extends
-      AbstractMessageCallback<DoorValidateMoverMessage<org.dcache.chimera.nfs.v4.xdr.stateid4>> {
+      AbstractMessageCallback<DoorValidateMoverMessage<stateid4>> {
 
     private final Logger LOGGER = LoggerFactory.getLogger(NfsMoverValidationCallback.class);
     /**
