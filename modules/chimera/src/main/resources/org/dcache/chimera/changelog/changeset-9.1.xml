@@ -110,4 +110,23 @@
         </rollback>
     </changeSet>
 
+    <changeSet id="35" author="tigran" dbms="postgresql">
+        <createProcedure>
+            CREATE OR REPLACE FUNCTION f_create_inode95_lazy_wcc(parent bigint, name varchar, id varchar, type integer, mode integer, nlink integer, uid integer, gid int, size bigint, io integer, now timestamp) RETURNS bigint AS $$
+            DECLARE
+                newid bigint;
+            BEGIN
+                INSERT INTO t_inodes (ipnfsid, itype, imode, inlink, iuid, igid, isize, iio, ictime, iatime, imtime, icrtime, igeneration)
+                    VALUES (id,type,mode,nlink,uid,gid,size,io,now,now,now,now,0) RETURNING inumber INTO newid;
+                INSERT INTO t_dirs (iparent, ichild, iname) VALUES (parent, newid, name) ON CONFLICT ON CONSTRAINT t_dirs_pkey DO NOTHING;
+                IF NOT FOUND THEN
+                   -- no rows get updated
+                    RETURN -1;
+                END IF;
+
+                RETURN newid;
+            END;
+            $$ LANGUAGE plpgsql;
+        </createProcedure></changeSet>
+
 </databaseChangeLog>

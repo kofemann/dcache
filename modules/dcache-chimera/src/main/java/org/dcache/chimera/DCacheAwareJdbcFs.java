@@ -294,22 +294,6 @@ public class DCacheAwareJdbcFs extends JdbcFs implements CellIdentityAware {
     @Override
     public void remove(FsInode directory, String name, FsInode inode) throws ChimeraFsException {
         super.remove(directory, name, inode);
-        Subject subject = getSubjectFromContext();
-        DoorRequestInfoMessage infoRemove
-              = new DoorRequestInfoMessage(myAddress, "remove");
-
-        infoRemove.setSubject(subject);
-        infoRemove.setPnfsId(new PnfsId(inode.getId()));
-        infoRemove.setFileSize(0L);
-        infoRemove.setBillingPath("parent:[" + directory.getId() + "]/" + name);
-
-        infoRemove.setClient(
-              Optional.ofNullable(Subjects.getOrigin(subject)).map( p -> p.getAddress().getHostAddress()).orElse("0.0.0.0")
-        );
-
-        infoRemove.setClientChain(infoRemove.getClient());
-
-        billingStub.notify(infoRemove);
     }
 
     /**

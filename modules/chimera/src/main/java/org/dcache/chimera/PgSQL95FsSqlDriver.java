@@ -16,9 +16,11 @@
  */
 package org.dcache.chimera;
 
+import static java.nio.charset.StandardCharsets.UTF_8;
 import com.google.common.base.Throwables;
 import java.io.File;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -29,6 +31,13 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import javax.sql.DataSource;
+
+import com.sleepycat.je.CursorConfig;
+import com.sleepycat.je.Database;
+import com.sleepycat.je.DatabaseConfig;
+import com.sleepycat.je.DatabaseEntry;
+import com.sleepycat.je.Environment;
+import com.sleepycat.je.EnvironmentConfig;
 import org.dcache.acl.enums.AceFlags;
 import org.dcache.acl.enums.RsType;
 import org.dcache.chimera.posix.Stat;
@@ -60,6 +69,12 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
 
     private final boolean enableSoftUpdate;
 
+
+    // WCC
+    private Environment env;
+    private Database pendingRequests;
+
+
     /**
      * this is a utility class which is issues SQL queries on database
      */
@@ -85,6 +100,25 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
                 throw new IllegalArgumentException("Unsupported attribute consistency option '" + consistency + "'");
         }
         createProcedureName = enableLazyWcc ? "f_create_inode95_lazy_wcc" : "f_create_inode95";
+
+
+
+        if (enableLazyWcc) {
+
+            // local db for lazy wcc
+            EnvironmentConfig envConfig = new EnvironmentConfig();
+            envConfig.setAllowCreate(true);
+            envConfig.setTransactional(true);
+            envConfig.setReadOnly(false);
+
+            DatabaseConfig dbConfig = new DatabaseConfig();
+            dbConfig.setTransactional(true);
+            dbConfig.setAllowCreate(true);
+            dbConfig.setReadOnly(false);
+
+            env = new Environment(new File("/var/lib/dcache/wcc"), envConfig);
+            pendingRequests = env.openDatabase(null, "lazy-wcc", dbConfig);
+        }
     }
 
 
@@ -117,6 +151,20 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
 
         if (inumber == -1L) {
             throw new DuplicateKeyException("File exists");
+        }
+
+        if (enableLazyWcc) {
+            // insert  record into WCC
+            byte[] asKey = new byte[Long.BYTES];
+            ByteBuffer.wrap(asKey).putLong(inumber);
+
+            byte[] asValue = new byte[Long.BYTES + Integer.BYTES + Long.BYTES];
+            ByteBuffer.wrap(asValue).putLong(inumber).putInt(nlink).putLong(now.getTime());
+
+            DatabaseEntry key = new DatabaseEntry(asKey);
+            DatabaseEntry data = new DatabaseEntry(asValue);
+
+   //         pendingRequests.put(null, key, data);
         }
 
         Stat stat = new Stat();
@@ -152,6 +200,7 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
             /*
              * no updates as such entry already exists.
              * To be compatible with others, throw corresponding
+             *
              * DataAccessException.
              */
             throw new DuplicateKeyException("Entry already exists");
@@ -576,4 +625,13 @@ public class PgSQL95FsSqlDriver extends FsSqlDriver {
         }
         return stat;
     }
+
+    @Override
+    public void close() {
+        if (env != null) {
+            pendingRequests.close();
+            env.close();
+        }
+    }
+
 }
