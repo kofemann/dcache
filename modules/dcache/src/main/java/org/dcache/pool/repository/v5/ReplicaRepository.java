@@ -1296,6 +1296,12 @@ public class ReplicaRepository
     private long getFileSystemMaxSize() {
         _stateLock.readLock().lock();
         try {
+
+            // FIXME: when pools has already allocated some space, but not written to disk yet,
+            // the `account#getUsed()` will return allocated space too. Thus
+            // _store.getFreeSpace() + _account.getUsed(); will return more than actual free space
+            // as some of this `free` space is already reserved.
+
             return _store.getFreeSpace() + _account.getUsed();
         } finally {
             _stateLock.readLock().unlock();
