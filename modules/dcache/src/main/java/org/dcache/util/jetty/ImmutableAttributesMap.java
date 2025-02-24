@@ -1,7 +1,5 @@
 package org.dcache.util.jetty;
 
-import java.util.Collections;
-import java.util.Enumeration;
 import java.util.Map;
 import java.util.Set;
 import org.eclipse.jetty.util.Attributes;
@@ -18,12 +16,12 @@ public class ImmutableAttributesMap implements Attributes {
     }
 
     @Override
-    public void removeAttribute(String name) {
+    public Object removeAttribute(String name) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setAttribute(String name, Object attribute) {
+    public Object setAttribute(String name, Object attribute) {
         throw new UnsupportedOperationException();
     }
 
@@ -32,13 +30,8 @@ public class ImmutableAttributesMap implements Attributes {
         return map.get(name);
     }
 
-    @Override
-    public Enumeration<String> getAttributeNames() {
-        return Collections.enumeration(getAttributeNameSet());
-    }
-
     public Set<String> getAttributeNameSet() {
-        return keySet();
+        return map.keySet();
     }
 
     @Override
@@ -53,9 +46,5 @@ public class ImmutableAttributesMap implements Attributes {
     @Override
     public String toString() {
         return map.toString();
-    }
-
-    private Set<String> keySet() {
-        return map.keySet();
     }
 }

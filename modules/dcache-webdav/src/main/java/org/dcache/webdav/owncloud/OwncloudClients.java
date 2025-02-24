@@ -19,11 +19,13 @@ package org.dcache.webdav.owncloud;
 
 import java.time.Instant;
 import java.util.Optional;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
+
 
 /**
  * Class checking whether a request's User-agent is the OwnCloud Sync client.
@@ -37,8 +39,8 @@ public class OwncloudClients {
     /**
      * Method checking whether a request is made by the OwnCloud Sync client.
      */
-    public static boolean isSyncClient(HttpServletRequest request) {
-        String userAgent = request.getHeader(HttpHeader.USER_AGENT.toString());
+    public static boolean isSyncClient(Request request) {
+        String userAgent = request.getHeaders().get(HttpHeader.USER_AGENT.toString());
 
         return userAgent != null && userAgent.contains(OWNCLOUD_USERAGENT);
     }
@@ -48,13 +50,13 @@ public class OwncloudClients {
      *
      * @return Optionally the client stated mtime instance.
      */
-    public static Optional<Instant> parseMTime(HttpServletRequest request) {
+    public static Optional<Instant> parseMTime(Request request) {
         /*
          * See https://github.com/owncloud/client/blob/v2.2.3/src/libsync/propagateupload.cpp#L498
          *
          * NB. lower-case 't' in "X-OC-Mtime"
          */
-        String value = request.getHeader("X-OC-Mtime");
+        String value = request.getHeaders().get("X-OC-Mtime");
 
         try {
             if (value != null) {
@@ -70,12 +72,12 @@ public class OwncloudClients {
     /**
      * Update reply to indicate that the supplied mtime was accepted.
      */
-    public static void addMTimeAccepted(HttpServletResponse response) {
+    public static void addMTimeAccepted(Response response) {
         /*
          * See https://github.com/owncloud/client/blob/v2.2.3/src/libsync/propagateupload.cpp#L768
          *
          * NB. upper-case 'T' in "X-OC-MTime"
          */
-        response.setHeader("X-OC-MTime", "accepted");
+        response.getHeaders().add("X-OC-MTime", "accepted");
     }
 }

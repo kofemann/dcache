@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2017 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2017 - 2025 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,9 +20,9 @@ package org.dcache.webdav.macaroons;
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.emptyToNull;
 import static java.lang.Boolean.TRUE;
-import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
-import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
+import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
+import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.dcache.macaroons.CaveatType.BEFORE;
 import static org.dcache.macaroons.InvalidCaveatException.checkCaveat;
 
@@ -50,8 +50,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.security.auth.Subject;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.dcache.auth.Subjects;
 import org.dcache.auth.attributes.DenyActivityRestriction;
 import org.dcache.auth.attributes.Expiry;
@@ -69,8 +67,12 @@ import org.dcache.macaroons.InvalidCaveatException;
 import org.dcache.macaroons.MacaroonContext;
 import org.dcache.macaroons.MacaroonProcessor;
 import org.dcache.util.NDC;
+import org.dcache.util.Strings;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -79,7 +81,7 @@ import org.springframework.beans.factory.annotation.Required;
 /**
  * Handle HTTP-based requests to create a macaroon.
  */
-public class MacaroonRequestHandler extends AbstractHandler implements CellIdentityAware {
+public class MacaroonRequestHandler extends Handler.Abstract implements CellIdentityAware {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MacaroonRequestHandler.class);
 
@@ -97,12 +99,12 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
     private Duration _maximumLifetime;
     private Duration _defaultLifetime;
 
-    public static String getMacaroonRequest(HttpServletRequest request) {
+    public static String getMacaroonRequest(Request request) {
         Object result = request.getAttribute(MACAROON_REQUEST_ATTRIBUTE);
         return result == null ? null : String.valueOf(result);
     }
 
-    public static String getMacaroonId(HttpServletRequest request) {
+    public static String getMacaroonId(Request request) {
         Object result = request.getAttribute(MACAROON_ID_ATTRIBUTE);
         return result == null ? null : String.valueOf(result);
     }
@@ -141,39 +143,34 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
     }
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
-          throws IOException {
+    public boolean handle(Request request, Response response, Callback callback) throws Exception {
+
         try (CDC ignored = CDC.reset(_myAddress)) {
-            NDC.push("macaroon-request " + baseRequest.getRemoteAddr());
-            if (baseRequest.getMethod().equals("POST") &&
-                  Objects.equals(request.getContentType(), REQUEST_MIMETYPE)) {
+            NDC.push("macaroon-request " + Request.getRemoteAddr(request));
+            if (request.getMethod().equals("POST") &&
+                  Objects.equals(request.getHeaders().get(HttpHeader.CONTENT_TYPE),REQUEST_MIMETYPE)) {
                 handleMacaroonRequest(target, baseRequest, response);
-                baseRequest.setHandled(true);
             }
         }
+        return true;
     }
 
-    private void handleMacaroonRequest(String target, Request request,
-          HttpServletResponse response) {
+    private void handleMacaroonRequest(Request request,
+          Response response) {
         try {
-            try {
-                String macaroon = buildMacaroon(target, request);
-                JSONObject json = buildResponseJSON(request, macaroon);
+            String macaroon = buildMacaroon(request);
+            JSONObject json = buildResponseJSON(request, macaroon);
 
-                response.setStatus(200);
-                response.setContentType(RESPONSE_MIMETYPE);
-                try (PrintWriter w = response.getWriter()) {
-                    w.println(json.toString(JSON_RESPONSE_INDENTATION));
-                }
-            } catch (ErrorResponseException e) {
-                response.setStatus(e.getStatus(), e.getMessage());
-            } catch (RuntimeException e) {
-                LOGGER.error("Bug detected", e);
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }
-        } catch (IOException e) {
-            LOGGER.error("Failed to send output: {}", e.toString());
+            response.setStatus(200);
+            response.getHeaders().add(HttpHeader.CONTENT_TYPE, RESPONSE_MIMETYPE);
+            response.write(true, Strings.toByteBuffer(json.toString(JSON_RESPONSE_INDENTATION)),
+                  Callback.NOOP);
+
+        } catch (ErrorResponseException e) {
+            response.setStatus(e.getStatus());
+        } catch (RuntimeException e) {
+            LOGGER.error("Bug detected", e);
+            response.setStatus(SC_INTERNAL_SERVER_ERROR);
         }
     }
 
@@ -181,7 +178,7 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
         JSONObject json = new JSONObject();
         JSONObject uris = new JSONObject();
         json.put("macaroon", macaroon).put("uri", uris);
-        uris.put("target", request.getRequestURL());
+        uris.put("target", request.getHttpURI().asString());
         String withMacaroon = "?" + AuthenticationHandler.BEARER_TOKEN_QUERY_KEY + "=" + macaroon;
 
         /*
@@ -190,8 +187,8 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
          *
          *     https://github.com/onnozweers/dcache-scripts/
          */
-        uris.put("targetWithMacaroon", request.getRequestURL() + withMacaroon);
-        URI req = URI.create(new String(request.getRequestURL()));
+        uris.put("targetWithMacaroon", request.getHttpURI().asString() + withMacaroon);
+        URI req = URI.create(request.getHttpURI().asString());
 
         try {
             String base = new URI(req.getScheme(), req.getAuthority(), "/", null,
@@ -300,13 +297,13 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
     }
 
 
-    private String buildMacaroon(String target, Request request) throws ErrorResponseException {
+    private String buildMacaroon(Request request) throws ErrorResponseException {
         checkValidRequest(request.isSecure(), "Not secure transport");
         if (Subjects.isNobody(getSubject())) {
             throw new ErrorResponseException(SC_UNAUTHORIZED, "Authentication required");
         }
 
-        MacaroonContext context = buildContext(target, request);
+        MacaroonContext context = buildContext(request);
 
         MacaroonRequest macaroonRequest = parseJSON(request);
 
@@ -366,11 +363,11 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
         }
     }
 
-    private MacaroonRequest parseJSON(HttpServletRequest request) throws ErrorResponseException {
+    private MacaroonRequest parseJSON(Request request) throws ErrorResponseException {
         MacaroonRequest macaroonRequest;
 
         try {
-            String requestEntity = CharStreams.toString(request.getReader());
+            String requestEntity = CharStreams.toString(request.read().getByteBuffer().asCharBuffer());
             request.setAttribute(MACAROON_REQUEST_ATTRIBUTE, emptyToNull(requestEntity));
             macaroonRequest = new GsonBuilder().create().fromJson(requestEntity,
                   MacaroonRequest.class);

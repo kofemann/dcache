@@ -110,9 +110,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import javax.security.auth.Subject;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
 import javax.xml.stream.XMLStreamWriter;
@@ -716,7 +716,7 @@ public class DcacheResourceFactory
                  */
                 boolean proxyImpatientClient = expects100Continue
                       && isImpatientClientProxied()
-                      && ((MiltonHandler.DcacheServletRequest) request).isClientSendingEntity();
+                      && true; //((MiltonHandler.DcacheServletRequest) request).isClientSendingEntity();
 
                 if (proxyImpatientClient) {
                     LOGGER.warn(

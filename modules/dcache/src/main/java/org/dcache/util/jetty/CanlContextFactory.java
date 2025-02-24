@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2015 - 2019 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2015 - 2025 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -209,7 +209,6 @@ public class CanlContextFactory extends SslContextFactory.Server {
                 super.setSessionCachingEnabled(CanlContextFactory.this.isSessionCachingEnabled());
                 super.setSslSessionCacheSize(CanlContextFactory.this.getSslSessionCacheSize());
                 super.setSslSessionTimeout(CanlContextFactory.this.getSslSessionTimeout());
-                super.setStopTimeout(CanlContextFactory.this.getStopTimeout());
                 super.setUseCipherSuitesOrder(CanlContextFactory.this.isUseCipherSuitesOrder());
                 super.setWantClientAuth(CanlContextFactory.this.getWantClientAuth());
                 super.setNeedClientAuth(CanlContextFactory.this.getNeedClientAuth());

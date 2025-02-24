@@ -26,7 +26,7 @@ import io.swagger.annotations.License;
 import io.swagger.annotations.SecurityDefinition;
 import io.swagger.annotations.SwaggerDefinition;
 import io.swagger.annotations.Tag;
-import javax.ws.rs.ext.Provider;
+import jakarta.ws.rs.ext.Provider;
 
 /**
  * This interface exists only to give @SwaggerDefinition something to annotate that swagger will

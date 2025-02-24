@@ -1,6 +1,6 @@
 package org.dcache.util.aspects;
 
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.internal.HttpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

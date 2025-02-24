@@ -38,7 +38,7 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.dcache.cells.CellStub;
 import org.dcache.notification.BillingMessageSerializerVisitor;
 import org.dcache.services.billing.text.StringTemplateInfoMessageVisitor;

@@ -65,7 +65,7 @@ import java.io.Serializable;
 import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 import org.dcache.util.InvalidatableItem;
 
 @ApiModel(description = "A selection of results from a semi-persistant snapshot. "

@@ -1,11 +1,13 @@
 package org.dcache.services.httpd.handlers;
 
 import java.io.IOException;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -14,7 +16,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author arossi
  */
-public class RedirectHandler extends AbstractHandler {
+public class RedirectHandler extends Handler.Abstract {
 
     private static final Logger LOGGER
           = LoggerFactory.getLogger(RedirectHandler.class);
@@ -31,10 +33,10 @@ public class RedirectHandler extends AbstractHandler {
     }
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response) throws
-          IOException, ServletException {
-        LOGGER.debug("target: {}", target);
+    public boolean handle(Request request, Response response, Callback callback) throws Exception {
+        LOGGER.debug("target: {}", request.getHttpURI());
+
+        var target = request.getHttpURI().getPath();
 
         if (target.contains(fromContext)) {
             StringBuilder targetUrl = new StringBuilder(target);
@@ -44,7 +46,10 @@ public class RedirectHandler extends AbstractHandler {
                         toContext)
                   .toString();
             LOGGER.debug("redirected to: {}", newUrl);
-            response.sendRedirect(newUrl);
+            Response.sendRedirect(request, response, Callback.NOOP, newUrl);
         }
+
+        callback.succeeded();
+        return true;
     }
 }

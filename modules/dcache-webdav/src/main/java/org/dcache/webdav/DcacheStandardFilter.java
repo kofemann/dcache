@@ -13,7 +13,7 @@ import io.milton.http.exceptions.NotFoundException;
 import io.milton.http.quota.StorageChecker;
 import io.milton.http.webdav.WebDavResponseHandler;
 import io.milton.servlet.ServletResponse;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

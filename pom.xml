@@ -61,15 +61,15 @@
 
 
         <version.slf4j>1.7.32</version.slf4j>
-        <version.milton>2.7.3.0-dcache-1</version.milton>
+        <version.milton>4.0.5.2400</version.milton>
         <version.spring>5.3.39</version.spring>
         <!-- Remember to sync aspectj version in dcache.properties -->
         <version.aspectj>1.9.24</version.aspectj>
         <version.smc>6.6.0</version.smc>
         <version.xerces>2.12.0</version.xerces>
-        <version.jetty>9.4.57.v20241219</version.jetty>
+        <version.jetty>12.0.15</version.jetty>
         <version.xrootd4j>4.6.0</version.xrootd4j>
-        <version.jersey>2.41</version.jersey>
+        <version.jersey>3.1.10</version.jersey>
         <version.dcache-view>3.0.0</version.dcache-view>
         <version.dcache-view-admin>3.0.0</version.dcache-view-admin>
         <version.netty>4.1.118.Final</version.netty>
@@ -101,6 +101,7 @@
         <datanucleus.plugin.version>6.0.0-release</datanucleus.plugin.version>
         <asm.version>9.5</asm.version>
         <asm-tools.version>5.0.3</asm-tools.version>
+        <servlet.version>6.0.0</servlet.version>
     </properties>
 
     <scm>
@@ -353,6 +354,11 @@
                 </exclusions>
             </dependency>
             <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>${servlet.version}</version>
+            </dependency>
+            <dependency>
                 <groupId>io.netty</groupId>
                 <artifactId>netty-codec-http</artifactId>
                 <version>${version.netty}</version>
@@ -469,13 +475,13 @@
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-webapp</artifactId>
+                <groupId>org.eclipse.jetty.ee10</groupId>
+                <artifactId>jetty-ee10-webapp</artifactId>
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-servlets</artifactId>
+                <groupId>org.eclipse.jetty.ee10</groupId>
+                <artifactId>jetty-ee10-servlets</artifactId>
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
@@ -497,6 +503,12 @@
                 <groupId>org.eclipse.jetty.toolchain</groupId>
                 <artifactId>jetty-schemas</artifactId>
                 <version>3.1</version>
+            </dependency>
+
+            <dependency>
+                <groupId>jakarta.servlet</groupId>
+                <artifactId>jakarta.servlet-api</artifactId>
+                <version>6.0.0</version>
             </dependency>
 
             <dependency>

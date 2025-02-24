@@ -5,19 +5,19 @@ import com.google.common.base.Throwables;
 import com.google.common.collect.Iterables;
 import dmg.util.HttpBasicAuthenticationException;
 import dmg.util.HttpException;
-import java.io.IOException;
 import java.lang.reflect.InvocationTargetException;
+import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletResponse;
 import org.dcache.services.httpd.exceptions.OnErrorException;
 import org.dcache.services.httpd.util.AliasEntry;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author arossi
  */
-public class HandlerDelegator extends AbstractHandler {
+public class HandlerDelegator extends Handler.Abstract {
 
     private static final Logger LOGGER
           = LoggerFactory.getLogger(HandlerDelegator.class);
@@ -38,8 +38,7 @@ public class HandlerDelegator extends AbstractHandler {
         return Iterables.getFirst(PATH_SPLITTER.split(requestURI), "<home>");
     }
 
-    private static void handleException(Exception e, String uri,
-          HttpServletResponse response) {
+    private static void handleException(Exception e, String uri, Response response) {
         if (e instanceof ServletException) {
             final Throwable cause = e.getCause();
             if (cause instanceof HttpException) {
@@ -61,29 +60,28 @@ public class HandlerDelegator extends AbstractHandler {
     }
 
     private static void printHttpException(HttpException exception,
-          HttpServletResponse response) {
+          Response response) {
         if (exception instanceof HttpBasicAuthenticationException) {
             final String realm
                   = ((HttpBasicAuthenticationException) exception).getRealm();
-            response.setHeader("WWW-Authenticate", "Basic realm=\""
+            response.getHeaders().add("WWW-Authenticate", "Basic realm=\""
                   + realm + "\"");
         }
-        response.setStatus(exception.getErrorCode(), exception.getMessage());
+        response.setStatus(exception.getErrorCode());
+        response.write(true, ByteBuffer.wrap(exception.getMessage().getBytes()), Callback.NOOP);
     }
 
     private final Map<String, AliasEntry> aliases = new ConcurrentHashMap<>();
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
-          throws IOException {
+    public boolean handle(Request request, Response response, Callback callback) throws Exception {
 
         String uri = null;
         String alias;
         AliasEntry entry = null;
 
         try {
-            uri = request.getRequestURI();
+            uri = request.getHttpURI().asString();
             alias = extractAlias(uri);
 
             LOGGER.debug("handle {}, {}", uri, alias);
@@ -125,9 +123,8 @@ public class HandlerDelegator extends AbstractHandler {
             final Handler handler = entry.getHandler();
             LOGGER.debug("got handler: {}", handler);
             if (handler != null) {
-                handler.handle(target, baseRequest, request, response);
+                handler.handle(request, response, callback);
             }
-
         } catch (final Exception e) {
             if (entry != null && e.getCause() instanceof OnErrorException) {
                 final String alternate = entry.getOnError();
@@ -141,7 +138,7 @@ public class HandlerDelegator extends AbstractHandler {
                         final Handler handler = entry.getHandler();
                         if (handler != null) {
                             try {
-                                handler.handle(target, baseRequest, request, response);
+                                handler.handle(request, response, callback);
                             } catch (final ServletException t) {
                                 handleException(t, uri, response);
                             }
@@ -158,6 +155,7 @@ public class HandlerDelegator extends AbstractHandler {
         }
 
         LOGGER.info("Finished");
+        return true;
     }
 
     public AliasEntry removeAlias(String name) throws InvocationTargetException {

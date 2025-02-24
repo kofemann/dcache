@@ -10,9 +10,10 @@ import eu.emi.security.authn.x509.proxy.ProxyUtils;
 import java.net.InetSocketAddress;
 import java.security.cert.X509Certificate;
 import java.util.Optional;
-import javax.servlet.ServletContext;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
+
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
 import org.apache.axis.MessageContext;
 import org.apache.axis.transport.http.HTTPConstants;
 import org.dcache.delegation.gridsite2.Delegation;

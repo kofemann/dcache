@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2021 - 2023 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2021 - 2025 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,7 +22,7 @@ import eu.emi.security.authn.x509.CrlCheckingMode;
 import eu.emi.security.authn.x509.OCSPCheckingMode;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.dcache.ssl.CanlContextFactory;
 import org.springframework.beans.factory.annotation.Required;
 

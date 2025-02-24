@@ -20,7 +20,7 @@ package org.dcache.restful.util;
 import static org.springframework.web.context.WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE;
 
 import java.lang.annotation.Annotation;
-import javax.servlet.ServletContext;
+import jakarta.servlet.ServletContext;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.ObjectProvider;

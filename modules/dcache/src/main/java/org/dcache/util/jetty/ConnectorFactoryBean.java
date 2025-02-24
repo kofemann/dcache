@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014-2015 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014-2025 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -275,7 +275,7 @@ public class ConnectorFactoryBean implements FactoryBean<ServerConnector> {
         isForwardedHeaderProcessingEnabled = forwardedHeaderProcessingEnabled;
     }
 
-    private SslContextFactory createContextFactory() throws Exception {
+    private SslContextFactory.Server createContextFactory() throws Exception {
         CanlContextFactory factory = new CanlContextFactory();
         factory.setCertificatePath(serverCertificatePath);
         factory.setKeyPath(serverKeyPath);

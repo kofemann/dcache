@@ -16,6 +16,7 @@ import java.io.StringReader;
 import java.lang.reflect.Method;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.time.Instant;
@@ -603,5 +604,15 @@ public final class Strings {
 
         int from = fromEnd ? len - numChars : 0;
         return dataString.substring(from, from + numChars);
+    }
+
+    /**
+     * Convert a string to a ByteBuffer using UTF-8 encoding.
+     *
+     * @param s the string to convert
+     * @return a ByteBuffer containing the UTF-8 encoded string
+     */
+    public static ByteBuffer toByteBuffer(String s) {
+        return ByteBuffer.wrap(s.getBytes(UTF_8));
     }
 }

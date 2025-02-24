@@ -1,8 +1,8 @@
 package org.dcache.services.httpd.handlers;
 
-import static javax.servlet.http.HttpServletResponse.SC_FORBIDDEN;
-import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-import static javax.servlet.http.HttpServletResponse.SC_NOT_FOUND;
+import static jakarta.servlet.http.HttpServletResponse.SC_FORBIDDEN;
+import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static jakarta.servlet.http.HttpServletResponse.SC_NOT_FOUND;
 
 import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
@@ -13,13 +13,16 @@ import java.io.IOException;
 import java.net.FileNameMap;
 import java.net.URISyntaxException;
 import java.net.URLConnection;
+import java.nio.ByteBuffer;
 import java.nio.file.Files;
 import java.util.Arrays;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.dcache.services.httpd.util.StandardHttpRequest;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,22 +44,25 @@ public class PathHandler extends AbstractHandler {
     }
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
-          throws IOException {
+    public boolean handle(Request request, Response response, Callback callback) {
         try {
             HttpRequest proxy = new StandardHttpRequest(request, response);
             sendFile(path, proxy);
+            callback.succeeded();
         } catch (RuntimeException | IOException e) {
-            throw e;
+            callback.failed(e);
         } catch (HttpException e) {
-            LOGGER.debug("Failing request {}: {} {}", request, e.getErrorCode(),
-                  e.getMessage());
-            response.setStatus(e.getErrorCode(), e.getMessage());
+            LOGGER.debug("Failing request {}: {} {}", request, e.getErrorCode(), e.getMessage());
+            response.setStatus(e.getErrorCode());
+            response.write(true, ByteBuffer.wrap(e.getMessage().getBytes()), Callback.NOOP);
+            callback.failed(e);
         } catch (URISyntaxException e) {
             LOGGER.debug("Failing request {}: {}", request, e.getMessage());
-            response.setStatus(SC_INTERNAL_SERVER_ERROR, "Bad URI: " + e.getMessage());
+            response.setStatus(SC_INTERNAL_SERVER_ERROR);
+            response.write(true, ByteBuffer.wrap(("Bad URI: " + e.getMessage()).getBytes()), Callback.NOOP);
+            callback.failed(e);
         }
+        return true;
     }
 
 

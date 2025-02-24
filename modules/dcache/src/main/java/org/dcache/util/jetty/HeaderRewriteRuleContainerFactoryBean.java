@@ -1,7 +1,7 @@
 package org.dcache.util.jetty;
 
 import com.google.common.collect.ImmutableMap;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.eclipse.jetty.rewrite.handler.HeaderPatternRule;
 import org.eclipse.jetty.rewrite.handler.RuleContainer;
 import org.springframework.beans.factory.FactoryBean;
@@ -23,14 +23,16 @@ public class HeaderRewriteRuleContainerFactoryBean implements FactoryBean<RuleCo
 
     @PostConstruct
     private void buildMap() {
-        _rule.setRewritePathInfo(false);
-        _rule.setRewriteRequestURI(false);
+
+        // FIXME: do we still need this?
+        //_rule.setRewritePathInfo(false);
+        //_rule.setRewriteRequestURI(false);
 
         _headers.forEach((name, value) -> {
             HeaderPatternRule rule = new HeaderPatternRule();
             rule.setPattern("/*");
-            rule.setName(name);
-            rule.setValue(value);
+            rule.setHeaderName(name);
+            rule.setHeaderValue(value);
             _rule.addRule(rule);
         });
     }

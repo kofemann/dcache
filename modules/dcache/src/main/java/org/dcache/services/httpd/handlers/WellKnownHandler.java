@@ -63,57 +63,63 @@ import diskCacheV111.util.CacheException;
 import dmg.util.HttpRequest;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.Optional;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.dcache.services.httpd.exceptions.OnErrorException;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.dcache.services.httpd.util.StandardHttpRequest;
 import org.dcache.services.httpd.wellknown.WellKnownContentProducer;
 import org.dcache.services.httpd.wellknown.WellKnownForwardingProducer;
 import org.dcache.services.httpd.wellknown.WellKnownProducer;
 import org.dcache.services.httpd.wellknown.WellKnownProducerFactory;
 import org.dcache.services.httpd.wellknown.WellKnownProducerFactoryProvider;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Provides response for .well-known path requests.
  */
-public class WellKnownHandler extends AbstractHandler {
+public class WellKnownHandler extends Handler.Abstract {
 
     private WellKnownProducerFactoryProvider factoryProvider;
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
-          throws IOException, ServletException {
+    public boolean handle(Request request, Response response, Callback callback) throws Exception {
+
         try {
             HttpRequest proxy = new StandardHttpRequest(request, response);
             String[] tokens = proxy.getRequestTokens();
             Optional<WellKnownProducerFactory> factory = factoryProvider.getFactory(tokens[1]);
             if (factory.isEmpty()) {
-                response.sendError(HttpServletResponse.SC_NOT_FOUND, "No such endpoint");
-                return;
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                response.write(true, ByteBuffer.wrap("No such endpoint".getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+                callback.succeeded();
+                return true;
             }
 
             WellKnownProducer producer = factory.get().createProducer();
             if (producer instanceof WellKnownContentProducer) {
                 WellKnownContentProducer contentProducer = (WellKnownContentProducer)producer;
-                response.setContentType(contentProducer.getContentType());
-                response.setCharacterEncoding(contentProducer.getCharacterEncoding());
+                response.getHeaders().add(HttpHeader.CONTENT_TYPE, contentProducer.getContentType());
+                response.getHeaders().add(HttpHeader.CONTENT_ENCODING, contentProducer.getCharacterEncoding());
                 response.setStatus(HttpServletResponse.SC_OK);
                 proxy.getPrintWriter().print(contentProducer.getContent());
                 proxy.getPrintWriter().flush();
-                baseRequest.setHandled(true);
+                callback.succeeded();
             } else if (producer instanceof WellKnownForwardingProducer) {
-                response.sendRedirect(((WellKnownForwardingProducer)producer).getForwardingAddress());
-                baseRequest.setHandled(true);
+                Response.sendRedirect(request, response, callback, ((WellKnownForwardingProducer)producer).getForwardingAddress());
             }
-
         } catch (CacheException | URISyntaxException e) {
-            response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, e.getMessage());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.write(true, ByteBuffer.wrap(e.getMessage().getBytes(StandardCharsets.UTF_8)), Callback.NOOP);
+            callback.failed(e);
         }
+        return true;
     }
 
     public void setFactoryProvider(

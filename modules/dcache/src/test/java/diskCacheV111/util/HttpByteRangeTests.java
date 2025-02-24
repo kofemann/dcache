@@ -5,7 +5,7 @@ import static org.junit.Assert.fail;
 
 import dmg.util.HttpException;
 import java.util.List;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletResponse;
 import org.junit.Test;
 
 public class HttpByteRangeTests {

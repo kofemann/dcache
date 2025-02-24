@@ -27,10 +27,9 @@ import java.util.Optional;
 import java.util.Set;
 import javax.security.auth.Subject;
 import javax.security.auth.kerberos.KerberosPrincipal;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpServletResponseWrapper;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.dcache.auth.BearerTokenCredential;
 import org.dcache.auth.DesiredRole;
 import org.dcache.auth.LoginNamePrincipal;
@@ -44,15 +43,14 @@ import org.dcache.auth.attributes.Restriction;
 import org.dcache.auth.attributes.Restrictions;
 import org.dcache.util.CertificateFactories;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.security.UserAuthentication;
-import org.eclipse.jetty.server.Authentication;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class AuthenticationHandler extends HandlerWrapper {
+public class AuthenticationHandler extends Handler.Wrapper {
 
     private final static Logger LOG = LoggerFactory.getLogger(AuthenticationHandler.class);
     public static final String X509_CERTIFICATE_ATTRIBUTE =
@@ -95,7 +93,7 @@ public class AuthenticationHandler extends HandlerWrapper {
      * @throws CacheException                 some other problem with the X.509-based login
      * @throws IllegalArgumentException       X.509 authentication is not supported
      */
-    public static Subject getX509Identity(HttpServletRequest request)
+    public static Subject getX509Identity(Request request)
           throws CacheException {
         Subject dCacheUser = Subject.getSubject(AccessController.getContext());
         if (dCacheUser != null && Subjects.getDn(dCacheUser) != null) {
@@ -118,7 +116,7 @@ public class AuthenticationHandler extends HandlerWrapper {
         return x509Subject;
     }
 
-    private Subject x509Login(HttpServletRequest request) throws CacheException {
+    private Subject x509Login(Request request) throws CacheException {
         Subject suppliedIdentity = new Subject();
         addX509ChainToSubject(request, suppliedIdentity);
         addOriginToSubject(request, suppliedIdentity);
@@ -126,78 +124,77 @@ public class AuthenticationHandler extends HandlerWrapper {
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request,
-          HttpServletResponse servletResponse)
-          throws IOException, ServletException {
-        if (isStarted() && !baseRequest.isHandled()) {
-            AuthHandlerResponse response = new AuthHandlerResponse(servletResponse, request);
-            try {
-                Subject suppliedIdentity = new Subject();
-                addX509ChainToSubject(request, suppliedIdentity);
-                addOriginToSubject(request, suppliedIdentity);
-                addAuthCredentialsToSubject(request, suppliedIdentity);
-                addSpnegoCredentialsToSubject(baseRequest, request, suppliedIdentity);
-                addQueryBearerTokenToSubject(request, suppliedIdentity);
-                addDesiredRolesToSubject(request, suppliedIdentity);
+    public boolean handle(Request request, Response responce, Callback callback)
+          throws Exception {
 
-                LoginReply login = _loginStrategy.login(suppliedIdentity);
-                Subject authnIdentity = login.getSubject();
-                Restriction restriction = Restrictions.concat(_doorRestriction,
-                      login.getRestriction());
-
-                request.setAttribute(DCACHE_SUBJECT_ATTRIBUTE, authnIdentity);
-                request.setAttribute(DCACHE_RESTRICTION_ATTRIBUTE, restriction);
-                request.setAttribute(DCACHE_LOGIN_ATTRIBUTES, login.getLoginAttributes());
-                request.setAttribute(AUTH_HANDLER_ATTRIBUTE, this);
-
-                /* Process the request as the authenticated user.*/
-                Exception problem = Subject.doAs(authnIdentity,
-                      (PrivilegedAction<Exception>) () -> {
-                          try {
-                              AuthenticationHandler.super.handle(target, baseRequest, request,
-                                    response);
-                          } catch (IOException | ServletException e) {
-                              return e;
-                          }
-                          return null;
-                      });
-                if (problem != null) {
-                    Throwables.throwIfInstanceOf(problem, IOException.class);
-                    Throwables.throwIfInstanceOf(problem, ServletException.class);
-                    throw new RuntimeException(problem);
-                }
-            } catch (PermissionDeniedCacheException e) {
-                LOG.info("Login failed for {} on {}: {}", request.getMethod(),
-                      request.getPathInfo(), e.getMessage());
-                response.setStatus(HttpServletResponse.SC_UNAUTHORIZED,
-                      e.getMessage());
-                baseRequest.setHandled(true);
-            } catch (CacheException e) {
-                LOG.error("Internal server error: {}", e.getMessage());
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-                baseRequest.setHandled(true);
-            }
+        if (!isStarted()) {
+            return false;
         }
+
+        AuthHandlerResponse response = new AuthHandlerResponse(responce, request);
+        try {
+            Subject suppliedIdentity = new Subject();
+            addX509ChainToSubject(request, suppliedIdentity);
+            addOriginToSubject(request, suppliedIdentity);
+            addAuthCredentialsToSubject(request, suppliedIdentity);
+            addSpnegoCredentialsToSubject(request, suppliedIdentity);
+            addQueryBearerTokenToSubject(request, suppliedIdentity);
+            addDesiredRolesToSubject(request, suppliedIdentity);
+
+            LoginReply login = _loginStrategy.login(suppliedIdentity);
+            Subject authnIdentity = login.getSubject();
+            Restriction restriction = Restrictions.concat(_doorRestriction,
+                  login.getRestriction());
+
+            request.setAttribute(DCACHE_SUBJECT_ATTRIBUTE, authnIdentity);
+            request.setAttribute(DCACHE_RESTRICTION_ATTRIBUTE, restriction);
+            request.setAttribute(DCACHE_LOGIN_ATTRIBUTES, login.getLoginAttributes());
+            request.setAttribute(AUTH_HANDLER_ATTRIBUTE, this);
+
+            /* Process the request as the authenticated user.*/
+            Exception problem = Subject.doAs(authnIdentity,
+                  (PrivilegedAction<Exception>) () -> {
+                      try {
+                          AuthenticationHandler.super.handle(request, response, callback);
+                      } catch (Exception e) {
+                          return e;
+                      }
+                      return null;
+                  });
+            if (problem != null) {
+                callback.failed(problem);
+                Throwables.throwIfInstanceOf(problem, IOException.class);
+                Throwables.throwIfInstanceOf(problem, ServletException.class);
+                throw new RuntimeException(problem);
+            }
+            callback.succeeded();
+        } catch (PermissionDeniedCacheException e) {
+            LOG.info("Login failed for {} on {}: {}", request.getMethod(),
+                  request.getHttpURI().getPath(), e.getMessage());
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+            callback.failed(e);
+        } catch (CacheException e) {
+            LOG.error("Internal server error: {}", e.getMessage());
+            response.setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
+            response.write(true, null, Callback.NOOP);
+            callback.failed(e);
+        }
+        return true;
     }
 
-    private void addSpnegoCredentialsToSubject(Request baseRequest,
-          HttpServletRequest request,
-          Subject subject) {
+    private void addSpnegoCredentialsToSubject(Request request, Subject subject) {
         if (_isSpnegoAuthenticationEnabled) {
-            Authentication spnegoAuth = baseRequest.getAuthentication();
-            if (spnegoAuth instanceof Authentication.Deferred) {
-                Authentication spnegoUser = ((Authentication.Deferred) spnegoAuth).authenticate(
-                      request);
-                if (spnegoUser instanceof UserAuthentication) {
-                    UserIdentity identity = ((UserAuthentication) spnegoUser).getUserIdentity();
-                    subject.getPrincipals()
-                          .add(new KerberosPrincipal(identity.getUserPrincipal().getName()));
+            var authtenticationState = org.eclipse.jetty.server.Request.getAuthenticationState(request);
+            if (authtenticationState != null) {
+                var principal = authtenticationState.getUserPrincipal();
+                if (principal instanceof KerberosPrincipal) {
+                    subject.getPrincipals().add(principal);
                 }
             }
         }
     }
 
-    private void addX509ChainToSubject(HttpServletRequest request, Subject subject)
+    private void addX509ChainToSubject(Request request, Subject subject)
           throws CacheException {
         Object object = request.getAttribute(X509_CERTIFICATE_ATTRIBUTE);
         if (object instanceof X509Certificate[]) {
@@ -211,9 +208,14 @@ public class AuthenticationHandler extends HandlerWrapper {
         }
     }
 
-    private void addQueryBearerTokenToSubject(HttpServletRequest request, Subject subject)
+    private void addQueryBearerTokenToSubject(Request request, Subject subject)
           throws PermissionDeniedCacheException {
-        String[] bearerTokens = request.getParameterMap().get(BEARER_TOKEN_QUERY_KEY);
+
+        String[] bearerTokens = Request.extractQueryParameters(request)
+              .get(BEARER_TOKEN_QUERY_KEY)
+              .getValues()
+              .toArray(String[]::new);
+
         if (bearerTokens != null) {
             if (!_acceptBearerTokenUnencrypted && !request.isSecure()) {
                 throw new PermissionDeniedCacheException(
@@ -227,8 +229,8 @@ public class AuthenticationHandler extends HandlerWrapper {
     }
 
     private void addXForwardForAddresses(ImmutableList.Builder<InetAddress> addresses,
-          HttpServletRequest request) {
-        String xff = nullToEmpty(request.getHeader("X-Forwarded-For"));
+          Request request) {
+        String xff = nullToEmpty(request.getHeaders().get("X-Forwarded-For"));
         List<String> ids = newArrayList(
               Splitter.on(',').trimResults().omitEmptyStrings().split(xff));
         reverse(ids).stream().
@@ -244,10 +246,10 @@ public class AuthenticationHandler extends HandlerWrapper {
               forEach(addresses::add);
     }
 
-    private void addOriginToSubject(HttpServletRequest request, Subject subject) {
+    private void addOriginToSubject(Request request, Subject subject) {
         ImmutableList.Builder<InetAddress> addresses = ImmutableList.builder();
 
-        String address = request.getRemoteAddr();
+        String address = Request.getRemoteAddr(request);
         try {
             addresses.add(InetAddress.getByName(address));
         } catch (UnknownHostException e) {
@@ -264,7 +266,7 @@ public class AuthenticationHandler extends HandlerWrapper {
     }
 
 
-    private void addAuthCredentialsToSubject(HttpServletRequest request, Subject subject)
+    private void addAuthCredentialsToSubject(Request request, Subject subject)
           throws PermissionDeniedCacheException {
         Optional<AuthInfo> optional = parseAuthenticationHeader(request);
         if (optional.isPresent()) {
@@ -301,7 +303,7 @@ public class AuthenticationHandler extends HandlerWrapper {
                     } catch (IllegalArgumentException e) {
                         LOG.warn(
                               "Authentication Data in the header received is not Base64 encoded {}",
-                              request.getHeader("Authorization"));
+                              request.getHeaders().get("Authorization"));
                     }
                     break;
                 case "BEARER":
@@ -315,7 +317,7 @@ public class AuthenticationHandler extends HandlerWrapper {
                               .add(new BearerTokenCredential(info.getData()));
                     } catch (IllegalArgumentException e) {
                         LOG.info("Bearer Token in invalid {}",
-                              request.getHeader("Authorization"));
+                              request.getHeaders().get("Authorization"));
                     }
                     break;
                 default:
@@ -358,13 +360,13 @@ public class AuthenticationHandler extends HandlerWrapper {
         _acceptBearerTokenUnencrypted = value;
     }
 
-    private class AuthHandlerResponse extends HttpServletResponseWrapper {
+    private class AuthHandlerResponse extends org.eclipse.jetty.server.Response.Wrapper {
 
         private final boolean suppressWWWAuthenticate;
 
-        public AuthHandlerResponse(HttpServletResponse response, HttpServletRequest request) {
-            super(response);
-            suppressWWWAuthenticate = request.getHeader("Suppress-WWW-Authenticate") != null;
+        public AuthHandlerResponse(Response response, Request request) {
+            super(request, response);
+            suppressWWWAuthenticate = request.getHeaders().get("Suppress-WWW-Authenticate") != null;
         }
 
         @Override
@@ -373,39 +375,22 @@ public class AuthenticationHandler extends HandlerWrapper {
             super.setStatus(code);
         }
 
-        @Override
-        public void setStatus(int code, String message) {
-            addAuthenticationChallenges(code);
-            super.setStatus(code, message);
-        }
-
-        @Override
-        public void sendError(int code) throws IOException {
-            addAuthenticationChallenges(code);
-            super.sendError(code);
-        }
-
-        @Override
-        public void sendError(int code, String message) throws IOException {
-            addAuthenticationChallenges(code);
-            super.sendError(code, message);
-        }
 
         private void addAuthenticationChallenges(int code) {
             if (code == HttpServletResponse.SC_UNAUTHORIZED) {
                 if (_isSpnegoAuthenticationEnabled) {
                     // Firefox always defaults to the first available authentication mechanism
                     // Conversely, Chrome and Safari choose the strongest mechanism
-                    setHeader(HttpHeader.WWW_AUTHENTICATE.asString(),
+                    getHeaders().add(HttpHeader.WWW_AUTHENTICATE.asString(),
                           HttpHeader.NEGOTIATE.asString());
-                    addHeader(HttpHeader.WWW_AUTHENTICATE.asString(),
+                    getHeaders().add(HttpHeader.WWW_AUTHENTICATE.asString(),
                           "Basic realm=\"" + getRealm() + "\"");
                 } else {
                     if (suppressWWWAuthenticate) {
-                        setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), null);
-                        addHeader("Suppress-WWW-Authenticate", "suppressed");
+                        getHeaders().add(HttpHeader.WWW_AUTHENTICATE.asString(), (String)null);
+                        getHeaders().add("Suppress-WWW-Authenticate", "suppressed");
                     } else {
-                        setHeader(HttpHeader.WWW_AUTHENTICATE.asString(),
+                        getHeaders().add(HttpHeader.WWW_AUTHENTICATE.asString(),
                               "Basic realm=\"" + getRealm() + "\"");
                     }
                 }
@@ -433,8 +418,8 @@ public class AuthenticationHandler extends HandlerWrapper {
         }
     }
 
-    private Optional<AuthInfo> parseAuthenticationHeader(HttpServletRequest request) {
-        String header = request.getHeader("Authorization");
+    private Optional<AuthInfo> parseAuthenticationHeader(Request request) {
+        String header = request.getHeaders().get("Authorization");
         if (header == null) {
             LOG.debug("No credentials found in Authorization header");
             return Optional.empty();
@@ -452,8 +437,8 @@ public class AuthenticationHandler extends HandlerWrapper {
         return Optional.of(new AuthInfo(authScheme, authData));
     }
 
-    private void addDesiredRolesToSubject(HttpServletRequest request, Subject subject) {
-        String header = request.getHeader("Roles");
+    private void addDesiredRolesToSubject(Request request, Subject subject) {
+        String header = request.getHeaders().get("Roles");
         if (header == null) {
             LOG.debug("No roles header found");
             return;

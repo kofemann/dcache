@@ -29,9 +29,9 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.Subject;
-import javax.ws.rs.ClientErrorException;
+import jakarta.ws.rs.ClientErrorException;
 import org.dcache.auth.Subjects;
 import org.springframework.beans.factory.annotation.Required;
 
