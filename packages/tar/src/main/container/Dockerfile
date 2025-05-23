@@ -30,7 +30,7 @@ RUN echo "dcache:x:994:1000::/home/dcache:/bin/bash" >> /etc/passwd
 RUN echo "dcache:!!:18438::::::" >> /etc/shadow
 
 # Add JRE
-RUN microdnf -y install hostname which procps-ng tar gzip
+RUN microdnf -y install hostname which procps-ng tar gzip findutils
 
 # Add dCache
 COPY maven /opt/dcache
@@ -67,8 +67,9 @@ RUN chown -R dcache:dcache ${DCACHE_INSTALL_DIR}/var /pool
 RUN curl -s -L -o /tmp/s3hsm.tar.gz https://github.com/kofemann/s3hsm/releases/download/v0.1.0/s3hsm_0.1.0_linux_amd64.tar.gz
 RUN cd /usr/bin && tar xzf /tmp/s3hsm.tar.gz s3hsm && rm /tmp/s3hsm.tar.gz
 
+RUN mkdir -p ${DCACHE_INSTALL_DIR}/share/plugins
 RUN curl -s -L -o /tmp/dcache-cta.tar.gz https://gitlab.desy.de/dcache/dcache-cta/-/package_files/18149/download
-RUN cd /opt/dcache/share/classes && tar xzf /tmp/dcache-cta.tar.gz && rm /tmp/dcache-cta.tar.gz
+RUN cd ${DCACHE_INSTALL_DIR}/share/plugins && tar xzf /tmp/dcache-cta.tar.gz && rm /tmp/dcache-cta.tar.gz
 
 # the data log files must survive container restarts
 VOLUME ${DCACHE_INSTALL_DIR}/var
