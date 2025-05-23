@@ -67,6 +67,9 @@ RUN chown -R dcache:dcache ${DCACHE_INSTALL_DIR}/var /pool
 RUN curl -s -L -o /tmp/s3hsm.tar.gz https://github.com/kofemann/s3hsm/releases/download/v0.1.0/s3hsm_0.1.0_linux_amd64.tar.gz
 RUN cd /usr/bin && tar xzf /tmp/s3hsm.tar.gz s3hsm && rm /tmp/s3hsm.tar.gz
 
+RUN curl -s -L -o /tmp/dcache-cta.tar.gz https://gitlab.desy.de/dcache/dcache-cta/-/package_files/18149/download
+RUN cd /opt/dcache/share/classes && tar xzf /tmp/dcache-cta.tar.gz && rm /tmp/dcache-cta.tar.gz
+
 # the data log files must survive container restarts
 VOLUME ${DCACHE_INSTALL_DIR}/var
 VOLUME /pool
