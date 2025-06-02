@@ -52,10 +52,12 @@ import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -840,6 +842,21 @@ public class NFSv41Door extends AbstractCellComponent implements
 
                     _transfers.put(layoutStateid, transfer);
                     layoutStates.put(ioKey, layoutStateid);
+
+                    var ls = layoutStateid;
+                    // workaround Linux client bug, which might keep layouts without delegation
+                    openStateId.addDisposeListener(s -> {
+
+                        var tt = _transfers.get(ls);
+                        if (tt != null && !context.getStateHandler().getFileTracker().getDelegations().getOrDefault(nfsInode, Set.of()).contains(client)) {
+                            _log.warn("Client {} has no delegation for file {}, but still holds layout. Releasing layout.",
+                                    client.getRemoteAddress(), nfsInode);
+
+
+                            tt.getStateid().tryDispose();
+                        }
+                    });
+
 
                     final InetSocketAddress remote = client.getRemoteAddress();
 
@@ -2039,6 +2056,31 @@ public class NFSv41Door extends AbstractCellComponent implements
                 t.killMover(0, TimeUnit.SECONDS, "manual transfer termination");
             }
             return "Removed: " + t;
+        }
+    }
+
+    @Command(name = "transfer prune", hint = "remove that don't have a client",
+            description = "Remove transfer from the list of active transfers it no valid client associated with it.")
+    public class TransferPruneCmd implements Callable<String> {
+
+        @Override
+        public String call() {
+
+            var transfersIterator = _transfers.entrySet().iterator();
+
+            var removed = new HashSet<InetSocketAddress>();
+            while(transfersIterator.hasNext()) {
+                Map.Entry<stateid4, NfsTransfer> entry = transfersIterator.next();
+                NfsTransfer t = entry.getValue();
+                if (!t.getClient().isLeaseValid()) {
+                    _log.info("Pruning transfer {} for state {}", t, entry.getKey());
+                    t.killMover(0, "Dead client.");
+                    transfersIterator.remove();
+                    removed.add(t.getClient().getRemoteAddress());
+                }
+            }
+
+            return removed.toString();
         }
     }
 
