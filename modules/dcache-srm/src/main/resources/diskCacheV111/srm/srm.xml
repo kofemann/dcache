@@ -108,6 +108,7 @@
         <property name="needClientAuth" value="false"/>
         <property name="wantClientAuth" value="true"/>
         <property name="cipherFlags" value="${srm.authn.ciphers}"/>
+        <property name="tlsProtocols" value="TLSv1.2"/>
 
         <property name="caPath" value="${srm.authn.capath}"/>
         <property name="caPathTimeout" value="${srm.authn.capath.refresh}"/>

@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014-2015 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014-2025 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -68,6 +68,8 @@ public class ConnectorFactoryBean implements FactoryBean<ServerConnector> {
 
     private boolean isProxyConnectionEnabled;
     private boolean isForwardedHeaderProcessingEnabled;
+
+    private String[] tlsProtocols = {"TLSv1.3", "TLSv1.2"};
 
     private Protocol protocol;
 
@@ -361,6 +363,10 @@ public class ConnectorFactoryBean implements FactoryBean<ServerConnector> {
     @Override
     public boolean isSingleton() {
         return true;
+    }
+
+    public void setTlsProtocols(String[] tlsProtocols) {
+        this.tlsProtocols = tlsProtocols;
     }
 
     public enum Protocol {

@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2015 - 2019 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2015 - 2025 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -69,6 +69,11 @@ public class CanlContextFactory extends SslContextFactory.Server {
     private KeyPairCache keyPairCache;
 
     private Callable<SslContextFactory> delegate;
+
+    /**
+     * TLS protocols to use. Defaults to TLSv1.3 and TLSv1.2.
+     */
+    private String[] tlsProtocols = {"TLSv1.3", "TLSv1.2"};
 
     public File getCertificatePath() {
         return certificatePath.toFile();
@@ -166,6 +171,10 @@ public class CanlContextFactory extends SslContextFactory.Server {
         this.validationCacheLifetime = validationCacheLifetime;
     }
 
+    public void setTlsProtocols(String[] protocols) {
+        this.tlsProtocols = protocols;
+    }
+
     @Override
     protected void doStart() throws Exception {
         cf = CertificateFactory.getInstance("X.509");
@@ -214,6 +223,7 @@ public class CanlContextFactory extends SslContextFactory.Server {
                 super.setWantClientAuth(CanlContextFactory.this.getWantClientAuth());
                 super.setNeedClientAuth(CanlContextFactory.this.getNeedClientAuth());
                 super.setKeyStore(serverCredential.getKeyStore());
+                super.selectProtocols(tlsProtocols, tlsProtocols);
                 super.doStart();
             }
 
