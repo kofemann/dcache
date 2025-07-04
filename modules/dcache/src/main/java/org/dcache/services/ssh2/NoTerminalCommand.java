@@ -10,6 +10,7 @@ import dmg.util.CommandException;
 import dmg.util.CommandExitException;
 import dmg.util.CommandPanicException;
 import dmg.util.CommandSyntaxException;
+import dmg.util.PagedCommandResult;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -94,11 +95,24 @@ public class NoTerminalCommand implements Command, Runnable {
                         throw new CommandExitException();
                     }
                     Object result = _userAdminShell.executeCommand(str);
-                    String s = Strings.toString(result);
+                    String s;
+                    if (result instanceof PagedCommandResult) {
+                        s = ((PagedCommandResult) result).getPartialResult();
+                    } else {
+                        s = Strings.toString(result);
+                    }
                     if (!s.isEmpty()) {
                         _writer.println(s);
                     }
                     _writer.flush();
+                    if (result instanceof PagedCommandResult) {
+                        PagedCommandResult pagedResult = (PagedCommandResult) result;
+                        if (!pagedResult.isEOL()) {
+                            pagedResult.setCommand(str);
+                            str = pagedResult.nextCommand();
+                            continue;
+                        }
+                    }
                 } catch (IllegalArgumentException e) {
                     error = e.toString();
                 } catch (SerializationException e) {
