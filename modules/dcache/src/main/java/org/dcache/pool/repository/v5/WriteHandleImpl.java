@@ -12,7 +12,6 @@ import static org.dcache.namespace.FileAttribute.RETENTION_POLICY;
 import static org.dcache.namespace.FileAttribute.SIZE;
 import static org.dcache.namespace.FileAttribute.XATTR;
 
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Lists;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.FileCorruptedCacheException;
@@ -32,15 +31,11 @@ import org.dcache.alarms.AlarmMarkerFactory;
 import org.dcache.alarms.PredefinedAlarm;
 import org.dcache.pool.repository.Allocator;
 import org.dcache.pool.repository.AllocatorAwareRepositoryChannel;
-import org.dcache.pool.repository.FileStore;
 import org.dcache.pool.repository.ModifiableReplicaDescriptor;
 import org.dcache.pool.repository.ReplicaRecord;
 import org.dcache.pool.repository.ReplicaState;
 import org.dcache.pool.repository.RepositoryChannel;
 import org.dcache.pool.repository.StickyRecord;
-import org.dcache.pool.repository.checksums.ChecksumReplicaRecord;
-import org.dcache.pool.repository.inotify.InotifyReplicaRecord;
-import org.dcache.pool.statistics.IoStatisticsReplicaRecord;
 import org.dcache.util.Checksum;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
@@ -54,17 +49,6 @@ class WriteHandleImpl implements ModifiableReplicaDescriptor {
 
     private static final Logger LOGGER =
           LoggerFactory.getLogger("logger.org.dcache.repository");
-
-    private static final Set<OpenOption> OPEN_OPTIONS = ImmutableSet.<OpenOption>builder()
-          .addAll(FileStore.O_RW)
-          .add(IoStatisticsReplicaRecord.OpenFlags.ENABLE_IO_STATISTICS)
-          .add(ChecksumReplicaRecord.OpenFlags.ENABLE_CHECKSUM_CALCULATION)
-          .build();
-
-    private static final Set<OpenOption> OPEN_OPTIONS_WITH_INOTIFY = ImmutableSet.<OpenOption>builder()
-          .addAll(OPEN_OPTIONS)
-          .add(InotifyReplicaRecord.OpenFlags.ENABLE_INOTIFY_MONITORING)
-          .build();
 
     /**
      * Time that a new CACHED file with no sticky flags will be marked sticky.
@@ -121,8 +105,13 @@ class WriteHandleImpl implements ModifiableReplicaDescriptor {
      */
     private Long _atime;
 
-    private boolean hasChannelBeenCreated;
     private Exception _closedBy;
+
+    /**
+     * Set of open options used to create the repository IO channel.
+     */
+    private final Set<? extends OpenOption> _openOptions;
+
 
     WriteHandleImpl(ReplicaRepository repository,
           Allocator allocator,
@@ -130,7 +119,7 @@ class WriteHandleImpl implements ModifiableReplicaDescriptor {
           ReplicaRecord entry,
           FileAttributes fileAttributes,
           ReplicaState targetState,
-          List<StickyRecord> stickyRecords) {
+          List<StickyRecord> stickyRecords, Set<? extends OpenOption> openOptions) {
         _repository = requireNonNull(repository);
         _allocator = requireNonNull(allocator);
         _pnfs = requireNonNull(pnfs);
@@ -144,21 +133,12 @@ class WriteHandleImpl implements ModifiableReplicaDescriptor {
         checkState(_initialState != ReplicaState.FROM_CLIENT || _fileAttributes.isDefined(
               EnumSet.of(RETENTION_POLICY, ACCESS_LATENCY)));
         checkState(_initialState == ReplicaState.FROM_CLIENT || _fileAttributes.isDefined(SIZE));
+
+        _openOptions = openOptions;
     }
 
     private synchronized void setState(HandleState state) {
         _state = state;
-    }
-
-    /**
-     * Whether a createChannel request is intended for direct client IO.
-     */
-    private boolean isChannelForClient() {
-        // The createChannel method may be called multiple times; for example,
-        // the onWrite behaviour within ChecksumModuleV1#enforcePostTransferPolicy.
-        // We use the heuristic that the first createChannel is to accept client data
-        // and any subsequent channels are for dCache-internal activity.
-        return _initialState == ReplicaState.FROM_CLIENT && !hasChannelBeenCreated;
     }
 
     @Override
@@ -167,15 +147,8 @@ class WriteHandleImpl implements ModifiableReplicaDescriptor {
         if (_state == HandleState.CLOSED) {
             throw new IllegalStateException("Handle is closed");
         }
-
-        Set<OpenOption> options = isChannelForClient()
-              ? OPEN_OPTIONS_WITH_INOTIFY
-              : OPEN_OPTIONS;
-
-        RepositoryChannel channel = new AllocatorAwareRepositoryChannel(_entry.openChannel(options),
+        return  new AllocatorAwareRepositoryChannel(_entry.openChannel(_openOptions),
               _repository, _fileAttributes.getPnfsId(), _allocator);
-        hasChannelBeenCreated = true;
-        return channel;
     }
 
     private void registerFileAttributesInNameSpace() throws CacheException {
@@ -447,5 +420,10 @@ class WriteHandleImpl implements ModifiableReplicaDescriptor {
     @Override
     public long getReplicaCreationTime() {
         return _entry.getCreationTime();
+    }
+
+    @Override
+    public Set<? extends OpenOption> getOpenOptions() {
+        return Set.copyOf(_openOptions);
     }
 }

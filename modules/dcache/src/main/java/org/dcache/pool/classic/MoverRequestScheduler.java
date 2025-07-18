@@ -18,6 +18,7 @@ import diskCacheV111.vehicles.ProtocolInfo;
 import dmg.cells.nucleus.CDC;
 import java.io.InterruptedIOException;
 import java.nio.channels.CompletionHandler;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -40,7 +41,6 @@ import org.dcache.pool.FaultEvent;
 import org.dcache.pool.FaultListener;
 import org.dcache.pool.movers.Mover;
 import org.dcache.pool.movers.json.MoverData;
-import org.dcache.pool.repository.FileStore;
 import org.dcache.pool.repository.OutOfDiskException;
 import org.dcache.util.AdjustableSemaphore;
 import org.dcache.util.IoPrioritizable;
@@ -701,11 +701,11 @@ public class MoverRequestScheduler {
         }
 
         public boolean isRead() {
-            return _mover.getIoMode().equals(FileStore.O_READ);
+            return !isWrite();
         }
 
         public boolean isWrite() {
-            return _mover.getIoMode().equals(FileStore.O_RW);
+            return _mover.getIoMode().contains(StandardOpenOption.WRITE);
         }
 
         @Override

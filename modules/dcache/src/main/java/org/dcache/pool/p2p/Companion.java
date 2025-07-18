@@ -29,9 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
 import java.nio.channels.Channels;
 import java.nio.channels.ClosedChannelException;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.OptionalLong;
 import java.util.Set;
@@ -57,6 +55,7 @@ import org.dcache.namespace.FileAttribute;
 import org.dcache.pool.assumption.Assumptions;
 import org.dcache.pool.classic.ChecksumModule;
 import org.dcache.pool.movers.ChecksumChannel;
+import org.dcache.pool.repository.FileStore;
 import org.dcache.pool.repository.ModifiableReplicaDescriptor;
 import org.dcache.pool.repository.ReplicaDescriptor;
 import org.dcache.pool.repository.ReplicaState;
@@ -401,7 +400,7 @@ class Companion {
               ReplicaState.FROM_POOL,
               _targetState,
               _stickyRecords,
-              EnumSet.of(StandardOpenOption.CREATE),
+              FileStore.DEFAULT_CREATE_OPTIONS,
               OptionalLong.empty());
     }
 

@@ -1,5 +1,6 @@
 package org.dcache.pool.repository;
 
+import com.sun.nio.file.ExtendedOpenOption;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -13,6 +14,7 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class FileRepositoryChannel implements RepositoryChannel {
 
@@ -41,7 +43,15 @@ public class FileRepositoryChannel implements RepositoryChannel {
      */
     public FileRepositoryChannel(Path path, Set<? extends OpenOption> openOptions)
           throws FileNotFoundException, IOException {
-        _fileChannel = FileChannel.open(path, openOptions, NO_ATTRIBUTES);
+
+        // filter non-standard options as they will be rejected by open call
+
+        var standardOptions = openOptions
+              .stream()
+              .filter(o -> o instanceof StandardOpenOption || o instanceof ExtendedOpenOption)
+              .collect(Collectors.toUnmodifiableSet());
+
+        _fileChannel = FileChannel.open(path, standardOptions, NO_ATTRIBUTES);
         _fileSize = !openOptions.contains(StandardOpenOption.WRITE) ? _fileChannel.size() : -1;
     }
 

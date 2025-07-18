@@ -661,7 +661,7 @@ public class GFtpProtocol_2_nio implements ConnectionMonitor,
 
             RepositoryChannel fileChannel =
                   new FileRepositoryChannel(FileSystems.getDefault().getPath(args.argv(0)),
-                        role == Role.Sender ? FileStore.O_READ : FileStore.O_RW);
+                        role == Role.Sender ? FileStore.DEFAULT_READ_OPTIONS : FileStore.DEFAULT_CREATE_OPTIONS);
 
             Mode mode =
                   mover.createMode(getOption(args, "mode", "S"), role, fileChannel);

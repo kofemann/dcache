@@ -3,7 +3,9 @@ package org.dcache.pool.repository;
 import diskCacheV111.util.CacheException;
 import java.io.IOException;
 import java.net.URI;
+import java.nio.file.OpenOption;
 import java.util.Collection;
+import java.util.Set;
 import org.dcache.util.Checksum;
 import org.dcache.vehicles.FileAttributes;
 
@@ -81,4 +83,11 @@ public interface ReplicaDescriptor extends AutoCloseable {
      * @return replica creation time.
      */
     long getReplicaCreationTime();
+
+    /**
+     * Returns the set of open options that were used to create this descriptor.
+     *
+     * @return set of open options.
+     */
+    Set<? extends OpenOption> getOpenOptions();
 }

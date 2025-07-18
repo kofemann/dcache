@@ -2,25 +2,23 @@ package org.dcache.pool.repository.v5;
 
 import static java.util.Objects.requireNonNull;
 
-import com.google.common.collect.ImmutableSet;
+import com.google.common.base.Preconditions;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.FileCorruptedCacheException;
 import diskCacheV111.util.PnfsHandler;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.OpenOption;
+import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.Set;
 import org.dcache.namespace.FileAttribute;
-import org.dcache.pool.repository.FileStore;
 import org.dcache.pool.repository.ReplicaDescriptor;
 import org.dcache.pool.repository.ReplicaRecord;
 import org.dcache.pool.repository.ReplicaState;
 import org.dcache.pool.repository.RepositoryChannel;
-import org.dcache.pool.repository.inotify.InotifyReplicaRecord;
-import org.dcache.pool.statistics.IoStatisticsReplicaRecord;
 import org.dcache.util.Checksum;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
@@ -28,33 +26,33 @@ import org.slf4j.LoggerFactory;
 
 class ReadHandleImpl implements ReplicaDescriptor {
 
-    private static final Set<OpenOption> OPEN_OPTIONS = ImmutableSet.<OpenOption>builder()
-          .addAll(FileStore.O_READ)
-          .add(IoStatisticsReplicaRecord.OpenFlags.ENABLE_IO_STATISTICS)
-          .build();
-
-    private static final Set<OpenOption> OPEN_OPTIONS_WITH_INOTIFY = ImmutableSet.<OpenOption>builder()
-          .addAll(OPEN_OPTIONS)
-          .add(InotifyReplicaRecord.OpenFlags.ENABLE_INOTIFY_MONITORING)
-          .build();
-
     protected static final Logger LOGGER = LoggerFactory.getLogger(ReadHandleImpl.class);
 
 
     private final PnfsHandler _pnfs;
     private final ReplicaRecord _entry;
+
+    /**
+     * Set of open options used to open the repository IO channel.
+     */
     private final Set<? extends OpenOption> _openOptions;
     private FileAttributes _fileAttributes;
     private boolean _open;
     private Exception _closedBy;
 
     ReadHandleImpl(PnfsHandler pnfs, ReplicaRecord entry, FileAttributes fileAttributes,
-          boolean isInternalActivity) {
+          Set<? extends OpenOption> openOptions) {
         _pnfs = requireNonNull(pnfs);
         _entry = requireNonNull(entry);
         _fileAttributes = requireNonNull(fileAttributes);
+
+        Preconditions.checkArgument(!openOptions.contains(StandardOpenOption.CREATE),
+              "Read handle cannot be created with CREATE option");
+        Preconditions.checkArgument(!openOptions.contains(StandardOpenOption.WRITE),
+              "Read handle cannot be created with WRITE option");
+
         _open = true;
-        _openOptions = isInternalActivity ? OPEN_OPTIONS : OPEN_OPTIONS_WITH_INOTIFY;
+        _openOptions = openOptions;
     }
 
     /**
@@ -138,5 +136,10 @@ class ReadHandleImpl implements ReplicaDescriptor {
     @Override
     public long getReplicaCreationTime() {
         return _entry.getCreationTime();
+    }
+
+    @Override
+    public Set<? extends OpenOption> getOpenOptions() {
+        return Set.copyOf(_openOptions);
     }
 }

@@ -75,8 +75,8 @@ import java.nio.file.OpenOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -119,6 +119,7 @@ import org.dcache.pool.repository.Repository;
 import org.dcache.pool.repository.SpaceRecord;
 import org.dcache.pool.repository.StateChangeEvent;
 import org.dcache.pool.repository.StickyRecord;
+import org.dcache.pool.repository.inotify.InotifyReplicaRecord.OpenFlags;
 import org.dcache.util.IoPriority;
 import org.dcache.util.NetworkUtils;
 import org.dcache.util.Version;
@@ -692,10 +693,15 @@ public class PoolV4
                       moverFactory.getChannelCreateOptions(),
                       maximumSize);
             } else {
-                Set<? extends OpenOption> openFlags =
-                      message.isPool2Pool()
-                            ? EnumSet.of(Repository.OpenFlags.NOATIME)
-                            : EnumSet.noneOf(Repository.OpenFlags.class);
+                Set<? extends OpenOption> openFlags = moverFactory.getChannelReadOptions();
+                if (message.isPool2Pool()) {
+                    // by transfers triggered by dCache we do not want to
+                    // update mtime or trigger IO notification event.
+                    Set<OpenOption> p2pOpenFlags = new HashSet<>(openFlags);
+                    p2pOpenFlags.add(Repository.OpenFlags.NOATIME);
+                    p2pOpenFlags.remove(OpenFlags.ENABLE_INOTIFY_MONITORING);
+                    openFlags = p2pOpenFlags;
+                }
                 handle = _repository.openEntry(pnfsId, openFlags);
             }
         } catch (FileNotInCacheException e) {

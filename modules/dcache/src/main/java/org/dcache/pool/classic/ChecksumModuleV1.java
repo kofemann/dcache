@@ -39,7 +39,6 @@ import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Sets;
-import com.google.common.collect.Streams;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.FileCorruptedCacheException;
 import dmg.cells.nucleus.CellCommandListener;
@@ -459,7 +458,7 @@ public class ChecksumModuleV1
                           .map(ChecksumType::createMessageDigest)
                           .collect(Collectors.toList());
 
-                    try (RepositoryChannel channel = entry.openChannel(FileStore.O_READ)) {
+                    try (RepositoryChannel channel = entry.openChannel(FileStore.DEFAULT_READ_OPTIONS)) {
                         Set<Checksum> actualChecksums = computeChecksums(channel, digests);
                         compareChecksums(expectedChecksums, actualChecksums);
 

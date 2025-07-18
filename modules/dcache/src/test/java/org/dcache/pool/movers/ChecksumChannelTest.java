@@ -59,8 +59,7 @@ public class ChecksumChannelTest {
     @Before
     public void setUp() throws NoSuchAlgorithmException, IOException {
         testFile = Files.createTempFile("ChecksumChannelTest", ".tmp");
-        RepositoryChannel mockRepositoryChannel = new FileRepositoryChannel(testFile,
-              FileStore.O_RW);
+        RepositoryChannel mockRepositoryChannel = new FileRepositoryChannel(testFile, FileStore.DEFAULT_CREATE_OPTIONS);
         chksumChannel = new ChecksumChannel(mockRepositoryChannel,
               EnumSet.of(ChecksumType.MD5_TYPE));
         chksumChannel._readBackBuffer = ByteBuffer.allocate(2);

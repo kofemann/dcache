@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2013 - 2017 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2013 - 2025 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,13 +17,12 @@
  */
 package org.dcache.pool.movers;
 
-import com.google.common.collect.Sets;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.vehicles.PoolIoFileMessage;
 import dmg.cells.nucleus.CellPath;
 import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 import java.util.Set;
+import org.dcache.pool.repository.FileStore;
 import org.dcache.pool.repository.ReplicaDescriptor;
 
 /**
@@ -48,12 +47,22 @@ public interface MoverFactory {
           throws CacheException;
 
     /**
-     * Get set of option which have to be used by ReplicaDescriptor when a new RepositoryChannel is
-     * created.
+     * Get an unmodifiable set of option which have to be used by ReplicaDescriptor when a new
+     * RepositoryChannel is created.
      *
      * @return set of open options.
      */
     default Set<? extends OpenOption> getChannelCreateOptions() {
-        return Sets.newHashSet(StandardOpenOption.CREATE);
+        return FileStore.DEFAULT_CREATE_OPTIONS;
+    }
+
+    /**
+     * Get an unmodifiable set of option which have to be used by ReplicaDescriptor when an existing
+     * RepositoryChannel is created.
+     *
+     * @return set of open options.
+     */
+    default Set<? extends OpenOption> getChannelReadOptions() {
+        return FileStore.DEFAULT_READ_OPTIONS;
     }
 }

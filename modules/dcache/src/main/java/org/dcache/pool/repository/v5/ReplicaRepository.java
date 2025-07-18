@@ -652,6 +652,8 @@ public class ReplicaRepository
         if (stickyRecords == null) {
             throw new IllegalArgumentException("List of sticky records must not be null");
         }
+
+        checkArgument(!flags.isEmpty(), "Create flags can't be empty");
         PnfsId id = fileAttributes.getPnfsId();
         _stateLock.readLock().lock();
         try {
@@ -681,7 +683,7 @@ public class ReplicaRepository
                 r.setFileAttributes(fileAttributes);
                 r.setState(transferState);
                 return new WriteHandleImpl(this, buildAllocator(flags, maximumSize), _pnfs,
-                      entry, fileAttributes, targetState, stickyRecords);
+                      entry, fileAttributes, targetState, stickyRecords, flags);
             });
         } catch (DuplicateEntryException e) {
             /* Somebody got the idea that we don't have the file, so we make
@@ -707,6 +709,9 @@ public class ReplicaRepository
     @Override
     public ReplicaDescriptor openEntry(PnfsId id, Set<? extends OpenOption> flags)
           throws CacheException {
+
+        checkArgument(!flags.isEmpty(), "Open flags can't be empty");
+
         _stateLock.readLock().lock();
         try {
             checkInitialized();
@@ -736,12 +741,7 @@ public class ReplicaRepository
                 entry.incrementLinkCount();
             }
 
-            // Here we assume that all client-drive activity can (potentially)
-            // update the file's atime (hence does not have NOATIME flag), while
-            // all dCache-internal activity cannot (hence has NOATIME flag).
-            boolean isInternalActivity = flags.contains(OpenFlags.NOATIME);
-
-            return new ReadHandleImpl(_pnfs, entry, fileAttributes, isInternalActivity);
+            return new ReadHandleImpl(_pnfs, entry, fileAttributes, flags);
         } catch (FileNotInCacheException e) {
             /* Somebody got the idea that we have the file, so we make
              * sure to remove any stray pointers.

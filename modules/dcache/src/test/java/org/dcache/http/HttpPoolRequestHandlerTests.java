@@ -42,7 +42,6 @@ import com.google.common.collect.Iterators;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import com.google.common.collect.Multimap;
-import com.google.common.collect.Sets;
 import com.google.common.util.concurrent.Futures;
 import diskCacheV111.util.FsPath;
 import diskCacheV111.vehicles.HttpProtocolInfo;
@@ -514,7 +513,7 @@ public class HttpPoolRequestHandlerTests {
 
         given(channel.size()).willReturn(file.getSize());
 
-        given((Set<StandardOpenOption>) channel.getIoMode()).willReturn(FileStore.O_READ);
+        given(channel.getIoMode()).willReturn((Set)FileStore.DEFAULT_READ_OPTIONS);
         given(channel.getProtocolInfo())
               .willReturn(new HttpProtocolInfo("Http", 1, 1,
                     new InetSocketAddress((InetAddress) null, 0),
@@ -531,7 +530,7 @@ public class HttpPoolRequestHandlerTests {
 
         NettyTransferService<HttpProtocolInfo>.NettyMoverChannel channel =
               mock(NettyTransferService.NettyMoverChannel.class);
-        given((Set<StandardOpenOption>) channel.getIoMode()).willReturn(FileStore.O_RW);
+        given(channel.getIoMode()).willReturn((Set)FileStore.DEFAULT_CREATE_OPTIONS);
         given(channel.getProtocolInfo())
               .willReturn(new HttpProtocolInfo("Http", 1, 1,
                     new InetSocketAddress((InetAddress) null, 0),

@@ -3,12 +3,14 @@ package org.dcache.pool.repository;
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
+import static org.dcache.pool.repository.checksums.ChecksumReplicaRecord.OpenFlags.ENABLE_CHECKSUM_CALCULATION;
+import static org.dcache.pool.repository.inotify.InotifyReplicaRecord.OpenFlags.ENABLE_INOTIFY_MONITORING;
+import static org.dcache.pool.statistics.IoStatisticsReplicaRecord.OpenFlags.ENABLE_IO_STATISTICS;
 
 import diskCacheV111.util.PnfsId;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.file.OpenOption;
-import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.BasicFileAttributeView;
 import java.util.Set;
 
@@ -17,8 +19,16 @@ import java.util.Set;
  */
 public interface FileStore {
 
-    Set<StandardOpenOption> O_READ = Set.of(READ);
-    Set<StandardOpenOption> O_RW = Set.of(READ, WRITE, CREATE);
+    /**
+     * Set of options that must be used when opening a channel for creating a new replica.
+     */
+    Set<? extends OpenOption> DEFAULT_CREATE_OPTIONS = Set.of(READ, WRITE, CREATE,
+          ENABLE_IO_STATISTICS, ENABLE_INOTIFY_MONITORING, ENABLE_CHECKSUM_CALCULATION);
+    /**
+     * Set of options that must be used when opening a channel for reading an existing replica.
+     */
+    Set<? extends OpenOption> DEFAULT_READ_OPTIONS = Set.of(READ, ENABLE_IO_STATISTICS,
+          ENABLE_INOTIFY_MONITORING);
 
     /**
      * Returns the URI to the data file for the given PNFS id.

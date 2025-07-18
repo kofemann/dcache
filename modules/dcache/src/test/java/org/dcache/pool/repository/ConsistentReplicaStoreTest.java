@@ -76,7 +76,7 @@ public class ConsistentReplicaStoreTest {
     private void givenStoreHasFileOfSize(PnfsId pnfsId, long size)
           throws IOException {
         _fileStore.create(pnfsId);
-        try (RepositoryChannel channel = _fileStore.openDataChannel(pnfsId, FileStore.O_RW)) {
+        try (RepositoryChannel channel = _fileStore.openDataChannel(pnfsId, FileStore.DEFAULT_CREATE_OPTIONS)) {
             ByteBuffer buf = ByteBuffer.allocate((int) size);
             buf.limit(buf.capacity());
             channel.write(buf);

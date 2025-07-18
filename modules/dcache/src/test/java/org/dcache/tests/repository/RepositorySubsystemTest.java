@@ -153,7 +153,7 @@ public class RepositorySubsystemTest
                             ReplicaState.FROM_CLIENT,
                             state,
                             sticky,
-                            EnumSet.noneOf(OpenFlags.class),
+                            FileStore.DEFAULT_CREATE_OPTIONS,
                             OptionalLong.empty());
                 try {
                     createFile(handle, attributes.getSize());
@@ -330,7 +330,7 @@ public class RepositorySubsystemTest
     private void assertCanOpen(PnfsId id, long size, ReplicaState state) {
         try {
             ReplicaDescriptor handle =
-                  repository.openEntry(id, EnumSet.noneOf(OpenFlags.class));
+                  repository.openEntry(id, FileStore.DEFAULT_READ_OPTIONS);
             try {
                 try (RepositoryChannel channel = handle.createChannel()) {
                 }
@@ -371,13 +371,13 @@ public class RepositorySubsystemTest
         repository.init();
         List<StickyRecord> stickyRecords = Collections.emptyList();
         repository.createEntry(FileAttributes.of().pnfsId(id1).storageInfo(info1).build(),
-              FROM_CLIENT, PRECIOUS, stickyRecords, EnumSet.noneOf(OpenFlags.class),
+              FROM_CLIENT, PRECIOUS, stickyRecords,FileStore.DEFAULT_CREATE_OPTIONS,
               OptionalLong.empty());
     }
 
     @Test(expected = IllegalStateException.class)
     public void testOpenEntryFailsBeforeInit() throws Exception {
-        repository.openEntry(id1, EnumSet.noneOf(OpenFlags.class));
+        repository.openEntry(id1, FileStore.DEFAULT_READ_OPTIONS);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -451,7 +451,7 @@ public class RepositorySubsystemTest
             @Override
             protected void run()
                   throws CacheException, InterruptedException {
-                repository.openEntry(id4, EnumSet.noneOf(OpenFlags.class));
+                repository.openEntry(id4, FileStore.DEFAULT_READ_OPTIONS);
             }
         };
     }
@@ -478,7 +478,7 @@ public class RepositorySubsystemTest
                 List<StickyRecord> stickyRecords = Collections.emptyList();
                 ModifiableReplicaDescriptor handle = repository.createEntry(attributes5, FROM_STORE, CACHED,
                       stickyRecords,
-                      EnumSet.noneOf(OpenFlags.class), OptionalLong.empty());
+                      FileStore.DEFAULT_CREATE_OPTIONS, OptionalLong.empty());
                 try {
                     createFile(handle, attributes5.getSize());
                     handle.commit();
@@ -499,7 +499,7 @@ public class RepositorySubsystemTest
         repository.load();
         stateChangeEvents.clear();
 
-        ReplicaDescriptor handle = repository.openEntry(id1, EnumSet.noneOf(OpenFlags.class));
+        ReplicaDescriptor handle = repository.openEntry(id1, FileStore.DEFAULT_READ_OPTIONS);
         Path file = Paths.get(handle.getReplicaFile());
         Files.write(file, "APPEND".getBytes(), WRITE, APPEND);
         handle.createChannel();
@@ -565,7 +565,7 @@ public class RepositorySubsystemTest
         stateChangeEvents.clear();
 
         ReplicaDescriptor handle =
-              repository.openEntry(id1, EnumSet.noneOf(OpenFlags.class));
+              repository.openEntry(id1, FileStore.DEFAULT_READ_OPTIONS);
         handle.close();
         handle.close();
     }
@@ -578,7 +578,7 @@ public class RepositorySubsystemTest
         stateChangeEvents.clear();
 
         ReplicaDescriptor handle =
-              repository.openEntry(id1, EnumSet.noneOf(OpenFlags.class));
+              repository.openEntry(id1, FileStore.DEFAULT_READ_OPTIONS);
         handle.close();
         handle.getReplicaFile();
     }
@@ -591,7 +591,7 @@ public class RepositorySubsystemTest
         stateChangeEvents.clear();
 
         ReplicaDescriptor handle =
-              repository.openEntry(id1, EnumSet.noneOf(OpenFlags.class));
+              repository.openEntry(id1, FileStore.DEFAULT_READ_OPTIONS);
         handle.close();
         FileAttributes fileAttributes = handle.getFileAttributes();
         assertEquals(id1, fileAttributes.getPnfsId());
@@ -666,7 +666,7 @@ public class RepositorySubsystemTest
                   throws CacheException, InterruptedException,
                   IllegalTransitionException {
                 ReplicaDescriptor handle1 =
-                      repository.openEntry(id1, EnumSet.noneOf(OpenFlags.class));
+                      repository.openEntry(id1, FileStore.DEFAULT_READ_OPTIONS);
                 repository.setState(id1, REMOVED, "test");
                 expectStateChangeEvent(id1, PRECIOUS, REMOVED);
                 assertNoStateChangeEvent();
@@ -696,12 +696,12 @@ public class RepositorySubsystemTest
                   throws CacheException, InterruptedException,
                   IllegalTransitionException {
                 ReplicaDescriptor h1 =
-                      repository.openEntry(id1, EnumSet.noneOf(OpenFlags.class));
+                      repository.openEntry(id1, FileStore.DEFAULT_READ_OPTIONS);
                 repository.setState(id1, REMOVED, "test");
                 expectStateChangeEvent(id1, PRECIOUS, REMOVED);
                 assertStep("Cache location should have been cleared", 1);
                 ReplicaDescriptor h2 =
-                      repository.openEntry(id1, EnumSet.noneOf(OpenFlags.class));
+                      repository.openEntry(id1, FileStore.DEFAULT_READ_OPTIONS);
             }
         };
     }
@@ -728,7 +728,7 @@ public class RepositorySubsystemTest
                   throws CacheException, InterruptedException {
                 List<StickyRecord> stickyRecords = Collections.emptyList();
                 repository.createEntry(attributes1, FROM_CLIENT, PRECIOUS, stickyRecords,
-                      EnumSet.noneOf(OpenFlags.class), OptionalLong.empty());
+                      FileStore.DEFAULT_CREATE_OPTIONS, OptionalLong.empty());
             }
         };
     }
@@ -786,7 +786,7 @@ public class RepositorySubsystemTest
                 List<StickyRecord> stickyRecords = Collections.emptyList();
                 ModifiableReplicaDescriptor handle =
                       repository.createEntry(attributes4, transferState,
-                            finalState, stickyRecords, EnumSet.noneOf(OpenFlags.class),
+                            finalState, stickyRecords, FileStore.DEFAULT_CREATE_OPTIONS,
                             OptionalLong.empty());
                 try {
                     assertStep("No clear after this point", 2);

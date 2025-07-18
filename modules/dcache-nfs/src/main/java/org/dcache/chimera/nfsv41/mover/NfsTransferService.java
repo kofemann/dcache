@@ -1,6 +1,5 @@
 package org.dcache.chimera.nfsv41.mover;
 
-import com.google.common.collect.Sets;
 import com.google.common.net.InetAddresses;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import diskCacheV111.util.CacheException;
@@ -31,11 +30,11 @@ import java.nio.file.Files;
 import java.nio.file.NoSuchFileException;
 import java.nio.file.OpenOption;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -90,6 +89,7 @@ import org.dcache.pool.classic.PostTransferService;
 import org.dcache.pool.classic.TransferService;
 import org.dcache.pool.movers.Mover;
 import org.dcache.pool.movers.MoverFactory;
+import org.dcache.pool.repository.FileStore;
 import org.dcache.pool.repository.ReplicaDescriptor;
 import org.dcache.pool.repository.Repository;
 import org.dcache.util.ByteUnit;
@@ -205,6 +205,18 @@ public class NfsTransferService
     private final int expectedConcurrency =  GrizzlyUtils.getDefaultWorkerPoolSize();
     private final int allocationChunkSize = ByteUnit.MiB.toBytes(1); // one pool with 1MB chunks (max NFS rsize)
     private final float heapFraction = (allocationChunkSize * expectedConcurrency) / (float) Runtime.getRuntime().maxMemory();
+
+
+    /**
+     * New repository channel create options for NFS movers.
+     */
+    private static final Set<? extends OpenOption> NFS_CHANNEL_CREATE_OPTIONS;
+    static {
+        Set<OpenOption> t = new HashSet<>();
+        t.addAll(FileStore.DEFAULT_CREATE_OPTIONS);
+        t.add(Repository.OpenFlags.NONBLOCK_SPACE_ALLOCATION);
+        NFS_CHANNEL_CREATE_OPTIONS = Set.copyOf(t);
+    }
 
     /**
      * Buffer pool for IO operations.
@@ -428,10 +440,8 @@ public class NfsTransferService
     }
 
     @Override
-    @SuppressWarnings("unchecked")
     public Set<? extends OpenOption> getChannelCreateOptions() {
-        return Sets.newHashSet(StandardOpenOption.CREATE,
-              Repository.OpenFlags.NONBLOCK_SPACE_ALLOCATION);
+        return NFS_CHANNEL_CREATE_OPTIONS;
     }
 
     @Override
