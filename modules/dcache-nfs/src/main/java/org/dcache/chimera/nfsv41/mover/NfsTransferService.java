@@ -644,12 +644,13 @@ public class NfsTransferService
                       _log.debug("Verifying inactive mover {}", mover);
                       final org.dcache.chimera.nfs.v4.xdr.stateid4 legacyStateId = mover.getProtocolInfo()
                             .stateId();
-                      CellStub.addCallback(_door.send(mover.getPathToDoor(),
-                                  new DoorValidateMoverMessage<>(-1,
-                                        mover.getFileAttributes().getPnfsId(), _bootVerifier,
-                                        legacyStateId)),
-                            new NfsMoverValidationCallback(mover),
-                            _cleanerExecutor);
+
+                      var message = new DoorValidateMoverMessage<>(-1,
+                            mover.getFileAttributes().getPnfsId(), _bootVerifier,
+                            legacyStateId);
+
+                      _door.send(mover.getPathToDoor(), message, message.getClass(), _door.getTimeoutInMillis())
+                                  .whenCompleteAsync(new NfsMoverValidationCallback(mover), _cleanerExecutor);
                   });
         }
     }

@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2016 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2016 - 2025 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,7 +22,6 @@ package org.dcache.poolmanager;
 import static org.dcache.util.MathUtils.addWithInfinity;
 import static org.dcache.util.MathUtils.subWithInfinity;
 
-import com.google.common.util.concurrent.MoreExecutors;
 import diskCacheV111.poolManager.CostModule;
 import diskCacheV111.poolManager.PoolSelectionUnit;
 import diskCacheV111.pools.PoolCostInfo;
@@ -162,29 +161,33 @@ public class RemotePoolMonitor
     private synchronized void fetchMonitor(int count) {
         if (count < MAX_FETCH_RETRIES) {
             int nextCount = count + 1;
-            CellStub.addCallback(poolManagerStub.send(new PoolManagerGetPoolMonitor(),
-                        CellEndpoint.SendFlag.RETRY_ON_NO_ROUTE_TO_CELL),
-                  new AbstractMessageCallback<>() {
-                      @Override
-                      public void success(PoolManagerGetPoolMonitor message) {
-                          acceptMonitor(message.getPoolMonitor());
-                      }
+            poolManagerStub.send(poolManagerStub.getDestinationPath(),
+                        new PoolManagerGetPoolMonitor(),
+                        PoolManagerGetPoolMonitor.class,
+                        poolManagerStub.getTimeoutInMillis(),
+                        CellEndpoint.SendFlag.RETRY_ON_NO_ROUTE_TO_CELL)
+                  .whenComplete(
+                      new AbstractMessageCallback<>() {
+                          @Override
+                          public void success(PoolManagerGetPoolMonitor message) {
+                              acceptMonitor(message.getPoolMonitor());
+                          }
 
-                      @Override
-                      public void timeout(String message) {
-                          try {
-                              Thread.sleep(TimeUnit.SECONDS.toMillis(1));
-                              fetchMonitor(nextCount);
-                          } catch (InterruptedException e) {
-                              LOGGER.debug("Could not get Pool Monitor; sleep interrupted.");
+                          @Override
+                          public void timeout(String message) {
+                              try {
+                                  Thread.sleep(TimeUnit.SECONDS.toMillis(1));
+                                  fetchMonitor(nextCount);
+                              } catch (InterruptedException e) {
+                                  LOGGER.debug("Could not get Pool Monitor; sleep interrupted.");
+                              }
+                          }
+
+                          @Override
+                          public void failure(int rc, Object error) {
                           }
                       }
-
-                      @Override
-                      public void failure(int rc, Object error) {
-                      }
-                  },
-                  MoreExecutors.directExecutor());
+                  );
         } else {
             LOGGER.error("Could not get Pool Monitor; max retries {} exceeded.",
                   MAX_FETCH_RETRIES);
