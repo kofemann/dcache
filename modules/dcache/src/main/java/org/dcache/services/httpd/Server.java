@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2015 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2015 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -29,6 +29,7 @@ public class Server extends org.eclipse.jetty.server.Server {
 
     public Server(ThreadPool pool) {
         super(pool);
+        this.setRequestLog(new HttpdRequestLog());
     }
 
     @PostConstruct

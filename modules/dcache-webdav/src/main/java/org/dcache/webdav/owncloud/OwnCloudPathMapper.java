@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2016 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2016 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,8 +20,8 @@ package org.dcache.webdav.owncloud;
 import static com.google.common.base.Preconditions.checkArgument;
 
 import diskCacheV111.util.FsPath;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.function.Function;
-import javax.servlet.http.HttpServletRequest;
 import org.dcache.http.PathMapper;
 
 /**

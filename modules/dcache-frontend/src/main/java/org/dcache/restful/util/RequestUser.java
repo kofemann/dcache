@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.security.AccessController;
 import javax.inject.Inject;
 import javax.security.auth.Subject;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.ws.rs.NotAuthorizedException;
 import javax.ws.rs.container.ContainerRequestContext;
 import javax.ws.rs.container.ContainerRequestFilter;

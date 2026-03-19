@@ -9,7 +9,7 @@ import io.swagger.annotations.Authorization;
 import java.util.List;
 import java.util.stream.Collectors;
 import javax.inject.Inject;
-import javax.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequest;
 import javax.ws.rs.GET;
 import javax.ws.rs.Path;
 import javax.ws.rs.Produces;

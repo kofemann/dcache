@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2025 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2025 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -25,16 +25,16 @@ import com.google.common.util.concurrent.RateLimiter;
 import dmg.cells.nucleus.CellCommandListener;
 import dmg.util.command.Command;
 import dmg.util.command.Option;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.Handler;
+import org.eclipse.jetty.ee9.nested.HandlerCollection;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;

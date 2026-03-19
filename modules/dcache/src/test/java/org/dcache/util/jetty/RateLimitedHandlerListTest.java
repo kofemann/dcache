@@ -1,18 +1,18 @@
 package org.dcache.util.jetty;
 
+import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletOutputStream;
+import jakarta.servlet.http.Cookie;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.Handler;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
 
-import javax.servlet.ServletException;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.http.Cookie;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.time.temporal.ChronoUnit;

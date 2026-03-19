@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2017 - 2025 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2017 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -23,9 +23,9 @@ import com.google.common.base.Strings;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.FsPath;
 import diskCacheV111.util.PnfsHandler;
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Set;
 import javax.security.auth.Subject;
-import javax.servlet.http.HttpServletRequest;
 import javax.ws.rs.BadRequestException;
 import org.dcache.auth.Subjects;
 import org.dcache.auth.attributes.LoginAttribute;

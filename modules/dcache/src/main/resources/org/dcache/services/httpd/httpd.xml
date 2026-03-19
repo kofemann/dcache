@@ -72,18 +72,13 @@
         <property name="protocol" value="PLAIN"/>
     </bean>
 
-    <bean id="handler-collection" class="org.eclipse.jetty.server.handler.HandlerCollection">
-        <property name="handlers">
+    <bean id="handler-collection" class="org.eclipse.jetty.server.Handler$Sequence">
+        <constructor-arg>
             <list>
                 <ref bean="delegator"/>
                 <bean class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-                <bean class="org.eclipse.jetty.server.handler.RequestLogHandler">
-                    <property name="requestLog">
-                        <bean class="org.dcache.services.httpd.HttpdRequestLog"/>
-                    </property>
-                </bean>
             </list>
-        </property>
+        </constructor-arg>
     </bean>
 
     <util:list id="connectors">

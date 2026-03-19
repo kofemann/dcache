@@ -61,13 +61,13 @@
 
 
         <version.slf4j>1.7.32</version.slf4j>
-        <version.milton>2.7.3.0-dcache-1</version.milton>
+        <version.milton>4.1.0.2601</version.milton>
         <version.spring>5.3.39</version.spring>
         <!-- Remember to sync aspectj version in dcache.properties -->
         <version.aspectj>1.9.25.1</version.aspectj>
         <version.smc>7.6.0</version.smc>
         <version.xerces>2.12.0</version.xerces>
-        <version.jetty>9.4.57.v20241219</version.jetty>
+        <version.jetty>12.0.33</version.jetty>
         <version.xrootd4j>4.6.0</version.xrootd4j>
         <version.jersey>2.47</version.jersey>
         <version.dcache-view>3.0.0</version.dcache-view>
@@ -485,13 +485,13 @@
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-webapp</artifactId>
+                <groupId>org.eclipse.jetty.ee9</groupId>
+                <artifactId>jetty-ee9-webapp</artifactId>
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-servlets</artifactId>
+                <groupId>org.eclipse.jetty.ee9</groupId>
+                <artifactId>jetty-ee9-servlets</artifactId>
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
@@ -500,8 +500,8 @@
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.jetty</groupId>
-                <artifactId>jetty-security</artifactId>
+                <groupId>org.eclipse.jetty.ee9</groupId>
+                <artifactId>jetty-ee9-security</artifactId>
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>

@@ -178,20 +178,20 @@
         <artifactId>jetty-deploy</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-webapp</artifactId>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-webapp</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-servlets</artifactId>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-servlets</artifactId>
     </dependency>
     <dependency>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-plus</artifactId>
     </dependency>
     <dependency>
-        <groupId>org.eclipse.jetty</groupId>
-        <artifactId>jetty-security</artifactId>
+        <groupId>org.eclipse.jetty.ee9</groupId>
+        <artifactId>jetty-ee9-security</artifactId>
     </dependency>
     <dependency>
         <groupId>org.eclipse.jetty</groupId>

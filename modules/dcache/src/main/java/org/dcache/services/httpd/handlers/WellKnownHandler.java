@@ -61,21 +61,20 @@ package org.dcache.services.httpd.handlers;
 
 import diskCacheV111.util.CacheException;
 import dmg.util.HttpRequest;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URISyntaxException;
 import java.util.Optional;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.dcache.services.httpd.exceptions.OnErrorException;
 import org.dcache.services.httpd.util.StandardHttpRequest;
 import org.dcache.services.httpd.wellknown.WellKnownContentProducer;
 import org.dcache.services.httpd.wellknown.WellKnownForwardingProducer;
 import org.dcache.services.httpd.wellknown.WellKnownProducer;
 import org.dcache.services.httpd.wellknown.WellKnownProducerFactory;
 import org.dcache.services.httpd.wellknown.WellKnownProducerFactoryProvider;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.Request;
 
 /**
  * Provides response for .well-known path requests.

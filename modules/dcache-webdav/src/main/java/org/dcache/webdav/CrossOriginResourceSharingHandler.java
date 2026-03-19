@@ -1,14 +1,20 @@
 package org.dcache.webdav;
 
 import static com.google.common.base.Preconditions.checkArgument;
-import static org.eclipse.jetty.servlets.CrossOriginFilter.ALLOWED_HEADERS_PARAM;
-import static org.eclipse.jetty.servlets.CrossOriginFilter.ALLOWED_METHODS_PARAM;
-import static org.eclipse.jetty.servlets.CrossOriginFilter.ALLOWED_ORIGINS_PARAM;
-import static org.eclipse.jetty.servlets.CrossOriginFilter.CHAIN_PREFLIGHT_PARAM;
-import static org.eclipse.jetty.servlets.CrossOriginFilter.PREFLIGHT_MAX_AGE_PARAM;
+import static org.eclipse.jetty.ee9.servlets.CrossOriginFilter.ALLOWED_HEADERS_PARAM;
+import static org.eclipse.jetty.ee9.servlets.CrossOriginFilter.ALLOWED_METHODS_PARAM;
+import static org.eclipse.jetty.ee9.servlets.CrossOriginFilter.ALLOWED_ORIGINS_PARAM;
+import static org.eclipse.jetty.ee9.servlets.CrossOriginFilter.CHAIN_PREFLIGHT_PARAM;
+import static org.eclipse.jetty.ee9.servlets.CrossOriginFilter.PREFLIGHT_MAX_AGE_PARAM;
 
 import com.google.common.base.Splitter;
 import com.google.common.collect.ImmutableList;
+import jakarta.servlet.Filter;
+import jakarta.servlet.FilterConfig;
+import jakarta.servlet.ServletContext;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
@@ -18,15 +24,9 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import javax.annotation.PostConstruct;
-import javax.servlet.Filter;
-import javax.servlet.FilterConfig;
-import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.servlets.CrossOriginFilter;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.servlets.CrossOriginFilter;
 
 /**
  * A Jetty Handler that uses Jetty's CrossOriginFilter to implement support for CORS.

@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2019 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2019 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,8 +17,8 @@
  */
 package org.dcache.restful;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import org.dcache.http.AbstractLoggingHandler;
 import org.dcache.restful.interceptors.LoggingInterceptor;
 import org.dcache.util.NetLoggerBuilder;

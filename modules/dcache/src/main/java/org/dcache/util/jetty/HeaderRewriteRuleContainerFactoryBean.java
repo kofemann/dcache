@@ -23,14 +23,12 @@ public class HeaderRewriteRuleContainerFactoryBean implements FactoryBean<RuleCo
 
     @PostConstruct
     private void buildMap() {
-        _rule.setRewritePathInfo(false);
-        _rule.setRewriteRequestURI(false);
 
         _headers.forEach((name, value) -> {
             HeaderPatternRule rule = new HeaderPatternRule();
             rule.setPattern("/*");
-            rule.setName(name);
-            rule.setValue(value);
+            rule.setHeaderName(name);
+            rule.setHeaderValue(value);
             _rule.addRule(rule);
         });
     }

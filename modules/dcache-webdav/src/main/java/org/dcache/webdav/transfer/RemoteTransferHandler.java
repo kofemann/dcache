@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014-2024 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014-2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,11 +20,11 @@ package org.dcache.webdav.transfer;
 import static com.google.common.base.Preconditions.checkState;
 import static com.google.common.collect.Comparators.emptiesFirst;
 import static diskCacheV111.services.TransferManagerHandler.INITIAL_STATE;
+import static jakarta.servlet.http.HttpServletResponse.SC_ACCEPTED;
 import static java.time.Duration.ZERO;
-import static java.time.temporal.ChronoUnit.MILLIS;
-import static java.time.temporal.ChronoUnit.MINUTES;
+import static java.time.temporal.ChronoUnit.MILLIS;import static java.time.temporal.ChronoUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static javax.servlet.http.HttpServletResponse.SC_ACCEPTED;
+
 import static org.dcache.namespace.FileAttribute.CHECKSUM;
 import static org.dcache.namespace.FileAttribute.PNFSID;
 import static org.dcache.namespace.FileAttribute.SIZE;
@@ -88,6 +88,10 @@ import io.milton.http.Response;
 import io.milton.http.Response.Status;
 import io.milton.servlet.ServletRequest;
 import io.milton.servlet.ServletResponse;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.ServletResponseWrapper;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.Inet4Address;
@@ -120,10 +124,6 @@ import java.util.stream.Collectors;
 import javax.annotation.Nullable;
 import javax.annotation.PreDestroy;
 import javax.security.auth.Subject;
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletResponseWrapper;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.dcache.acl.enums.AccessMask;
 import org.dcache.auth.OpenIdCredential;
 import org.dcache.auth.attributes.Restriction;
@@ -144,9 +144,9 @@ import org.dcache.util.URIs;
 import org.dcache.util.Xattrs;
 import org.dcache.vehicles.FileAttributes;
 import org.dcache.webdav.transfer.CopyFilter.CredentialSource;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.HttpConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
@@ -772,7 +772,6 @@ public class RemoteTransferHandler implements CellMessageReceiver, CellCommandLi
         private final Instant _whenSubmitted = Instant.now();
         private final SettableFuture<Optional<String>> _transferResult = SettableFuture.create();
         private long _id;
-        private final EndPoint _endpoint = HttpConnection.getCurrentConnection().getEndPoint();
 
         private int _lastState = INITIAL_STATE;
         private Optional<IoJobInfo> _lastInfo = Optional.empty();
@@ -829,9 +828,7 @@ public class RemoteTransferHandler implements CellMessageReceiver, CellCommandLi
 
         private IoDoorEntry describe() {
             @Nullable
-            InetSocketAddress remoteAddress = _endpoint.getRemoteAddress();
-            // This may trigger DNS lookup; however, result should be cached by JVM.
-            String client = remoteAddress == null ? "(disconnected)" : remoteAddress.getHostName();
+            String client = ServletRequest.getRequest().getRemoteHost();
             StringBuilder status = new StringBuilder();
             status.append(_direction == Direction.PULL ? "PULL from" : "PUSH to");
             status.append(' ').append(_destination.getHost());
@@ -1011,7 +1008,7 @@ public class RemoteTransferHandler implements CellMessageReceiver, CellCommandLi
          * be called after output has been written to the client.
          */
         private void checkClientConnected() {
-            if (!_endpoint.isOpen()) {
+            if (false /* !_endpoint.isOpen() */) { // FIXME
                 CancelTransferMessage message =
                       new CancelTransferMessage(_id, DUMMY_LONG);
                 message.setExplanation("client went away");
@@ -1099,9 +1096,7 @@ public class RemoteTransferHandler implements CellMessageReceiver, CellCommandLi
          */
         private HttpFields getTrailers() {
             return _digestValue.map(v -> {
-                      HttpFields fields = new HttpFields();
-                      fields.put("Digest", v);
-                      return fields;
+                      return HttpFields.build().add("Digest", v).asImmutable();
                   })
                   .orElse(null);
         }
@@ -1145,7 +1140,7 @@ public class RemoteTransferHandler implements CellMessageReceiver, CellCommandLi
                 while (response instanceof ServletResponseWrapper) {
                     response = (HttpServletResponse) ((ServletResponseWrapper) response).getResponse();
                 }
-                ((org.eclipse.jetty.server.Response) response).setTrailers(this::getTrailers);
+                ((org.eclipse.jetty.ee9.nested.Response) response).setTrailers(this::getTrailers);
             }
         }
 

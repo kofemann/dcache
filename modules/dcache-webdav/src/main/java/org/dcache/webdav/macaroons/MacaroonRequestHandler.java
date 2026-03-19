@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2017 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2017 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,10 +19,10 @@ package org.dcache.webdav.macaroons;
 
 import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.emptyToNull;
+import static jakarta.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
+import static jakarta.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
+import static jakarta.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static java.lang.Boolean.TRUE;
-import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
-import static javax.servlet.http.HttpServletResponse.SC_INTERNAL_SERVER_ERROR;
-import static javax.servlet.http.HttpServletResponse.SC_UNAUTHORIZED;
 import static org.dcache.macaroons.CaveatType.BEFORE;
 import static org.dcache.macaroons.InvalidCaveatException.checkCaveat;
 
@@ -34,6 +34,8 @@ import diskCacheV111.util.FsPath;
 import dmg.cells.nucleus.CDC;
 import dmg.cells.nucleus.CellAddressCore;
 import dmg.cells.nucleus.CellIdentityAware;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
@@ -50,8 +52,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import javax.security.auth.Subject;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.dcache.auth.Subjects;
 import org.dcache.auth.attributes.DenyActivityRestriction;
 import org.dcache.auth.attributes.Expiry;
@@ -69,8 +69,8 @@ import org.dcache.macaroons.InvalidCaveatException;
 import org.dcache.macaroons.MacaroonContext;
 import org.dcache.macaroons.MacaroonProcessor;
 import org.dcache.util.NDC;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

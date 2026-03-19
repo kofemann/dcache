@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014 - 2021 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -36,6 +36,8 @@ import io.milton.http.Response.Status;
 import io.milton.http.exceptions.BadRequestException;
 import io.milton.servlet.ServletRequest;
 import io.milton.servlet.ServletResponse;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -56,8 +58,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.PostConstruct;
 import javax.security.auth.Subject;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.dcache.auth.BearerTokenCredential;
 import org.dcache.auth.OidcSubjectPrincipal;
 import org.dcache.auth.OpenIdClientSecret;

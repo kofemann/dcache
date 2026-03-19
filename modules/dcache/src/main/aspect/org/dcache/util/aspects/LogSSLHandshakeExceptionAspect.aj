@@ -1,6 +1,6 @@
 package org.dcache.util.aspects;
 
-import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.io.Connection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -10,9 +10,9 @@ import java.net.InetSocketAddress;
 
 public aspect LogSSLHandshakeExceptionAspect
 {
-    private static final Logger LOGGER = LoggerFactory.getLogger(HttpConnection.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Connection.class);
 
-    before(HttpConnection c, Exception e) : withincode(void HttpConnection.onFillable()) && this(c) && handler(Exception) && args(e) {
+    before(Connection c, Exception e) : withincode(void Connection.onFillable()) && this(c) && handler(Exception) && args(e) {
         if (e instanceof SSLHandshakeException) {
             InetSocketAddress remoteAddress = c.getEndPoint().getRemoteAddress();
             LOGGER.warn("SSL handshake with {}:{} failed: {}", remoteAddress.getAddress().getHostAddress(), remoteAddress.getPort(), e.getMessage());

@@ -2,18 +2,18 @@ package org.dcache.services.httpd.handlers;
 
 import dmg.cells.nucleus.DomainContextAware;
 import dmg.util.HttpRequest;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
 import java.util.Map;
 import java.util.SortedMap;
 import java.util.TreeMap;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.dcache.services.httpd.exceptions.OnErrorException;
 import org.dcache.services.httpd.util.StandardHttpRequest;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.Request;
 
 /**
  * Provides lookup in the context map of preconfigured HTML pages.

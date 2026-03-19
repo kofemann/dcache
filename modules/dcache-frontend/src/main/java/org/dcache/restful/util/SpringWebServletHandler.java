@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2001 - 2022 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2001 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,9 +19,9 @@ package org.dcache.restful.util;
 
 import static org.springframework.web.context.WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE;
 
+import jakarta.servlet.ServletContext;
 import java.lang.annotation.Annotation;
-import javax.servlet.ServletContext;
-import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.ee9.servlet.ServletHandler;
 import org.springframework.beans.factory.NoSuchBeanDefinitionException;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.context.ApplicationContext;

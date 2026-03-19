@@ -5,14 +5,14 @@ import static java.util.Objects.requireNonNull;
 import dmg.util.HttpException;
 import dmg.util.HttpRequest;
 import dmg.util.HttpResponseEngine;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URISyntaxException;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.dcache.services.httpd.util.StandardHttpRequest;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.Request;
 
 /**
  * Wraps calls to {@link HttpResponseEngine} aliases with the Jetty handler API.

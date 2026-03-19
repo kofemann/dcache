@@ -18,12 +18,12 @@ public class ImmutableAttributesMap implements Attributes {
     }
 
     @Override
-    public void removeAttribute(String name) {
+    public Object removeAttribute(String name) {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void setAttribute(String name, Object attribute) {
+    public Object setAttribute(String name, Object attribute) {
         throw new UnsupportedOperationException();
     }
 
@@ -33,10 +33,6 @@ public class ImmutableAttributesMap implements Attributes {
     }
 
     @Override
-    public Enumeration<String> getAttributeNames() {
-        return Collections.enumeration(getAttributeNameSet());
-    }
-
     public Set<String> getAttributeNameSet() {
         return keySet();
     }

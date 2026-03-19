@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2016 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2016 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,11 +17,12 @@
  */
 package org.dcache.webdav.owncloud;
 
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.time.Instant;
 import java.util.Optional;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +34,15 @@ public class OwncloudClients {
     private static final Logger LOGGER = LoggerFactory.getLogger(OwncloudClients.class);
     private static final String OWNCLOUD_USERAGENT = "mirall";
 
+
+    /**
+     * Method checking whether a request is made by the OwnCloud Sync client.
+     */
+    public static boolean isSyncClient(Request request) {
+        String userAgent = request.getHeaders().get(HttpHeader.USER_AGENT);
+
+        return userAgent != null && userAgent.contains(OWNCLOUD_USERAGENT);
+    }
 
     /**
      * Method checking whether a request is made by the OwnCloud Sync client.

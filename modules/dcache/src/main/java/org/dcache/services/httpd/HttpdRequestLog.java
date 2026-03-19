@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,7 +17,6 @@
  */
 package org.dcache.services.httpd;
 
-import javax.servlet.http.HttpServletResponse;
 import org.dcache.util.NetLoggerBuilder;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
@@ -32,19 +31,20 @@ class HttpdRequestLog extends AbstractLifeCycle
     private final Logger ACCESS_LOGGER =
           LoggerFactory.getLogger("org.dcache.access.httpd");
 
+    @Override
     public void log(Request request, Response response) {
         NetLoggerBuilder log = new NetLoggerBuilder(logLevel(response), "org.dcache.httpd.request");
         log.add("request.method", request.getMethod());
-        log.add("request.scheme", request.getScheme());
-        log.add("request.url", request.getRequestURL());
-        log.add("request.hostname", request.getLocalName());
-        log.add("request.remoteIP", request.getRemoteAddr());
+        log.add("request.scheme", request.getHttpURI().getScheme());
+        log.add("request.url", request.getHttpURI().asString());
+        log.add("request.hostname", Request.getLocalAddr(request));
+        log.add("request.remoteIP", Request.getRemoteAddr(request));
 
         log.add("response.code", response.getStatus());
         log.toLogger(ACCESS_LOGGER);
     }
 
-    private static NetLoggerBuilder.Level logLevel(HttpServletResponse response) {
+    private static NetLoggerBuilder.Level logLevel(Response response) {
         int code = response.getStatus();
         if (code >= 500) {
             return NetLoggerBuilder.Level.ERROR;

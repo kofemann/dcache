@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2017 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2017 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,18 +19,18 @@ package org.dcache.restful.util;
 
 import com.google.common.base.Splitter;
 import com.google.gson.GsonBuilder;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.ee9.nested.AbstractHandler;
+import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.springframework.beans.factory.annotation.Required;
 
 
@@ -86,7 +86,7 @@ public class StaticDataHandler extends AbstractHandler {
         MetaData.Request metadata = request.getMetaData();
         List<String> types = metadata == null
               ? Collections.emptyList()
-              : metadata.getFields().getQualityCSV(HttpHeader.ACCEPT);
+              : metadata.getHttpFields().getQualityCSV(HttpHeader.ACCEPT);
 
         for (String type : types) {
             switch (type) {

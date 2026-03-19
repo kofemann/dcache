@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2016 - 2020 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2016 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,17 +18,19 @@
 package org.dcache.webdav.owncloud;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.servlet.ServletException;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.rewrite.handler.RewriteHandler;
 import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.springframework.http.MediaType;
 
 /**
@@ -43,32 +45,34 @@ public class OwnCloudHandler extends RewriteHandler {
     private static final String OWNCLOUD_CAPABILITIES_ENDPOINT = "/ocs/v1.php/cloud/capabilities";
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request,
-          HttpServletResponse response) throws IOException, ServletException {
-        if (OwncloudClients.isSyncClient(request) && baseRequest.getMethod()
-              .equals(HttpMethod.GET.toString())) {
+    public boolean handle(Request request, Response response, Callback callback)
+          throws IOException, ServletException {
 
-            String json = null;
+            if (OwncloudClients.isSyncClient(request) && request.getMethod()
+                  .equals(HttpMethod.GET.toString())) {
 
-            switch (target) {
-                case OWNCLOUD_STATUS_ENDPOINT:
-                    json = buildStatusResponse();
-                    break;
+                String json = null;
 
-                case OWNCLOUD_CAPABILITIES_ENDPOINT:
-                    json = buildCapabilitiesResponse();
-                    break;
+                switch (request.getHttpURI().getPath()) {
+                    case OWNCLOUD_STATUS_ENDPOINT:
+                        json = buildStatusResponse();
+                        break;
 
+                    case OWNCLOUD_CAPABILITIES_ENDPOINT:
+                        json = buildCapabilitiesResponse();
+                        break;
+                }
+
+                if (json != null) {
+                    HttpFields.Mutable responseHeaders = response.getHeaders();
+                    responseHeaders.add(HttpHeader.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE);
+                    responseHeaders.add(HttpHeader.CONTENT_ENCODING, StandardCharsets.UTF_8.name());
+                    response.write(true, StandardCharsets.UTF_8.encode(json), callback);
+                    return true;
+                }
             }
 
-            if (json != null) {
-                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                response.setCharacterEncoding(StringUtil.__UTF8);
-                response.getOutputStream().write(json.getBytes());
-                response.setStatus(HttpServletResponse.SC_OK);
-                baseRequest.setHandled(true);
-            }
-        }
+            return false;
     }
 
     String buildStatusResponse() throws IOException {

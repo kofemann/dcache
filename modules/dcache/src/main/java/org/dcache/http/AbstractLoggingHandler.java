@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2019 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2019 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -22,6 +22,11 @@ import static org.dcache.http.AuthenticationHandler.DCACHE_SUBJECT_ATTRIBUTE;
 import com.google.common.base.Stopwatch;
 import com.google.common.net.InetAddresses;
 import dmg.cells.nucleus.CDC;
+import jakarta.servlet.AsyncEvent;
+import jakarta.servlet.AsyncListener;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -30,19 +35,14 @@ import java.time.Duration;
 import java.util.Optional;
 import java.util.function.Consumer;
 import javax.security.auth.Subject;
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.ServletException;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
 import org.dcache.auth.JwtJtiPrincipal;
 import org.dcache.auth.OidcSubjectPrincipal;
 import org.dcache.auth.Subjects;
 import org.dcache.util.NetLoggerBuilder;
+import org.eclipse.jetty.ee9.nested.HandlerWrapper;
+import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.Request;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
