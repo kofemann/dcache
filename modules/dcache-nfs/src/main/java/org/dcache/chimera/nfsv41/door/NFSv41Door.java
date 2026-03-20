@@ -191,7 +191,7 @@ import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.core.KafkaTemplate;
 
 public class NFSv41Door extends AbstractCellComponent implements
@@ -439,17 +439,17 @@ public class NFSv41Door extends AbstractCellComponent implements
         _versions = Sets.newHashSet(versions);
     }
 
-    @Required
+    @Autowired
     public void setLoginBrokerPublisher(LoginBrokerPublisher loginBrokerPublisher) {
         _loginBrokerPublisher = loginBrokerPublisher;
     }
 
-    @Required
+    @Autowired
     public void setVfsCacheConfig(VfsCacheConfig vfsCacheConfig) {
         _vfsCacheConfig = vfsCacheConfig;
     }
 
-    @Required
+    @Autowired
     public void setAccessLogMode(AccessLogMode accessLogMode) {
         _accessLogMode = accessLogMode;
     }
@@ -464,12 +464,12 @@ public class NFSv41Door extends AbstractCellComponent implements
         _manageGids = manageGids;
     }
 
-    @Required
+    @Autowired
     public void setClientStore(ClientRecoveryStore clientStore) {
         _clientStore = clientStore;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         _poolMonitor = poolMonitor;
     }

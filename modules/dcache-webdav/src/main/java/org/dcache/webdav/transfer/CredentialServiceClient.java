@@ -67,7 +67,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This class acts as a client to credential services.
@@ -87,7 +87,7 @@ public class CredentialServiceClient
     private Cache<CellAddressCore, URI> cache = CacheBuilder.newBuilder()
           .expireAfterWrite(70, SECONDS).build();
 
-    @Required
+    @Autowired
     public void setTopicStub(CellStub topic) {
         this.topic = topic;
     }

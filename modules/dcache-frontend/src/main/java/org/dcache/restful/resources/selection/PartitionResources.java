@@ -59,18 +59,18 @@ documents or software obtained from this server.
  */
 package org.dcache.restful.resources.selection;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map.Entry;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.restful.providers.selection.Partition;
 import org.springframework.stereotype.Component;
@@ -82,7 +82,7 @@ import org.springframework.stereotype.Component;
  * @version v1.0
  */
 @Component
-@Api(value = "poolmanager", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "poolmanager")
 @Path("/partitions")
 public final class PartitionResources {
 
@@ -91,7 +91,7 @@ public final class PartitionResources {
 
 
     @GET
-    @ApiOperation("Get information about all partitions."
+    @Operation(summary = "Get information about all partitions."
           + " Results sorted lexicographically by partition name.")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Partition> getPartitions() {

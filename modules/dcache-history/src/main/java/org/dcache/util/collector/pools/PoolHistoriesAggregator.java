@@ -65,7 +65,7 @@ import org.dcache.pool.json.PoolData;
 import org.dcache.pool.json.PoolInfoWrapper;
 import org.dcache.services.history.pools.PoolTimeseriesServiceImpl;
 import org.dcache.util.histograms.CountingHistogram;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Called during the collection gathering in order to aggregate
@@ -75,7 +75,7 @@ public class PoolHistoriesAggregator extends PoolInfoAggregator {
 
     private PoolTimeseriesServiceImpl service;
 
-    @Required
+    @Autowired
     public void setService(PoolTimeseriesServiceImpl service) {
         this.service = service;
     }

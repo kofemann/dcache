@@ -60,16 +60,15 @@ documents or software obtained from this server.
 package org.dcache.restful.providers.selection;
 
 import diskCacheV111.poolManager.LinkReadWritePreferences;
-import io.swagger.annotations.ApiModel;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.io.Serializable;
 
-@ApiModel(description = "Information about the preferences for a link.")
+@Schema(description = "Information about the preferences for a link.")
 public final class UnitPreferences implements Serializable {
 
     private static final long serialVersionUID = 6866520870092665548L;
 
-    @ApiModelProperty(value =
+    @Schema(name=
           "The preference for using this link to decide the "
                 + "target pool for a read operation.  A value of 0 disables this "
                 + "link for read pool selection, otherwise the link with the "
@@ -77,7 +76,7 @@ public final class UnitPreferences implements Serializable {
           allowableValues = "range[0,infinity]")
     private final Integer read;
 
-    @ApiModelProperty(value =
+    @Schema(name=
           "The preference for using this link to decide the "
                 + "target pool for a restore from tape operation.  A value of 0 "
                 + "disables this link for restore from tape pool selection, "
@@ -85,7 +84,7 @@ public final class UnitPreferences implements Serializable {
           allowableValues = "range[0,infinity]")
     private final Integer write;
 
-    @ApiModelProperty(value =
+    @Schema(name=
           "The preference for using this link to decide the "
                 + "target pool for a write operation.  A value of 0 disables this "
                 + "link for write pool selection, otherwise the link with the "
@@ -93,7 +92,7 @@ public final class UnitPreferences implements Serializable {
           allowableValues = "range[0,infinity]")
     private final Integer restore;
 
-    @ApiModelProperty(value =
+    @Schema(name=
           "The preference for using this link to decide the "
                 + "target pool for a pool-to-pool operation.  A value of 0 disables "
                 + "this link for pool-to-pool selection, otherwise the link with "

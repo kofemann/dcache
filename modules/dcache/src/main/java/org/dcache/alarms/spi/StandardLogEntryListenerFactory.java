@@ -61,7 +61,7 @@ package org.dcache.alarms.spi;
 
 import java.util.Map;
 import org.dcache.alarms.file.FileBackedAlarmPriorityMap;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Factory for creating and configuring listeners which require
@@ -88,12 +88,12 @@ public class StandardLogEntryListenerFactory
         super(StandardLogEntryListener.class);
     }
 
-    @Required
+    @Autowired
     public void setConfiguration(Map<String, String> configuration) {
         this.configuration = configuration;
     }
 
-    @Required
+    @Autowired
     public void setPriorityMap(FileBackedAlarmPriorityMap priorityMap) {
         this.priorityMap = priorityMap;
     }

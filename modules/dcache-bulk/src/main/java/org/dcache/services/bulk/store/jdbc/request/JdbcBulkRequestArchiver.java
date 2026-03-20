@@ -73,7 +73,7 @@ import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.dcache.services.bulk.BulkRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Looks at the request table periodically and archives those which are out of date and have
@@ -181,38 +181,38 @@ public class JdbcBulkRequestArchiver implements Runnable, CellInfoProvider, Lead
         archiverScheduler.shutdownNow();
     }
 
-    @Required
+    @Autowired
     public void setRequestStore(
           JdbcBulkRequestStore requestStore) {
         this.requestStore = requestStore;
     }
 
-    @Required
+    @Autowired
     public void setRequestDao(JdbcBulkRequestDao requestDao) {
         this.requestDao = requestDao;
     }
 
-    @Required
+    @Autowired
     public void setArchiverScheduler(ScheduledExecutorService archiverScheduler) {
         this.archiverScheduler = archiverScheduler;
     }
 
-    @Required
+    @Autowired
     public void setArchiverPeriod(long archiverPeriod) {
         this.archiverPeriod = archiverPeriod;
     }
 
-    @Required
+    @Autowired
     public void setArchiverPeriodUnit(TimeUnit archiverPeriodUnit) {
         this.archiverPeriodUnit = archiverPeriodUnit;
     }
 
-    @Required
+    @Autowired
     public void setArchiverWindow(long archiverWindow) {
         this.archiverWindow = archiverWindow;
     }
 
-    @Required
+    @Autowired
     public void setArchiverWindowUnit(TimeUnit archiverWindowUnit) {
         this.archiverWindowUnit = archiverWindowUnit;
     }

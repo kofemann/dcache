@@ -71,7 +71,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Used in conjunction with the {@link CellMessagingCollector} as message
@@ -134,7 +134,7 @@ public abstract class RequestFutureProcessor<T extends Serializable, D> {
         futureMap.entrySet().stream().forEach(this::addListener);
     }
 
-    @Required
+    @Autowired
     public void setExecutor(Executor executor) {
         this.executor = executor;
     }

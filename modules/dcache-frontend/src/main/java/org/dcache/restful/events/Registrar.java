@@ -29,11 +29,11 @@ import java.util.Optional;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ScheduledExecutorService;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import javax.security.auth.Subject;
-import javax.ws.rs.ClientErrorException;
+import jakarta.ws.rs.ClientErrorException;
 import org.dcache.auth.Subjects;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * The Registrar is responsible for holding client channels.
@@ -93,12 +93,12 @@ public class Registrar implements CellLifeCycleAware {
     @Inject
     private EventStreamRepository repository;
 
-    @Required
+    @Autowired
     public void setMaximumChannelsPerUser(int max) {
         maximumChannelsPerUser = max;
     }
 
-    @Required
+    @Autowired
     public void setEventBacklog(int backlog) {
         eventBacklog = backlog;
     }
@@ -107,7 +107,7 @@ public class Registrar implements CellLifeCycleAware {
         return maximumChannelsPerUser;
     }
 
-    @Required
+    @Autowired
     public void setDefaultDisconnectTimeout(long timeout) {
         defaultDisconnectTimeout = timeout;
     }

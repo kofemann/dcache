@@ -69,7 +69,7 @@ import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.command.CommandFactory;
 import org.dcache.cells.CellStub;
 import org.dcache.util.list.ListDirectoryHandler;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Implementation of Command Factory interface that enables direct command execution in dCache admin
@@ -88,27 +88,27 @@ public class DirectCommandFactory implements CommandFactory, CellMessageSender {
     private String prompt;
     private ListDirectoryHandler list;
 
-    @Required
+    @Autowired
     public void setPnfsManager(CellStub stub) {
         this.pnfsManager = stub;
     }
 
-    @Required
+    @Autowired
     public void setPoolManager(CellStub stub) {
         this.poolManager = stub;
     }
 
-    @Required
+    @Autowired
     public void setAcm(CellStub stub) {
         this.acm = stub;
     }
 
-    @Required
+    @Autowired
     public void setPrompt(String prompt) {
         this.prompt = prompt;
     }
 
-    @Required
+    @Autowired
     public void setListHandler(ListDirectoryHandler list) {
         this.list = list;
     }

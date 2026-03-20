@@ -82,7 +82,7 @@ import javax.annotation.concurrent.GuardedBy;
 import org.dcache.util.collector.CellMessagingCollector;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Services which collect and cache data from other services should extend
@@ -259,12 +259,12 @@ public abstract class CellDataCollectingService<D, C extends CellMessagingCollec
         scheduleNext(timeout, timeoutUnit);
     }
 
-    @Required
+    @Autowired
     public void setCollector(C collector) {
         this.collector = collector;
     }
 
-    @Required
+    @Autowired
     public void setExecutorService(ScheduledExecutorService service) {
         executorService = service;
     }

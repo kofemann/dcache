@@ -73,7 +73,7 @@ import org.dcache.namespace.FileAttribute;
 import org.dcache.restful.providers.restores.RestoreInfo;
 import org.dcache.util.collector.CellMessagingCollector;
 import org.dcache.vehicles.FileAttributes;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Thin wrapper around cell messaging to pool manager pnfs manager endpoints.</p>
@@ -111,12 +111,12 @@ public class RestoreCollector extends
         info.setOwnerGroup(String.valueOf(attributes.getGroup()));
     }
 
-    @Required
+    @Autowired
     public void setPnfsStub(CellStub pnfsStub) {
         this.pnfsStub = pnfsStub;
     }
 
-    @Required
+    @Autowired
     public void setReceiver(RestoreRequestsReceiver receiver) {
         this.receiver = receiver;
     }

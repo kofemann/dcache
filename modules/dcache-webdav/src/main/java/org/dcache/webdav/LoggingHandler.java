@@ -3,12 +3,12 @@ package org.dcache.webdav;
 import static org.dcache.util.NetLoggerBuilder.Level.WARN;
 import static org.dcache.webdav.DcacheResourceFactory.TRANSACTION_ATTRIBUTE;
 
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.dcache.http.AbstractLoggingHandler;
 import org.dcache.util.NetLoggerBuilder;
 import org.dcache.webdav.macaroons.MacaroonRequestHandler;
 import org.dcache.webdav.transfer.CopyFilter;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -19,7 +19,7 @@ public class LoggingHandler extends AbstractLoggingHandler {
 
     private static final Logger LOGGER = LoggerFactory.getLogger("org.dcache.access.webdav");
 
-    private static String getTransaction(HttpServletRequest request) {
+    private static String getTransaction(Request request) {
         Object object = request.getAttribute(TRANSACTION_ATTRIBUTE);
         return object == null ? null : String.valueOf(object);
     }
@@ -35,8 +35,8 @@ public class LoggingHandler extends AbstractLoggingHandler {
     }
 
     @Override
-    protected NetLoggerBuilder.Level logLevel(HttpServletRequest request,
-          HttpServletResponse response) {
+    protected NetLoggerBuilder.Level logLevel(Request request,
+          Response response) {
         NetLoggerBuilder.Level level = super.logLevel(request, response);
 
         if (level.ordinal() > WARN.ordinal() && CopyFilter.getTpcError(request) != null) {
@@ -47,8 +47,7 @@ public class LoggingHandler extends AbstractLoggingHandler {
     }
 
     @Override
-    protected void describeOperation(NetLoggerBuilder log,
-          HttpServletRequest request, HttpServletResponse response) {
+    protected void describeOperation(NetLoggerBuilder log, Request request, Response response) {
         super.describeOperation(log, request, response);
 
         log.add("transaction", getTransaction(request));

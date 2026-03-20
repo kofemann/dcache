@@ -35,7 +35,7 @@ import org.dcache.util.Glob;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class RepositoryInterpreter
       implements CellCommandListener {
@@ -46,12 +46,12 @@ public class RepositoryInterpreter
     private Repository _repository;
     private StatisticsListener _statisticsListener;
 
-    @Required
+    @Autowired
     public void setRepository(Repository repository) {
         _repository = repository;
     }
 
-    @Required
+    @Autowired
     public void setStatisticsListener(StatisticsListener statisticsListener) {
         _statisticsListener = statisticsListener;
     }

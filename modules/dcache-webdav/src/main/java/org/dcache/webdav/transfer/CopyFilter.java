@@ -56,7 +56,7 @@ import java.util.Set;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import javax.security.auth.Subject;
 import org.dcache.auth.BearerTokenCredential;
 import org.dcache.auth.OidcSubjectPrincipal;
@@ -69,7 +69,7 @@ import org.dcache.webdav.transfer.RemoteTransferHandler.Direction;
 import org.dcache.webdav.transfer.RemoteTransferHandler.TransferType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * The CopyFilter adds support for initiating third-party copies via WebDAV.  This makes use of a
@@ -177,31 +177,35 @@ public class CopyFilter implements Filter {
         return (String) request.getAttribute(TPC_ERROR_ATTRIBUTE);
     }
 
+    public static String getTpcError(org.eclipse.jetty.server.Request request) {
+        return (String) request.getAttribute(TPC_ERROR_ATTRIBUTE);
+    }
+
     /**
      * Provide the credential type used for the TPC.
      */
-    public static String getTpcCredential(HttpServletRequest request) {
+    public static String getTpcCredential(org.eclipse.jetty.server.Request request) {
         return (String) request.getAttribute(TPC_CREDENTIAL_ATTRIBUTE);
     }
 
     /**
      * Whether checksum verification is required.
      */
-    public static String getTpcRequireChecksumVerification(HttpServletRequest request) {
+    public static String getTpcRequireChecksumVerification(org.eclipse.jetty.server.Request request) {
         return (String) request.getAttribute(TPC_REQUIRE_CHECKSUM_VERIFICATION_ATTRIBUTE);
     }
 
     /**
      * Provide the remote source URI for pull-type third-party copies.
      */
-    public static URI getTpcSource(HttpServletRequest request) {
+    public static URI getTpcSource(org.eclipse.jetty.server.Request request) {
         return (URI) request.getAttribute(TPC_SOURCE_ATTRIBUTE);
     }
 
     /**
      * Provide the remote destination URI for push-type third-party copies.
      */
-    public static URI getTpcDestination(HttpServletRequest request) {
+    public static URI getTpcDestination(org.eclipse.jetty.server.Request request) {
         return (URI) request.getAttribute(TPC_DESTINATION_ATTRIBUTE);
     }
 
@@ -212,6 +216,10 @@ public class CopyFilter implements Filter {
         return (String) request.getAttribute(TPC_SCITAG_ATTRIBUTE);
     }
 
+    public static String getTpcSciTag(org.eclipse.jetty.server.Request request) {
+        return (String) request.getAttribute(TPC_SCITAG_ATTRIBUTE);
+    }
+
     /**
      * Provide the transfer-header-carried SciTag value supplied by the client.
      */
@@ -219,22 +227,26 @@ public class CopyFilter implements Filter {
         return (String) request.getAttribute(TPC_TRANSFER_HEADER_SCITAG_ATTRIBUTE);
     }
 
-    @Required
+    public static String getTpcTransferHeaderSciTag(org.eclipse.jetty.server.Request request) {
+        return (String) request.getAttribute(TPC_TRANSFER_HEADER_SCITAG_ATTRIBUTE);
+    }
+
+    @Autowired
     public void setPathMapper(PathMapper mapper) {
         _pathMapper = mapper;
     }
 
-    @Required
+    @Autowired
     public void setCredentialServiceClient(CredentialServiceClient client) {
         _credentialService = client;
     }
 
-    @Required
+    @Autowired
     public void setRemoteTransferHandler(RemoteTransferHandler handler) {
         _remoteTransfers = handler;
     }
 
-    @Required
+    @Autowired
     public void setDefaultVerification(boolean verify) {
         _defaultVerification = verify;
     }
@@ -307,7 +319,7 @@ public class CopyFilter implements Filter {
         } catch (ErrorResponseException e) {
             var r = ServletResponse.getResponse();
             int code = e.getStatus().code;
-            r.setStatus(code, e.getMessage());
+            r.setStatus(code);
             if (code == 507) {
                 /**
                  * https://www.rfc-editor.org/rfc/rfc4331.html#section-6
@@ -328,11 +340,9 @@ public class CopyFilter implements Filter {
                 }
             }
         } catch (BadRequestException e) {
-            ServletResponse.getResponse().setStatus(HttpServletResponse.SC_BAD_REQUEST,
-                  e.getMessage());
+            ServletResponse.getResponse().setStatus(HttpServletResponse.SC_BAD_REQUEST);
         } catch (InterruptedException ignored) {
-            ServletResponse.getResponse().setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE,
-                  "dCache is shutting down");
+            ServletResponse.getResponse().setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
         }
     }
 
@@ -456,8 +466,7 @@ public class CopyFilter implements Filter {
             } else {
                 LOGGER.error("Error performing OpenId Connect Token Exchange");
                 ServletResponse.getResponse()
-                      .setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                            "Error performing OpenId Connect Token Exchange");
+                      .setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
             }
             return;
         }
@@ -569,7 +578,7 @@ public class CopyFilter implements Filter {
         Subject subject = Subject.getSubject(AccessController.getContext());
         switch (source) {
             case GRIDSITE:
-                try {
+  //              try {
                     HttpServletRequest request = ServletRequest.getRequest();
                     // Use the X.509 identity from TLS, even if that wasn't used to
                     // establish the user's identity.  This allows the local activity of
@@ -578,7 +587,7 @@ public class CopyFilter implements Filter {
                     // delegated X.509 credential when authenticating for the
                     // third-party copy, based on the client credential presented when
                     // establishing the TLS connection.
-                    Subject x509Subject = AuthenticationHandler.getX509Identity(request);
+                    Subject x509Subject = null; // AuthenticationHandler.getX509Identity(request);
                     String dn = x509Subject == null ? null : Subjects.getDn(x509Subject);
                     if (dn == null) {
                         throw new ErrorResponseException(Response.Status.SC_UNAUTHORIZED,
@@ -595,13 +604,13 @@ public class CopyFilter implements Filter {
                           ? 2 : 20;
                     return _credentialService.getDelegatedCredential(dn, fqan,
                           minLifetimeInMinutes, MINUTES);
-                } catch (PermissionDeniedCacheException e) {
-                    throw new ErrorResponseException(Status.SC_UNAUTHORIZED,
-                          "Presented X.509 certificate not valid");
-                } catch (CacheException e) {
-                    throw new ErrorResponseException(Status.SC_INTERNAL_SERVER_ERROR,
-                          "Internal problem: " + e.getMessage());
-                }
+//                } catch (PermissionDeniedCacheException e) {
+//                    throw new ErrorResponseException(Status.SC_UNAUTHORIZED,
+//                          "Presented X.509 certificate not valid");
+//                } catch (CacheException e) {
+//                    throw new ErrorResponseException(Status.SC_INTERNAL_SERVER_ERROR,
+//                          "Internal problem: " + e.getMessage());
+//                }
 
             case OIDC:
                 BearerTokenCredential bearer = subject.getPrivateCredentials()
@@ -640,8 +649,7 @@ public class CopyFilter implements Filter {
 
         if (hasClientAlreadyBeenRedirected(request)) {
             LOGGER.debug("client failed to delegate a credential before re-requesting the COPY");
-            ServletResponse.getResponse().setStatus(HttpServletResponse.SC_UNAUTHORIZED,
-                  "client failed to delegate a credential");
+            ServletResponse.getResponse().setStatus(HttpServletResponse.SC_UNAUTHORIZED);
             return;
         }
 
@@ -652,8 +660,7 @@ public class CopyFilter implements Filter {
             response.sendRedirect(buildRedirectUrl(request));
         } catch (IllegalArgumentException e) {
             LOGGER.debug(e.getMessage());
-            ServletResponse.getResponse().setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                  e.getMessage());
+            ServletResponse.getResponse().setStatus(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         }
     }
 

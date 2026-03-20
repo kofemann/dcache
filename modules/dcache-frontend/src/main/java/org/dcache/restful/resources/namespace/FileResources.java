@@ -17,15 +17,16 @@ import diskCacheV111.vehicles.PnfsWriteExtendedAttributesMessage.Mode;
 import diskCacheV111.vehicles.ProtocolInfo;
 import dmg.cells.nucleus.NoRouteToCellException;
 import dmg.util.Exceptions;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
-import io.swagger.annotations.Example;
-import io.swagger.annotations.ExampleProperty;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.core.Context;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -38,27 +39,24 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import javax.security.auth.Subject;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.dcache.auth.Subjects;
 import org.dcache.cells.CellStub;
 import org.dcache.http.PathMapper;
@@ -84,13 +82,13 @@ import org.json.JSONException;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
  * RestFul API to  provide files/folders manipulation operations.
  */
-@Api(value = "namespace", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "namespace")
 @Component
 @Path("/namespace")
 public class FileResources {
@@ -133,43 +131,43 @@ public class FileResources {
     private boolean useQosService;
 
     @GET
-    @ApiOperation(value = "Find metadata and optionally directory contents.",
-          notes = "The method offers the possibility to list the content of a "
+    @Operation(summary = "Find metadata and optionally directory contents.",
+          description = "The method offers the possibility to list the content of a "
                 + "directory in addition to providing metadata of a "
                 + "specified file or directory.")
     @ApiResponses({
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Path("{path : .*}")
     @Produces(MediaType.APPLICATION_JSON)
-    public JsonFileAttributes getFileAttributes(@ApiParam("Path of file or directory.")
+    public JsonFileAttributes getFileAttributes(@Parameter(description = "Path of file or directory.")
     @PathParam("path") String requestPath,
-          @ApiParam("Whether to include directory listing.")
+          @Parameter(description = "Whether to include directory listing.")
           @DefaultValue("false")
           @QueryParam("children") boolean isList,
-          @ApiParam("Whether to include file locality information.")
+          @Parameter(description = "Whether to include file locality information.")
           @DefaultValue("false")
           @QueryParam("locality") boolean isLocality,
-          @ApiParam(value = "Whether to include replica locations.")
+          @Parameter(description = "Whether to include replica locations.")
           @QueryParam("locations") boolean isLocations,
-          @ApiParam(value = "Whether to include quality of service.")
+          @Parameter(description = "Whether to include quality of service.")
           @DefaultValue("false")
           @QueryParam("qos") boolean isQos,
-          @ApiParam("Whether to include extended attributes.")
+          @Parameter(description = "Whether to include extended attributes.")
           @QueryParam("xattr") boolean isXattr,
-          @ApiParam("Whether to include labels.")
+          @Parameter(description = "Whether to include labels.")
           @QueryParam("labels") boolean isLabels,
-          @ApiParam("Whether or not to list checksum values.")
+          @Parameter(description = "Whether or not to list checksum values.")
           @QueryParam("checksum") boolean isChecksum,
-          @ApiParam("Whether or not to print optional attributes")
+          @Parameter(description = "Whether or not to print optional attributes")
           @DefaultValue("false")
 	  @QueryParam("optional") boolean isOptional,
-          @ApiParam("Limit number of replies in directory listing.")
+          @Parameter(description = "Limit number of replies in directory listing.")
           @QueryParam("limit") String limit,
-          @ApiParam("Number of entries to skip in directory listing.")
+          @Parameter(description = "Number of entries to skip in directory listing.")
           @QueryParam("offset") String offset) throws CacheException {
         JsonFileAttributes fileAttributes = new JsonFileAttributes();
         Set<FileAttribute> attributes =
@@ -259,26 +257,26 @@ public class FileResources {
     }
 
     @POST
-    @ApiOperation(value = "Modify a file or directory.")
+    @Operation(summary = "Modify a file or directory.")
     @Path("{path : .*}")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Transition for directories not supported"),
-          @ApiResponse(code = 400, message = "Unsupported QoS transition"),
-          @ApiResponse(code = 400, message = "Unknown target QoS"),
-          @ApiResponse(code = 400, message = "Unknown action"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 409, message = "Attribute already exists"),
-          @ApiResponse(code = 409, message = "No such attribute"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Transition for directories not supported"),
+          @ApiResponse(responseCode = "400", description = "Unsupported QoS transition"),
+          @ApiResponse(responseCode = "400", description = "Unknown target QoS"),
+          @ApiResponse(responseCode = "400", description = "Unknown action"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "409", description = "Attribute already exists"),
+          @ApiResponse(responseCode = "409", description = "No such attribute"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
     public Response cmrResources(
-          @ApiParam(value = "Path of file or directory to be modified.", required = true)
+          @Parameter(description = "Path of file or directory to be modified.", required = true)
           @PathParam("path") String requestPath,
-          @ApiParam(value = "A JSON object that has an 'action' "
+          @Parameter(description = "A JSON object that has an 'action' "
                 + "item with a String value.\n"
                 + "\n"
                 + "If the 'action' value is 'mkdir' "
@@ -356,72 +354,7 @@ public class FileResources {
                 + "JSON object 'mode' item is the "
                 + "numerical value of the desired "
                 + "mode.",
-                required = true,
-                examples = @Example({
-                      @ExampleProperty(mediaType = "MV",
-                            value = "{\n"
-                                  + "    \"action\" : \"mv\",\n"
-                                  + "    \"destination\" : \"../foo\"\n"
-                                  + "}"),
-                      @ExampleProperty(mediaType = "MKDIR",
-                            value = "{\n"
-                                  + "    \"action\" : \"mkdir\",\n"
-                                  + "    \"name\" : \"new-subdir\"\n"
-                                  + "}"),
-                      @ExampleProperty(mediaType = "QOS",
-                            value = "{\n"
-                                  + "    \"action\" : \"qos\",\n"
-                                  + "    \"target\" : \"DISK+TAPE\"\n"
-                                  + "}"),
-                      @ExampleProperty(mediaType = "PIN",
-                            value = "{\n"
-                                  + "    \"action\" : \"pin\",\n"
-                                  + "    \"lifetime\" : \"number\"\n"
-                                  + "    \"lifetime-unit\" : \"SECONDS|MINUTES|HOURS|DAYS\"\n"
-                                  + "}"),
-                      @ExampleProperty(mediaType = "UNPIN",
-                            value = "{\n"
-                                  + "    \"action\" : \"unpin\",\n"
-                                  + "}"),
-                      @ExampleProperty(mediaType = "SET-XATTR",
-                            value = "{\n"
-                                  + "    \"action\" : \"set-xattr\",\n"
-                                  + "    \"mode\" : \"CREATE\",\n"
-                                  + "    \"attributes\" : {\n"
-                                  + "        \"attr-1\": \"First attribute\",\n"
-                                  + "        \"attr-2\": \"Second attribute\"\n"
-                                  + "    }\n"
-                                  + "}"),
-                      @ExampleProperty(mediaType = "RM-XATTR",
-                            value = "{\n"
-                                  + "    \"action\" : \"rm-xattr\",\n"
-                                  + "    \"names\" : [\n"
-                                  + "        \"attr-1\",\n"
-                                  + "        \"attr-2\"\n"
-                                  + "    ]\n"
-                                  + "}"),
-
-                      @ExampleProperty(mediaType = "SET-LABEL",
-                            value = "{\n"
-                                  + "    \"action\" : \"set-label\",\n"
-                                  + "    \"label\" : : \"label\",\n"
-                                  + "}"),
-
-                      @ExampleProperty(mediaType = "RM-LABEL",
-                            value = "{\n"
-                                  + "    \"action\" : \"rm-label\",\n"
-                                  + "    \"label\" :  \"label\",\n"
-                                  + "}"),
-                      @ExampleProperty(mediaType = "CHGRP",
-                            value = "{\n"
-                                  + "    \"action\" : \"chgrp\",\n"
-                                  + "    \"gid\" : 1000\n"
-                                  + "}"),
-                      @ExampleProperty(mediaType = "CHMOD",
-                            value = "{\n"
-                                  + "    \"action\" : \"chmod\",\n"
-                                  + "    \"mode\" : 493\n"
-                                  + "}")}))
+                required = true)
                 String requestPayload) {
         try {
             JSONObject reqPayload = new JSONObject(requestPayload);
@@ -595,16 +528,16 @@ public class FileResources {
 
     @DELETE
     @Path("{path : .*}")
-    @ApiOperation(value = "delete a file or directory",
-          notes = "If a directory is targeted then the directory must already be empty.")
+    @Operation(summary = "delete a file or directory",
+          description = "If a directory is targeted then the directory must already be empty.")
     @Produces(MediaType.APPLICATION_JSON)
     @ApiResponses({
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
-    public Response deleteFileEntry(@ApiParam(value = "Path of file or directory.", required = true)
+    public Response deleteFileEntry(@Parameter(description = "Path of file or directory.", required = true)
     @PathParam("path") String requestPath) throws CacheException {
         PnfsHandler handler = HandlerBuilders.roleAwarePnfsHandler(pnfsmanager);
         FsPath path = pathMapper.asDcachePath(request, requestPath, ForbiddenException::new, handler);
@@ -629,7 +562,7 @@ public class FileResources {
         return successfulResponse(Response.Status.OK);
     }
 
-    @Required
+    @Autowired
     public void setUseQosService(boolean useQosService) {
         this.useQosService = useQosService;
     }

@@ -3,7 +3,6 @@ package org.dcache.services.httpd.handlers;
 import dmg.cells.nucleus.DomainContextAware;
 import dmg.util.HttpRequest;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.util.Date;
@@ -12,15 +11,17 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 import org.dcache.services.httpd.exceptions.OnErrorException;
 import org.dcache.services.httpd.util.StandardHttpRequest;
-import org.eclipse.jetty.ee9.nested.AbstractHandler;
-import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Provides lookup in the context map of preconfigured HTML pages.
  *
  * @author arossi
  */
-public class ContextHandler extends AbstractHandler implements DomainContextAware {
+public class ContextHandler extends Handler.Abstract implements DomainContextAware {
 
     private final String specificName;
     private Map<String, Object> context;
@@ -41,9 +42,7 @@ public class ContextHandler extends AbstractHandler implements DomainContextAwar
     }
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
-          throws IOException, ServletException {
+    public boolean handle( Request request, Response response, Callback callback) throws IOException, ServletException {
 
         try {
             final HttpRequest proxy = new StandardHttpRequest(request, response);
@@ -69,10 +68,11 @@ public class ContextHandler extends AbstractHandler implements DomainContextAwar
             response.setStatus(status);
             proxy.getPrintWriter().println(html);
             proxy.getPrintWriter().flush();
-            baseRequest.setHandled(true);
+            callback.succeeded();
         } catch (final Exception t) {
-            throw new ServletException("ContextHandler", t);
+            callback.failed(t);
         }
+        return true;
     }
 
     private String createContextDirectory() {

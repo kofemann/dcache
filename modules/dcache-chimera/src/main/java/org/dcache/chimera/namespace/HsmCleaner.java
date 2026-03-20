@@ -38,7 +38,7 @@ import java.util.stream.Collectors;
 import org.dcache.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DataIntegrityViolationException;
 
@@ -115,12 +115,12 @@ public class HsmCleaner extends AbstractCleaner implements CellMessageReceiver, 
         _maxFilesPerRequest = value;
     }
 
-    @Required
+    @Autowired
     public void setHsmTimeoutUnit(TimeUnit hsmTimeoutUnit) {
         _hsmTimeoutUnit = hsmTimeoutUnit;
     }
 
-    @Required
+    @Autowired
     public void setHsmTimeout(long hsmTimeout) {
         _hsmTimeout = hsmTimeout;
     }

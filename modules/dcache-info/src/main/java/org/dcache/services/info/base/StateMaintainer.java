@@ -14,7 +14,7 @@ import org.dcache.util.FireAndForgetTask;
 import org.dcache.util.NDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * The StateMaintainer class provides the machinery for processing StateUpdate objects independently
@@ -52,12 +52,12 @@ public class StateMaintainer implements StateUpdateManager, CellIdentityAware {
     private ScheduledFuture<?> _metricExpiryFuture;
     private Date _metricExpiryDate;
 
-    @Required
+    @Autowired
     public void setCaretaker(StateCaretaker caretaker) {
         _caretaker = caretaker;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(ScheduledExecutorService executor) {
         _scheduler = executor;
     }

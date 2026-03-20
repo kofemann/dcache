@@ -18,7 +18,7 @@ import org.dcache.util.CDCScheduledExecutorServiceDecorator;
 import org.dcache.util.FireAndForgetTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class JobTimeoutManager
       implements CellCommandListener, CellInfoProvider,
@@ -42,7 +42,7 @@ public class JobTimeoutManager
               ";total=" + (entry.getTotal() / 1000L) + ")";
     }
 
-    @Required
+    @Autowired
     public void setIoQueueManager(IoQueueManager queues) {
         _ioQueues = queues;
     }

@@ -26,16 +26,17 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import javax.ws.rs.WebApplicationException;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.ext.InterceptorContext;
-import javax.ws.rs.ext.ReaderInterceptor;
-import javax.ws.rs.ext.ReaderInterceptorContext;
-import javax.ws.rs.ext.WriterInterceptor;
-import javax.ws.rs.ext.WriterInterceptorContext;
+import jakarta.ws.rs.WebApplicationException;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.ext.InterceptorContext;
+import jakarta.ws.rs.ext.ReaderInterceptor;
+import jakarta.ws.rs.ext.ReaderInterceptorContext;
+import jakarta.ws.rs.ext.WriterInterceptor;
+import jakarta.ws.rs.ext.WriterInterceptorContext;
 import org.apache.commons.io.input.TeeInputStream;
 import org.dcache.util.Exceptions;
+import org.eclipse.jetty.server.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -55,12 +56,12 @@ public class LoggingInterceptor implements ReaderInterceptor, WriterInterceptor 
     @Context
     private HttpServletRequest request;
 
-    public static String getRequestEntity(ServletRequest request) {
+    public static String getRequestEntity(Request request) {
         Object value = request.getAttribute(REQUEST_ENTITY_KEY);
         return value == null ? null : String.valueOf(value);
     }
 
-    public static String getResponseEntity(ServletRequest request) {
+    public static String getResponseEntity(Request request) {
         Object value = request.getAttribute(RESPONSE_ENTITY_KEY);
         return value == null ? null : String.valueOf(value);
     }

@@ -83,7 +83,7 @@ import org.dcache.services.bulk.util.BulkRequestTarget;
 import org.dcache.services.bulk.util.BulkServiceStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Takes the appropriate action at the various phases in the lifetime of a given request. Interacts
@@ -183,32 +183,32 @@ public final class BulkRequestHandler implements BulkSubmissionHandler,
         return terminated;
     }
 
-    @Required
+    @Autowired
     public void setCancelExecutor(ExecutorService cancelExecutor) {
         this.cancelExecutor = cancelExecutor;
     }
 
-    @Required
+    @Autowired
     public void setJobFactory(RequestContainerJobFactory jobFactory) {
         this.jobFactory = jobFactory;
     }
 
-    @Required
+    @Autowired
     public void setRequestManager(BulkRequestManager requestManager) {
         this.requestManager = requestManager;
     }
 
-    @Required
+    @Autowired
     public void setRequestStore(BulkRequestStore requestStore) {
         this.requestStore = requestStore;
     }
 
-    @Required
+    @Autowired
     public void setStatistics(BulkServiceStatistics statistics) {
         this.statistics = statistics;
     }
 
-    @Required
+    @Autowired
     public void setTargetStore(BulkTargetStore targetStore) {
         this.targetStore = targetStore;
     }

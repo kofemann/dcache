@@ -95,7 +95,7 @@ import org.dcache.util.PortRange;
 import org.dcache.vehicles.DoorValidateMoverMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Factory and transfer service for NFS movers.
@@ -321,32 +321,32 @@ public class NfsTransferService
         }
     }
 
-    @Required
+    @Autowired
     public void setPostTransferService(PostTransferService postTransferService) {
         _postTransferService = postTransferService;
     }
 
-    @Required
+    @Autowired
     public void setPnfsHandler(PnfsHandler pnfsHandler) {
         _pnfsHandler = pnfsHandler;
     }
 
-    @Required
+    @Autowired
     public void setDoorStub(CellStub cellStub) {
         _door = cellStub;
     }
 
-    @Required
+    @Autowired
     public void setMinTcpPort(int minPort) {
         _minTcpPort = minPort;
     }
 
-    @Required
+    @Autowired
     public void setMaxTcpPort(int maxPort) {
         _maxTcpPort = maxPort;
     }
 
-    @Required
+    @Autowired
     public void setIoStrategy(IoStrategy ioStrategy) {
         _ioStrategy = ioStrategy;
     }

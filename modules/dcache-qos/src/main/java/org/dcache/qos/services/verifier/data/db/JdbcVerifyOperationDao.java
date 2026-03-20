@@ -35,7 +35,7 @@ import org.dcache.qos.data.QoSMessageType;
 import org.dcache.qos.services.verifier.data.VerifyOperation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ParameterizedPreparedStatementSetter;
@@ -85,7 +85,7 @@ public class JdbcVerifyOperationDao extends JdbcDaoSupport implements VerifyOper
 
     private Integer fetchSize;
 
-    @Required
+    @Autowired
     public void setFetchSize(Integer fetchSize) {
         this.fetchSize = fetchSize;
     }

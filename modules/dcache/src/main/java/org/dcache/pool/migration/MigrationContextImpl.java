@@ -8,7 +8,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ScheduledExecutorService;
 import org.dcache.cells.CellStub;
 import org.dcache.pool.repository.Repository;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Describes the context of migration jobs.
@@ -40,7 +40,7 @@ public class MigrationContextImpl implements MigrationContext, CellIdentityAware
         return _executor;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(ScheduledExecutorService executor) {
         _executor = executor;
     }
@@ -50,7 +50,7 @@ public class MigrationContextImpl implements MigrationContext, CellIdentityAware
         return _pool;
     }
 
-    @Required
+    @Autowired
     public void setPoolStub(CellStub pool) {
         _pool = pool;
     }
@@ -60,7 +60,7 @@ public class MigrationContextImpl implements MigrationContext, CellIdentityAware
         return _pnfs;
     }
 
-    @Required
+    @Autowired
     public void setPnfsStub(CellStub pnfs) {
         _pnfs = pnfs;
     }
@@ -70,7 +70,7 @@ public class MigrationContextImpl implements MigrationContext, CellIdentityAware
         return _poolManager;
     }
 
-    @Required
+    @Autowired
     public void setPoolManagerStub(CellStub poolManager) {
         _poolManager = poolManager;
     }
@@ -80,7 +80,7 @@ public class MigrationContextImpl implements MigrationContext, CellIdentityAware
         return _pinManager;
     }
 
-    @Required
+    @Autowired
     public void setPinManagerStub(CellStub pinManager) {
         _pinManager = pinManager;
     }
@@ -90,7 +90,7 @@ public class MigrationContextImpl implements MigrationContext, CellIdentityAware
         return _repository;
     }
 
-    @Required
+    @Autowired
     public void setRepository(Repository repository) {
         _repository = repository;
     }

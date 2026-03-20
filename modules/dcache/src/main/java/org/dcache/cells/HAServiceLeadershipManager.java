@@ -39,7 +39,7 @@ import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.apache.curator.framework.recipes.leader.Participant;
 import org.apache.curator.utils.CloseableUtils;
 import org.apache.curator.utils.ZKPaths;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Manages the leader election for HA services and propagates leadership change events to the
@@ -79,7 +79,7 @@ public class HAServiceLeadershipManager implements CellIdentityAware, CellComman
         cellAddress = address;
     }
 
-    @Required
+    @Autowired
     public void setLeadershipListener(LeaderLatchListener leadershipListener) {
         this.leadershipListener = leadershipListener;
     }

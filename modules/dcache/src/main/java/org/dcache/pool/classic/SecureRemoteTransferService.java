@@ -22,7 +22,7 @@ import eu.emi.security.authn.x509.NamespaceCheckingMode;
 import eu.emi.security.authn.x509.OCSPCheckingMode;
 import java.security.SecureRandom;
 import java.util.concurrent.TimeUnit;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 
 /**
@@ -46,7 +46,7 @@ public abstract class SecureRemoteTransferService
         return caPath;
     }
 
-    @Required
+    @Autowired
     public void setCertificateAuthorityPath(String certificateAuthorityPath) {
         this.caPath = certificateAuthorityPath;
     }
@@ -55,7 +55,7 @@ public abstract class SecureRemoteTransferService
         return ocspCheckingMode;
     }
 
-    @Required
+    @Autowired
     public void setOcspCheckingMode(OCSPCheckingMode ocspCheckingMode) {
         this.ocspCheckingMode = ocspCheckingMode;
     }
@@ -64,7 +64,7 @@ public abstract class SecureRemoteTransferService
         return crlCheckingMode;
     }
 
-    @Required
+    @Autowired
     public void setCrlCheckingMode(CrlCheckingMode crlCheckingMode) {
         this.crlCheckingMode = crlCheckingMode;
     }
@@ -73,7 +73,7 @@ public abstract class SecureRemoteTransferService
         return namespaceMode;
     }
 
-    @Required
+    @Autowired
     public void setNamespaceMode(NamespaceCheckingMode namespaceMode) {
         this.namespaceMode = namespaceMode;
     }
@@ -82,7 +82,7 @@ public abstract class SecureRemoteTransferService
         return certificateAuthorityUpdateInterval;
     }
 
-    @Required
+    @Autowired
     public void setCertificateAuthorityUpdateInterval(long certificateAuthorityUpdateInterval) {
         this.certificateAuthorityUpdateInterval = certificateAuthorityUpdateInterval;
     }
@@ -91,7 +91,7 @@ public abstract class SecureRemoteTransferService
         return certificateAuthorityUpdateIntervalUnit;
     }
 
-    @Required
+    @Autowired
     public void setCertificateAuthorityUpdateIntervalUnit(TimeUnit unit) {
         this.certificateAuthorityUpdateIntervalUnit = unit;
     }

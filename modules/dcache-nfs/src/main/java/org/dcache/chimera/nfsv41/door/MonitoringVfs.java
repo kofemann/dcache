@@ -61,7 +61,7 @@ import org.dcache.nfs.vfs.Stat.Type;
 import org.dcache.nfs.vfs.VirtualFileSystem;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * A VirtualFileSystem that forwards requests to some other VirtualFileSystem while adds support for
@@ -97,17 +97,17 @@ public class MonitoringVfs extends ForwardingFileSystem {
     private FileSystemProvider fs;
     private EventReceiver eventReceiver;
 
-    @Required
+    @Autowired
     public void setInner(VirtualFileSystem fileSystem) {
         inner = requireNonNull(fileSystem);
     }
 
-    @Required
+    @Autowired
     public void setFileSystemProvider(FileSystemProvider provider) {
         fs = requireNonNull(provider);
     }
 
-    @Required
+    @Autowired
     public void setEventReceiver(EventReceiver receiver) {
         eventReceiver = receiver;
     }

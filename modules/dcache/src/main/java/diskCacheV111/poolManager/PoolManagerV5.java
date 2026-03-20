@@ -68,7 +68,7 @@ import org.dcache.util.Version;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class PoolManagerV5
       implements CellCommandListener, CellMessageReceiver, CellLifeCycleAware, CellInfoProvider,
@@ -108,52 +108,52 @@ public class PoolManagerV5
         _args = args;
     }
 
-    @Required
+    @Autowired
     public void setPoolSelectionUnit(PoolSelectionUnit selectionUnit) {
         _selectionUnit = selectionUnit;
     }
 
-    @Required
+    @Autowired
     public void setCostModule(CostModule costModule) {
         _costModule = costModule;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(SerializablePoolMonitor poolMonitor) {
         _poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setRequestContainer(RequestContainerV5 requestContainer) {
         _requestContainer = requestContainer;
     }
 
-    @Required
+    @Autowired
     public void setPoolStatusTopic(CellStub stub) {
         _poolStatusTopic = stub;
     }
 
-    @Required
+    @Autowired
     public void setPnfsHandler(PnfsHandler pnfsHandler) {
         _pnfsHandler = pnfsHandler;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitorTopic(CellStub stub) {
         _poolMonitorTopic = stub;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitorUpdatePeriod(long period) {
         _poolMonitorUpdatePeriod = period;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitorUpdatePeriodUnit(TimeUnit unit) {
         _poolMonitorUpdatePeriodUnit = unit;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitorMaxUpdatesPerSecond(double maxUpdatesPerSecond) {
         _poolMonitorMaxUpdatesPerSecond = maxUpdatesPerSecond;
     }

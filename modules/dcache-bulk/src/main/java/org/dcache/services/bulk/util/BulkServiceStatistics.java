@@ -79,7 +79,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import org.dcache.services.bulk.job.RequestContainerJobFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Provides activity statistics via the CellInfo interface.
@@ -227,7 +227,7 @@ public final class BulkServiceStatistics implements CellInfoProvider {
         activeRequests.set(count);
     }
 
-    @Required
+    @Autowired
     public void setRequestContainerJobFactory(RequestContainerJobFactory factory) {
         this.factory = factory;
     }

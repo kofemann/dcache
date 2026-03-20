@@ -41,16 +41,16 @@
             <artifactId>jetty-server</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty.ee9</groupId>
-            <artifactId>jetty-ee9-servlets</artifactId>
+            <groupId>org.eclipse.jetty.ee11</groupId>
+            <artifactId>jetty-ee11-servlets</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-plus</artifactId>
         </dependency>
         <dependency>
-            <groupId>org.eclipse.jetty.ee9</groupId>
-            <artifactId>jetty-ee9-security</artifactId>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-security</artifactId>
         </dependency>
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
@@ -70,7 +70,7 @@
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.ext</groupId>
-            <artifactId>jersey-spring5</artifactId>
+            <artifactId>jersey-spring6</artifactId>
         </dependency>
         <dependency>
             <groupId>org.glassfish.jersey.media</groupId>
@@ -84,10 +84,22 @@
             <groupId>org.webjars</groupId>
             <artifactId>swagger-ui</artifactId>
         </dependency>
+
         <dependency>
-            <groupId>io.swagger</groupId>
-            <artifactId>swagger-jersey2-jaxrs</artifactId>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-jaxrs2-servlet-initializer-jakarta</artifactId>
         </dependency>
+
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-jaxrs2-jakarta</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.swagger.core.v3</groupId>
+            <artifactId>swagger-annotations</artifactId>
+        </dependency>
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-core</artifactId>

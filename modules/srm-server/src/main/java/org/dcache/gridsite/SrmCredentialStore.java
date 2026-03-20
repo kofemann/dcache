@@ -33,7 +33,7 @@ import org.dcache.util.Exceptions;
 import org.dcache.util.SqlGlob;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * The SrmCredentialStore acts as a bridge between the SRM's delegation store and the API expected
@@ -45,7 +45,7 @@ public class SrmCredentialStore implements CredentialStore {
 
     private RequestCredentialStorage _store;
 
-    @Required
+    @Autowired
     public void setRequestCredentialStorage(RequestCredentialStorage store) {
         _store = store;
     }

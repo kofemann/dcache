@@ -48,7 +48,7 @@ import org.dcache.pool.movers.NettyMover;
 import org.dcache.pool.movers.NettyTransferService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Netty-based HTTP transfer service.
@@ -90,12 +90,12 @@ public class HttpTransferService extends NettyTransferService<HttpProtocolInfo> 
         return chunkSize;
     }
 
-    @Required
+    @Autowired
     public void setChunkSize(int chunkSize) {
         this.chunkSize = chunkSize;
     }
 
-    @Required
+    @Autowired
     public void setCustomHeaders(ImmutableMap<String, String> headers) {
         customHeaders = headers;
     }

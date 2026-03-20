@@ -8,6 +8,7 @@ import diskCacheV111.poolManager.PoolSelectionUnit;
 import diskCacheV111.util.CacheException;
 import diskCacheV111.vehicles.PoolSetStickyMessage;
 import dmg.cells.nucleus.CellPath;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -23,7 +24,6 @@ import org.dcache.util.NDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
-import org.springframework.remoting.RemoteConnectFailureException;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -74,7 +74,7 @@ public class UnpinProcessor implements Runnable {
         } catch (JDOException | DataAccessException e) {
             LOGGER.error("Database failure while unpinning: {}",
                   e.getMessage());
-        } catch (RemoteConnectFailureException e) {
+        } catch (CompletionException e) {
             LOGGER.error("Remote connection failure while unpinning: {}", e.getMessage());
         } catch (RuntimeException e) {
             LOGGER.error("Unexpected failure while unpinning", e);

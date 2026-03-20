@@ -83,7 +83,7 @@ import org.dcache.qos.services.engine.util.QoSPolicyCache;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This provider tries to derive requirements from the QoSPolicy of the file.
@@ -202,12 +202,12 @@ public class PolicyBasedQoSProvider extends ALRPStorageUnitQoSProvider {
         modifyRequirements(pnfsId, currentAttributes, modifiedAttributes, newRequirements, subject);
     }
 
-    @Required
+    @Autowired
     public void setEngineDao(JdbcQoSEngineDao engineDao) {
         this.engineDao = engineDao;
     }
 
-    @Required
+    @Autowired
     public void setCache(QoSPolicyCache policyCache) {
         this.policyCache = policyCache;
     }

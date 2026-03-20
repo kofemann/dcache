@@ -45,7 +45,7 @@ import org.dcache.util.CDCExecutorServiceDecorator;
 import org.dcache.util.Exceptions;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public abstract class AbstractMoverProtocolTransferService
       extends AbstractCellComponent
@@ -64,7 +64,7 @@ public abstract class AbstractMoverProtocolTransferService
     private TransferLifeCycle _transferLifeCycle;
 
 
-    @Required
+    @Autowired
     public void setPostTransferService(PostTransferService postTransferService) {
         _postTransferService = postTransferService;
     }

@@ -30,7 +30,7 @@ import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.services.pinmanager1.PinManagerMovePinMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -63,27 +63,27 @@ public class MovePinRequestProcessor
     private TimeUnit _maxLifetimeUnit;
     private PoolMonitor _poolMonitor;
 
-    @Required
+    @Autowired
     public void setDao(PinDao dao) {
         _dao = dao;
     }
 
-    @Required
+    @Autowired
     public void setPoolStub(CellStub stub) {
         _poolStub = stub;
     }
 
-    @Required
+    @Autowired
     public void setAuthorizationPolicy(AuthorizationPolicy pdp) {
         _pdp = pdp;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         _poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setMaxLifetimeUnit(TimeUnit unit) {
         _maxLifetimeUnit = unit;
     }
@@ -92,12 +92,12 @@ public class MovePinRequestProcessor
         return _maxLifetimeUnit;
     }
 
-    @Required
+    @Autowired
     public void setMaxLifetime(long maxLifetime) {
         _maxLifetime = maxLifetime;
     }
 
-    @Required
+    @Autowired
     public long getMaxLifetime() {
         return _maxLifetime;
     }

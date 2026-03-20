@@ -8,7 +8,7 @@ import java.net.SocketException;
 import org.dcache.services.info.serialisation.StateSerialiser;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Information Exporter class.<br> This class is instantiated by the <code>InfoCollector</code> to
@@ -47,12 +47,12 @@ public class XmlConduit extends AbstractThreadedConduit {
      */
     private StateSerialiser _serialiser;
 
-    @Required
+    @Autowired
     public void setSerialiser(StateSerialiser serialiser) {
         _serialiser = serialiser;
     }
 
-    @Required
+    @Autowired
     public void setPort(int port) {
         _port = port;
     }
@@ -61,7 +61,7 @@ public class XmlConduit extends AbstractThreadedConduit {
         return _port;
     }
 
-    @Required
+    @Autowired
     public void setBacklog(int backlog) {
         _backlog = backlog;
     }
@@ -70,7 +70,7 @@ public class XmlConduit extends AbstractThreadedConduit {
         return _backlog;
     }
 
-    @Required
+    @Autowired
     public void setBindAddress(String address) {
         _bindAddress = address;
     }

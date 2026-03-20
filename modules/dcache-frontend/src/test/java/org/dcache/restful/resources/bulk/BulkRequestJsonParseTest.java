@@ -69,7 +69,7 @@ import diskCacheV111.vehicles.PnfsMessage;
 import dmg.cells.nucleus.CellPath;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
-import javax.ws.rs.BadRequestException;
+import jakarta.ws.rs.BadRequestException;
 import org.dcache.services.bulk.BulkRequest;
 import org.dcache.services.bulk.BulkRequest.Depth;
 import org.dcache.vehicles.PnfsResolveSymlinksMessage;

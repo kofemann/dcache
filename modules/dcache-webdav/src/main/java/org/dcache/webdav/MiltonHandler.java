@@ -8,23 +8,44 @@ import io.milton.http.Auth;
 import io.milton.http.FileItem;
 import io.milton.http.HttpManager;
 import io.milton.http.RequestParseException;
+import io.milton.servlet.MiltonServlet;
 import io.milton.servlet.ServletRequest;
 import io.milton.servlet.ServletResponse;
+import jakarta.servlet.AsyncContext;
+import jakarta.servlet.DispatcherType;
+import jakarta.servlet.RequestDispatcher;
+import jakarta.servlet.Servlet;
+import jakarta.servlet.ServletConfig;
 import jakarta.servlet.ServletContext;
 import jakarta.servlet.ServletException;
+import jakarta.servlet.ServletInputStream;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletRequestWrapper;
 import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
+import jakarta.servlet.http.HttpUpgradeHandler;
+import jakarta.servlet.http.Part;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UnsupportedEncodingException;
 import java.security.AccessController;
+import java.security.Principal;
+import java.util.Collection;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import javax.security.auth.Subject;
 import org.apache.commons.fileupload2.core.FileUploadException;
 import org.dcache.auth.Subjects;
 import org.dcache.util.Transfer;
-import org.eclipse.jetty.ee9.nested.AbstractHandler;
-import org.eclipse.jetty.ee9.nested.ContextHandler;
-import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,9 +53,7 @@ import org.slf4j.LoggerFactory;
  * A Jetty handler that wraps a Milton HttpManager. Makes it possible to embed Milton in Jetty
  * without using the Milton servlet.
  */
-public class MiltonHandler
-      extends AbstractHandler
-      implements CellIdentityAware {
+public class MiltonHandler implements Servlet, CellIdentityAware {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MiltonHandler.class);
     private static final ImmutableList<String> ALLOWED_ORIGIN_PROTOCOL = ImmutableList.of("http",
@@ -53,15 +72,27 @@ public class MiltonHandler
     }
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
-          throws IOException, ServletException {
+    public void init(ServletConfig config) throws ServletException {
+
+    }
+
+    @Override
+    public ServletConfig getServletConfig() {
+        return null;
+    }
+
+    @Override
+    public void service(jakarta.servlet.ServletRequest servletRequest, jakarta.servlet.ServletResponse servletResponse) throws ServletException, IOException {
+
+        HttpServletRequest request = (HttpServletRequest)servletRequest;
+        HttpServletResponse response = (HttpServletResponse)servletResponse;
+
         try (CDC ignored = CDC.reset(_myAddress)) {
             Transfer.initSession(false, false);
-            ServletContext context = ContextHandler.getCurrentContext();
+            ServletContext context = (ServletContext) ContextHandler.getCurrentContextHandler();
 
             if ("USERINFO".equals(request.getMethod())) {
-                response.sendError(501);
+                response.setStatus(501);
             } else {
                 Subject subject = Subject.getSubject(AccessController.getContext());
                 ServletRequest req = new DcacheServletRequest(request, context);
@@ -72,15 +103,19 @@ public class MiltonHandler
                  * was preauthenticated.
                  */
                 req.setAuthorization(new Auth(Subjects.getUserName(subject), subject));
-
-                baseRequest.setHandled(true);
                 _httpManager.process(req, resp);
             }
-            if (!request.isAsyncStarted()) {
-                response.getOutputStream().flush();
-                response.flushBuffer();
-            }
         }
+    }
+
+    @Override
+    public String getServletInfo() {
+        return "";
+    }
+
+    @Override
+    public void destroy() {
+
     }
 
 
@@ -137,11 +172,7 @@ public class MiltonHandler
                  * provides a "back door" that returns the InputStream without
                  * triggering this behaviour.
                  */
-                InputStream in = request instanceof Request
-                      ? ((Request) request).getHttpInput()
-                      : getInputStream();
-
-                return in.available() > 0;
+                return request.getInputStream().available() > 0;
             } catch (IOException e) {
                 LOGGER.warn("Got exception in hasContent: {}", e.toString());
                 return false;

@@ -43,7 +43,7 @@ import org.dcache.delegation.gridsite2.DelegationException;
 import org.dcache.srm.util.Axis;
 import org.dcache.util.CertificateFactories;
 import org.dcache.util.Version;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class DelegationHandler implements Delegation {
 
@@ -57,12 +57,12 @@ public class DelegationHandler implements Delegation {
 
     private LoginStrategy loginStrategy;
 
-    @Required
+    @Autowired
     public void setDelegationServiceStub(CellStub delegationServiceStub) {
         this.delegationServiceStub = delegationServiceStub;
     }
 
-    @Required
+    @Autowired
     public void setLoginStrategy(LoginStrategy loginStrategy) {
         this.loginStrategy = loginStrategy;
     }

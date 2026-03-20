@@ -69,7 +69,7 @@ import org.dcache.pool.json.PoolData;
 import org.dcache.services.history.pools.PoolListingService;
 import org.dcache.util.collector.CellMessagingCollector;
 import org.dcache.util.collector.ListenableFutureWrapper;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>This collector provides a thin layer on top of cell adapter
@@ -125,7 +125,7 @@ public abstract class PoolInfoCollector<T extends Message> extends
         return wrapper;
     }
 
-    @Required
+    @Autowired
     public void setService(PoolListingService service) {
         this.service = service;
     }

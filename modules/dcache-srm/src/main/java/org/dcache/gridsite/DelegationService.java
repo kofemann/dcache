@@ -31,7 +31,7 @@ import java.util.Map;
 import javax.security.auth.Subject;
 import org.dcache.auth.Subjects;
 import org.dcache.delegation.gridsite2.DelegationException;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Implementation of the Delegation interface, as defined by the WSDL.  Most of the implementation
@@ -45,22 +45,22 @@ public class DelegationService implements CellMessageReceiver {
     private CredentialDelegationFactory factory;
     private CredentialStore credentials;
 
-    @Required
+    @Autowired
     public void setServiceMetadata(Map<String, String> serviceMetadata) {
         this.serviceMetadata = serviceMetadata;
     }
 
-    @Required
+    @Autowired
     public void setDelegations(CredentialDelegationStore delegations) {
         this.delegations = delegations;
     }
 
-    @Required
+    @Autowired
     public void setFactory(CredentialDelegationFactory factory) {
         this.factory = factory;
     }
 
-    @Required
+    @Autowired
     public void setCredentials(CredentialStore credentials) {
         this.credentials = credentials;
     }

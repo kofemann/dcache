@@ -11,7 +11,7 @@ import org.dcache.pool.repository.StateChangeEvent;
 import org.dcache.pool.repository.StateChangeListener;
 import org.dcache.pool.repository.StickyChangeEvent;
 import org.dcache.vehicles.FileAttributes;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class StatisticsListener implements StateChangeListener {
 
@@ -36,7 +36,7 @@ public class StatisticsListener implements StateChangeListener {
         updateStatistics(event, event.getOldEntry().getState(), event.getNewEntry().getState());
     }
 
-    @Required
+    @Autowired
     public void setRepository(Repository repository) {
         this.repository = repository;
     }

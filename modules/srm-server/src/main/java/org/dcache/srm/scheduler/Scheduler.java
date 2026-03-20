@@ -99,7 +99,7 @@ import org.dcache.srm.util.JDC;
 import org.dcache.srm.v2_2.TStatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 
 public class Scheduler<T extends Job> implements JobStateChangeAware {
@@ -169,13 +169,13 @@ public class Scheduler<T extends Job> implements JobStateChangeAware {
         addScheduler(id, this);
     }
 
-    @Required
+    @Autowired
     public void setSchedulingStrategyProvider(SchedulingStrategyProvider provider) {
         schedulingStrategyName = provider.getName();
         schedulingStrategy = provider.createStrategy(this);
     }
 
-    @Required
+    @Autowired
     public void setTransferStrategyProvider(TransferStrategyProvider provider) {
         transferStrategyName = provider.getName();
         transferStrategy = provider.createStrategy(this);

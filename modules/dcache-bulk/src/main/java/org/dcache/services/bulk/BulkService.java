@@ -100,7 +100,7 @@ import org.dcache.services.bulk.store.BulkTargetStore;
 import org.dcache.services.bulk.util.BulkServiceStatistics;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Bulk service façade.  Handles incoming messages.  Handles restart reloading.
@@ -398,77 +398,77 @@ public final class BulkService implements CellLifeCycleAware, CellMessageReceive
         return allowedDepth;
     }
 
-    @Required
+    @Autowired
     public synchronized void setAllowedDepth(Depth allowedDepth) {
         this.allowedDepth = allowedDepth;
     }
 
-    @Required
+    @Autowired
     public void setEndpointStub(CellStub endpoint) {
         this.endpoint = endpoint;
     }
 
-    @Required
+    @Autowired
     public void setLeadershipManager(HAServiceLeadershipManager leadershipManager) {
         this.leadershipManager = leadershipManager;
     }
 
-    @Required
+    @Autowired
     public synchronized void setMaxFlatTargets(int maxFlatTargets) {
         this.maxFlatTargets = maxFlatTargets;
     }
 
-    @Required
+    @Autowired
     public synchronized void setMaxShallowTargets(int maxShallowTargets) {
         this.maxShallowTargets = maxShallowTargets;
     }
 
-    @Required
+    @Autowired
     public synchronized void setMaxRecursiveTargets(int maxRecursiveTargets) {
         this.maxRecursiveTargets = maxRecursiveTargets;
     }
 
-    @Required
+    @Autowired
     public synchronized void setMaxRequestsPerUser(int maxRequestsPerUser) {
         this.maxRequestsPerUser = maxRequestsPerUser;
     }
 
-    @Required
+    @Autowired
     public void setActivityFactory(BulkActivityFactory activityFactory) {
         this.activityFactory = activityFactory;
     }
 
-    @Required
+    @Autowired
     public void setNamespace(CellStub namespace) {
         this.namespace = namespace;
     }
 
-    @Required
+    @Autowired
     public void setRequestStore(BulkRequestStore requestStore) {
         this.requestStore = requestStore;
     }
 
-    @Required
+    @Autowired
     public void setRequestManager(BulkRequestManager requestManager) {
         this.requestManager = requestManager;
     }
 
-    @Required
+    @Autowired
     public void setSubmissionHandler(BulkSubmissionHandler submissionHandler) {
         this.submissionHandler = submissionHandler;
     }
 
-    @Required
+    @Autowired
     public void setTargetStore(BulkTargetStore targetStore) {
         this.targetStore = targetStore;
     }
 
-    @Required
+    @Autowired
     public void setIncomingExecutorService(ExecutorService incomingExecutorService) {
         this.incomingExecutorService = incomingExecutorService;
     }
 
-    @Required
+    @Autowired
     public void setStatistics(BulkServiceStatistics statistics) {
         this.statistics = statistics;
     }

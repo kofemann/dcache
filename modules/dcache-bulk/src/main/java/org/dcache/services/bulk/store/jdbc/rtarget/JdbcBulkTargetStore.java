@@ -75,7 +75,7 @@ import org.dcache.services.bulk.util.BulkRequestTarget.State;
 import org.dcache.services.bulk.util.BulkTargetFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Uses underlying JDBC Dao implementations to satisfy the API.
@@ -177,7 +177,7 @@ public final class JdbcBulkTargetStore implements BulkTargetStore {
         return Optional.of(list.get(0));
     }
 
-    @Required
+    @Autowired
     public void setTargetDao(JdbcRequestTargetDao targetDao) {
         this.targetDao = targetDao;
     }

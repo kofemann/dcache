@@ -97,7 +97,7 @@ import org.dcache.pinmanager.PinManagerPinMessage;
 import org.dcache.pinmanager.PinManagerUnpinMessage;
 import org.dcache.poolmanager.RemotePoolMonitor;
 import org.dcache.vehicles.FileAttributes;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.PlatformTransactionManager;
 
 
@@ -177,7 +177,7 @@ public class DCacheAwareJdbcFs extends JdbcFs implements CellIdentityAware {
      */
     private RemotePoolMonitor poolMonitor;
 
-    @Required
+    @Autowired
     public void setQueryPnfsManagerOnRename(boolean yes) {
         queryPnfsManagerOnRename = yes;
     }

@@ -83,7 +83,7 @@ import org.dcache.util.collector.pools.PoolHistoriesAggregator;
 import org.dcache.util.collector.pools.PoolInfoCollectorUtils;
 import org.dcache.util.histograms.CountingHistogram;
 import org.dcache.vehicles.pool.PoolLiveDataForHistoriesMessage;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Handles the transformation of message content from pools into a cached
@@ -163,17 +163,17 @@ public final class PoolHistoriesRequestProcessor extends
         return values;
     }
 
-    @Required
+    @Autowired
     public void setHandler(PoolHistoriesAggregator handler) {
         this.handler = handler;
     }
 
-    @Required
+    @Autowired
     public void setService(PoolTimeseriesServiceImpl service) {
         this.service = service;
     }
 
-    @Required
+    @Autowired
     public void setStorageDir(File storageDir) {
         this.storageDir = storageDir;
     }

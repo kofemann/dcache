@@ -36,7 +36,7 @@ import org.dcache.pool.classic.json.FlushControllerData;
 import org.dcache.util.FireAndForgetTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Controls flush to tape.
@@ -64,7 +64,7 @@ public class HsmFlushController
     private Supplier<CellInfo> _cellInfoSupplier;
     private StorageClassContainer _storageQueue;
 
-    @Required
+    @Autowired
     public void setStorageClassContainer(StorageClassContainer storageQueue) {
         _storageQueue = storageQueue;
     }
@@ -74,7 +74,7 @@ public class HsmFlushController
         _cellInfoSupplier = supplier;
     }
 
-    @Required
+    @Autowired
     public void setPoolMode(PoolV2Mode mode) {
         _poolMode = mode;
     }
@@ -141,7 +141,7 @@ public class HsmFlushController
         return _order;
     }
 
-    @Required
+    @Autowired
     public synchronized void setQueueOrder(String order) {
         _order = Order.valueOf(order.toUpperCase());
     }

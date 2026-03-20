@@ -38,7 +38,7 @@ import org.dcache.cells.CuratorFrameworkAware;
 import org.dcache.util.FireAndForgetTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 
 /**
@@ -95,7 +95,7 @@ public class ZookeeperSecretHandler implements SecretHandler,
         this.client = client;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(ScheduledExecutorService executor) {
         this.executor = executor;
     }
@@ -105,7 +105,7 @@ public class ZookeeperSecretHandler implements SecretHandler,
         this.address = address;
     }
 
-    @Required
+    @Autowired
     public void setExpirationPeriod(long period) {
         expirationPeriod = period;
     }
@@ -114,7 +114,7 @@ public class ZookeeperSecretHandler implements SecretHandler,
         return expirationPeriod;
     }
 
-    @Required
+    @Autowired
     public void setExpirationPeriodUnit(TimeUnit unit) {
         expirationPeriodUnit = unit;
     }
@@ -123,7 +123,7 @@ public class ZookeeperSecretHandler implements SecretHandler,
         return expirationPeriodUnit;
     }
 
-    @Required
+    @Autowired
     public void setZookeeperSecretStorage(ZookeeperSecretStorage storage) {
         secrets = storage;
     }

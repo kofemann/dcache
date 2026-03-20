@@ -19,19 +19,19 @@ package org.dcache.restful.util;
 
 import com.google.common.base.Splitter;
 import com.google.gson.GsonBuilder;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
+
 import java.io.IOException;
 import java.io.PrintWriter;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
-import org.eclipse.jetty.ee9.nested.AbstractHandler;
-import org.eclipse.jetty.ee9.nested.Request;
+
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.MetaData;
-import org.springframework.beans.factory.annotation.Required;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
+import org.springframework.beans.factory.annotation.Autowired;
 
 
 /**
@@ -39,7 +39,7 @@ import org.springframework.beans.factory.annotation.Required;
  * static, but the representation is negotiable, based on the client-supplied preferences.  If the
  * client expresses no preference then the filename determines the format.
  */
-public class StaticDataHandler extends AbstractHandler {
+public class StaticDataHandler extends Handler.Abstract {
 
     private static enum Media {
         JSON("application/json", "", "\n"),
@@ -59,35 +59,37 @@ public class StaticDataHandler extends AbstractHandler {
     private List<String> paths;
     private String json;
 
-    @Required
+    @Autowired
     public void setPath(String path) {
         paths = Splitter.on(':').splitToList(path);
     }
 
-    @Required
+    @Autowired
     public void setData(Map<String, String> data) {
         json = new GsonBuilder().setPrettyPrinting().disableHtmlEscaping().create().toJson(data);
     }
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request,
-          HttpServletResponse response) throws IOException, ServletException {
-        if (isStarted() && !baseRequest.isHandled() && paths.contains(target)) {
+    public boolean handle(Request request, Response response, Callback callback)
+          throws IOException {
+
+        String target = request.getHttpURI().getPath();
+        if (paths.contains(target)) {
             if (request.getMethod().equals("GET")) {
-                handleRequest(target, baseRequest, response);
-                baseRequest.setHandled(true);
+                handleRequest(request, response);
+                callback.succeeded();
             } else {
-                doError(target, baseRequest, request, response);
+                Response.writeError(request, response, callback, HttpStatus.METHOD_NOT_ALLOWED_405);
             }
+
+            return true;
         }
+        return false;
     }
 
     private Media decideMedia(String target, Request request) {
-        MetaData.Request metadata = request.getMetaData();
-        List<String> types = metadata == null
-              ? Collections.emptyList()
-              : metadata.getHttpFields().getQualityCSV(HttpHeader.ACCEPT);
 
+        List<String> types = request.getHeaders().getQualityCSV(HttpHeader.ACCEPT);
         for (String type : types) {
             switch (type) {
                 case "application/json":
@@ -113,19 +115,18 @@ public class StaticDataHandler extends AbstractHandler {
         return Media.JAVASCRIPT;
     }
 
-    private void handleRequest(String target, Request request, HttpServletResponse response)
-          throws IOException {
-        Media media = decideMedia(target, request);
+    private void handleRequest(Request request, Response response) {
+        Media media = decideMedia(request.getHttpURI().getPath(), request);
 
-        response.setContentType(media.mime);
-        response.setCharacterEncoding("UTF-8");
-        response.setContentLength(media.pre.length() + json.length() + media.post.length());
-        response.setStatus(HttpServletResponse.SC_OK);
+        response.getHeaders().add(HttpHeader.CONTENT_TYPE, media.mime);
+        response.getHeaders().add(HttpHeader.CONTENT_ENCODING, "UTF-8");
+        response.getHeaders().add(HttpHeader.CONTENT_LENGTH, Integer.toString(media.pre.length() + json.length() + media.post.length()));
 
-        PrintWriter writer = response.getWriter();
-        writer.print(media.pre);
-        writer.print(json);
-        writer.print(media.post);
-        writer.flush();
+        try (PrintWriter writer = new PrintWriter(Response.asBufferedOutputStream(request, response))) {
+            writer.print(media.pre);
+            writer.print(json);
+            writer.print(media.post);
+            writer.flush();
+        }
     }
 }

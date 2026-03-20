@@ -18,7 +18,7 @@ import org.dcache.auth.Subjects;
 import org.dcache.auth.UnionLoginStrategy.AccessLevel;
 import org.dcache.auth.attributes.LoginAttribute;
 import org.dcache.auth.attributes.Restrictions;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Add support for logging in a particular user as Users.NOBODY, all other requests are passed on to
@@ -39,12 +39,12 @@ public class AnonymousUserLoginStrategy implements LoginStrategy {
         return _anonymousAccess;
     }
 
-    @Required
+    @Autowired
     public void setNonAnonymousStrategy(LoginStrategy strategy) {
         _inner = requireNonNull(strategy);
     }
 
-    @Required
+    @Autowired
     public void setUsername(String username) {
         _username = requireNonNull(username);
     }

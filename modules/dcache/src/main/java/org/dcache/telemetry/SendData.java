@@ -22,7 +22,7 @@ import org.dcache.util.CDCScheduledExecutorServiceDecorator;
 import org.dcache.util.FireAndForgetTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This is a cell, that collects information about the dCache-instance and sends it once per hour to
@@ -44,7 +44,7 @@ public class SendData implements CellCommandListener, CellLifeCycleAware {
     private boolean enable;
     private static final int HTTP_TIMEOUT = 60;
 
-    @Required
+    @Autowired
     public void setUrlStr(String url) {
         try {
             uri = URI.create(url);
@@ -54,12 +54,12 @@ public class SendData implements CellCommandListener, CellLifeCycleAware {
         }
     }
 
-    @Required
+    @Autowired
     public void setInstanceData(InstanceData instanceData) {
         this.instanceData = instanceData;
     }
 
-    @Required
+    @Autowired
     public void setEnable(boolean enable) {
         this.enable = enable;
     }

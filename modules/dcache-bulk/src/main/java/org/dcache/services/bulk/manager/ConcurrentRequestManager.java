@@ -96,7 +96,7 @@ import org.dcache.util.BoundedCachedExecutor;
 import org.dcache.util.FireAndForgetTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Initializes a processor thread to handle the promotion of requests from queued to active, and to
@@ -421,52 +421,52 @@ public final class ConcurrentRequestManager implements BulkRequestManager {
         return maxActiveRequests;
     }
 
-    @Required
+    @Autowired
     public void setCompletionHandler(BulkRequestCompletionHandler completionHandler) {
         this.completionHandler = completionHandler;
     }
 
-    @Required
+    @Autowired
     public void setContainerExecutor(BoundedCachedExecutor containerExecutor) {
         this.containerExecutor = containerExecutor;
     }
 
-    @Required
+    @Autowired
     public void setTargetStore(BulkTargetStore targetStore) {
         this.targetStore = targetStore;
     }
 
-    @Required
+    @Autowired
     public void setMaxActiveRequests(int maxActiveRequests) {
         this.maxActiveRequests = maxActiveRequests;
     }
 
-    @Required
+    @Autowired
     public void setRequestStore(BulkRequestStore requestStore) {
         this.requestStore = requestStore;
     }
 
-    @Required
+    @Autowired
     public void setSchedulerProvider(BulkSchedulerProvider schedulerProvider) {
         this.schedulerProvider = schedulerProvider;
     }
 
-    @Required
+    @Autowired
     public void setStatistics(BulkServiceStatistics statistics) {
         this.statistics = statistics;
     }
 
-    @Required
+    @Autowired
     public void setSubmissionHandler(BulkSubmissionHandler submissionHandler) {
         this.submissionHandler = submissionHandler;
     }
 
-    @Required
+    @Autowired
     public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 
-    @Required
+    @Autowired
     public void setTimeoutUnit(TimeUnit timeoutUnit) {
         this.timeoutUnit = timeoutUnit;
     }

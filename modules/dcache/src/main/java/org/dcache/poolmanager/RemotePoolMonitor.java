@@ -38,8 +38,10 @@ import dmg.cells.nucleus.CellMessage;
 import dmg.cells.nucleus.CellMessageReceiver;
 import dmg.cells.nucleus.NoRouteToCellException;
 import java.io.PrintWriter;
+import java.rmi.RemoteException;
 import java.util.Collection;
 import java.util.Set;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 import org.dcache.cells.AbstractMessageCallback;
 import org.dcache.cells.CellStub;
@@ -47,9 +49,7 @@ import org.dcache.util.TimeUtils;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
-import org.springframework.remoting.RemoteConnectFailureException;
-import org.springframework.remoting.RemoteProxyFailureException;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * PoolMonitor that delegates to a PoolMonitor obtained from pool manager.
@@ -66,7 +66,7 @@ public class RemotePoolMonitor
     private long refreshCount;
     private CellAddressCore previousMonitorSource;
 
-    @Required
+    @Autowired
     public void setPoolManagerStub(CellStub stub) {
         poolManagerStub = stub;
     }
@@ -201,7 +201,7 @@ public class RemotePoolMonitor
                     now = System.currentTimeMillis();
                 } while (poolMonitor == null || deadline <= now);
                 if (poolMonitor == null) {
-                    throw new RemoteConnectFailureException(
+                    throw new CompletionException(
                           "Cached pool information is not yet available.", null);
                 }
             }
@@ -211,7 +211,7 @@ public class RemotePoolMonitor
             }
             return poolMonitor;
         } catch (InterruptedException e) {
-            throw new RemoteProxyFailureException("Failed to fetch pool monitor: " + e.getMessage(),
+            throw new CompletionException("Failed to fetch pool monitor: " + e.getMessage(),
                   e);
         }
     }

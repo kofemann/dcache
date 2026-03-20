@@ -9,8 +9,6 @@ import com.google.common.base.Joiner;
 import com.google.common.collect.Iterables;
 import dmg.util.HttpException;
 import dmg.util.HttpRequest;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.net.FileNameMap;
@@ -19,8 +17,10 @@ import java.net.URLConnection;
 import java.nio.file.Files;
 import java.util.Arrays;
 import org.dcache.services.httpd.util.StandardHttpRequest;
-import org.eclipse.jetty.ee9.nested.AbstractHandler;
-import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author arossi
  */
-public class PathHandler extends AbstractHandler {
+public class PathHandler extends Handler.Abstract {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(PathHandler.class);
 
@@ -42,22 +42,27 @@ public class PathHandler extends AbstractHandler {
     }
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
+    public boolean handle(Request request, Response response, Callback callback)
           throws IOException {
         try {
             HttpRequest proxy = new StandardHttpRequest(request, response);
             sendFile(path, proxy);
+
+            callback.succeeded();
         } catch (RuntimeException | IOException e) {
+            callback.failed(e);
             throw e;
         } catch (HttpException e) {
             LOGGER.debug("Failing request {}: {} {}", request, e.getErrorCode(),
                   e.getMessage());
-            response.setStatus(e.getErrorCode(), e.getMessage());
+            callback.failed(e);
+            response.setStatus(e.getErrorCode());
         } catch (URISyntaxException e) {
             LOGGER.debug("Failing request {}: {}", request, e.getMessage());
-            response.setStatus(SC_INTERNAL_SERVER_ERROR, "Bad URI: " + e.getMessage());
+            callback.failed(e);
+            response.setStatus(SC_INTERNAL_SERVER_ERROR);
         }
+        return true;
     }
 
 

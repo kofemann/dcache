@@ -40,6 +40,8 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.security.AccessController;
 import java.time.Duration;
 import java.time.Instant;
@@ -69,17 +71,20 @@ import org.dcache.macaroons.InvalidCaveatException;
 import org.dcache.macaroons.MacaroonContext;
 import org.dcache.macaroons.MacaroonProcessor;
 import org.dcache.util.NDC;
-import org.eclipse.jetty.ee9.nested.AbstractHandler;
-import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Handle HTTP-based requests to create a macaroon.
  */
-public class MacaroonRequestHandler extends AbstractHandler implements CellIdentityAware {
+public class MacaroonRequestHandler extends Handler.Abstract implements CellIdentityAware {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MacaroonRequestHandler.class);
 
@@ -97,27 +102,27 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
     private Duration _maximumLifetime;
     private Duration _defaultLifetime;
 
-    public static String getMacaroonRequest(HttpServletRequest request) {
+    public static String getMacaroonRequest(Request request) {
         Object result = request.getAttribute(MACAROON_REQUEST_ATTRIBUTE);
         return result == null ? null : String.valueOf(result);
     }
 
-    public static String getMacaroonId(HttpServletRequest request) {
+    public static String getMacaroonId(Request request) {
         Object result = request.getAttribute(MACAROON_ID_ATTRIBUTE);
         return result == null ? null : String.valueOf(result);
     }
 
-    @Required
+    @Autowired
     public void setMacaroonProcessor(MacaroonProcessor processor) {
         _processor = processor;
     }
 
-    @Required
+    @Autowired
     public void setPathMapper(PathMapper mapper) {
         _pathMapper = mapper;
     }
 
-    @Required
+    @Autowired
     public void setMaximumLifetime(long millis) {
         _maximumLifetime = Duration.of(millis, ChronoUnit.MILLIS);
     }
@@ -126,7 +131,7 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
         return _maximumLifetime.toMillis();
     }
 
-    @Required
+    @Autowired
     public void setDefaultLifetime(long millis) {
         _defaultLifetime = Duration.of(millis, ChronoUnit.MILLIS);
     }
@@ -141,39 +146,35 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
     }
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
+    public boolean handle(Request request, Response response, Callback callback)
           throws IOException {
         try (CDC ignored = CDC.reset(_myAddress)) {
-            NDC.push("macaroon-request " + baseRequest.getRemoteAddr());
-            if (baseRequest.getMethod().equals("POST") &&
-                  Objects.equals(request.getContentType(), REQUEST_MIMETYPE)) {
-                handleMacaroonRequest(target, baseRequest, response);
-                baseRequest.setHandled(true);
+            NDC.push("macaroon-request " + Request.getRemoteAddr(request));
+            if (request.getMethod().equals("POST") &&
+                  Objects.equals(request.getHeaders().get(HttpHeader.CONTENT_TYPE), REQUEST_MIMETYPE)) {
+                handleMacaroonRequest(request, response, callback);
+                return true;
             }
         }
+        return false;
     }
 
-    private void handleMacaroonRequest(String target, Request request,
-          HttpServletResponse response) {
-        try {
-            try {
-                String macaroon = buildMacaroon(target, request);
-                JSONObject json = buildResponseJSON(request, macaroon);
+    private void handleMacaroonRequest(Request request, Response response, Callback callback) {
 
-                response.setStatus(200);
-                response.setContentType(RESPONSE_MIMETYPE);
-                try (PrintWriter w = response.getWriter()) {
-                    w.println(json.toString(JSON_RESPONSE_INDENTATION));
-                }
-            } catch (ErrorResponseException e) {
-                response.setStatus(e.getStatus(), e.getMessage());
-            } catch (RuntimeException e) {
-                LOGGER.error("Bug detected", e);
-                response.sendError(HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
-            }
-        } catch (IOException e) {
-            LOGGER.error("Failed to send output: {}", e.toString());
+        try {
+            String macaroon = buildMacaroon(request);
+            JSONObject json = buildResponseJSON(request, macaroon);
+
+            response.setStatus(200);
+            response.getHeaders().put(HttpHeader.CONTENT_TYPE, RESPONSE_MIMETYPE);
+            response.write(true,
+                  ByteBuffer.wrap(json.toString(JSON_RESPONSE_INDENTATION).getBytes()), callback);
+        } catch (ErrorResponseException e) {
+            Response.writeError(request, response, callback, e.getStatus(), e.getMessage());
+        } catch (RuntimeException e) {
+            LOGGER.error("Bug detected", e);
+            Response.writeError(request, response, callback, SC_INTERNAL_SERVER_ERROR,
+                  e.getMessage());
         }
     }
 
@@ -181,7 +182,7 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
         JSONObject json = new JSONObject();
         JSONObject uris = new JSONObject();
         json.put("macaroon", macaroon).put("uri", uris);
-        uris.put("target", request.getRequestURL());
+        uris.put("target", request.getHttpURI());
         String withMacaroon = "?" + AuthenticationHandler.BEARER_TOKEN_QUERY_KEY + "=" + macaroon;
 
         /*
@@ -190,8 +191,8 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
          *
          *     https://github.com/onnozweers/dcache-scripts/
          */
-        uris.put("targetWithMacaroon", request.getRequestURL() + withMacaroon);
-        URI req = URI.create(new String(request.getRequestURL()));
+        uris.put("targetWithMacaroon", request.getHttpURI() + withMacaroon);
+        URI req = request.getHttpURI().toURI();
 
         try {
             String base = new URI(req.getScheme(), req.getAuthority(), "/", null,
@@ -204,7 +205,7 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
         return json;
     }
 
-    private Instant calculateExpiry(MacaroonContext context, Collection<Caveat> beforeCaveats)
+    private Instant calculateExpiry(MacaroonContext context, java.util.Collection<Caveat> beforeCaveats)
           throws InvalidCaveatException {
         Optional<Instant> userSupplied = beforeCaveats.stream()
               .map(Caveat::getValue)
@@ -236,10 +237,11 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
         return expiry;
     }
 
-    private MacaroonContext buildContext(String target, Request request)
+    private MacaroonContext buildContext(Request request)
           throws ErrorResponseException {
 
         MacaroonContext context = new MacaroonContext();
+        String target = request.getHttpURI().getPath();
 
         FsPath desiredPath = _pathMapper.asDcachePath(request, target);
 
@@ -300,13 +302,13 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
     }
 
 
-    private String buildMacaroon(String target, Request request) throws ErrorResponseException {
+    private String buildMacaroon(Request request) throws ErrorResponseException {
         checkValidRequest(request.isSecure(), "Not secure transport");
         if (Subjects.isNobody(getSubject())) {
             throw new ErrorResponseException(SC_UNAUTHORIZED, "Authentication required");
         }
 
-        MacaroonContext context = buildContext(target, request);
+        MacaroonContext context = buildContext(request);
 
         MacaroonRequest macaroonRequest = parseJSON(request);
 
@@ -366,11 +368,11 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
         }
     }
 
-    private MacaroonRequest parseJSON(HttpServletRequest request) throws ErrorResponseException {
+    private MacaroonRequest parseJSON(Request request) throws ErrorResponseException {
         MacaroonRequest macaroonRequest;
 
-        try {
-            String requestEntity = CharStreams.toString(request.getReader());
+        try (var in = Request.asInputStream(request)) {
+            String requestEntity = new String( in.readAllBytes(), StandardCharsets.UTF_8);
             request.setAttribute(MACAROON_REQUEST_ATTRIBUTE, emptyToNull(requestEntity));
             macaroonRequest = new GsonBuilder().create().fromJson(requestEntity,
                   MacaroonRequest.class);

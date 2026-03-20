@@ -70,7 +70,7 @@ public class DcacheStandardFilter implements Filter {
             responseHandler.respondBadRequest(e.getResource(), response, request);
             // Work-around: milton doesn't allow non-standard text, so we update the value here.
             ServletResponse.getResponse()
-                  .setStatus(HttpServletResponse.SC_BAD_REQUEST, e.getReason());
+                  .setStatus(HttpServletResponse.SC_BAD_REQUEST);
         } catch (UncheckedBadRequestException e) {
             LOGGER.debug("Client supplied bad request parameters: {}", e.getMessage());
             responseHandler.respondBadRequest(e.getResource(), response, request);
@@ -100,7 +100,7 @@ public class DcacheStandardFilter implements Filter {
             responseHandler.respondMethodNotAllowed(e.getResource(), response, request);
             // Work-around: milton doesn't allow non-standard text, so we update the value here.
             ServletResponse.getResponse()
-                  .setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED, e.getMessage());
+                  .setStatus(HttpServletResponse.SC_METHOD_NOT_ALLOWED);
         } catch (WebDavException e) {
             LOGGER.warn("Internal server error: {}", e.toString());
             responseHandler.respondServerError(request, response, e.getMessage());

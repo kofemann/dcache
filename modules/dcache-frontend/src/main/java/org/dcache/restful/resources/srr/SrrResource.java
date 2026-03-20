@@ -5,22 +5,22 @@ import com.google.common.net.InetAddresses;
 import diskCacheV111.util.CacheException;
 import dmg.cells.nucleus.NoRouteToCellException;
 import dmg.cells.services.login.LoginBrokerSubscriber;
-import io.swagger.annotations.Api;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import java.net.InetAddress;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import jakarta.servlet.http.HttpServletRequest;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.dcache.cells.CellStub;
 import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.restful.srr.SrrBuilder;
@@ -30,7 +30,7 @@ import org.springframework.stereotype.Component;
 /**
  * RestFul API to  provide files/folders manipulation operations.
  */
-@Api(value = "srr")
+@Tag(name = "srr")
 @Component
 @Path("/srr")
 public class SrrResource {

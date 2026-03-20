@@ -43,7 +43,7 @@ import org.dcache.poolmanager.SelectedPool;
 import org.dcache.vehicles.PnfsGetFileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -96,47 +96,47 @@ public class PinRequestProcessor
 
     private PoolMonitor _poolMonitor;
 
-    @Required
+    @Autowired
     public void setScheduledExecutor(ScheduledExecutorService executor) {
         _scheduledExecutor = executor;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(Executor executor) {
         _executor = executor;
     }
 
-    @Required
+    @Autowired
     public void setDao(PinDao dao) {
         _dao = dao;
     }
 
-    @Required
+    @Autowired
     public void setPoolStub(CellStub stub) {
         _poolStub = stub;
     }
 
-    @Required
+    @Autowired
     public void setPnfsStub(CellStub stub) {
         _pnfsStub = stub;
     }
 
-    @Required
+    @Autowired
     public void setPoolManagerStub(PoolManagerStub stub) {
         _poolManagerStub = stub;
     }
 
-    @Required
+    @Autowired
     public void setStagePermission(CheckStagePermission checker) {
         _checkStagePermission = checker;
     }
 
-    @Required
+    @Autowired
     public void setMaxLifetime(long maxLifetime) {
         _maxLifetime = maxLifetime;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         _poolMonitor = poolMonitor;
     }
@@ -145,7 +145,7 @@ public class PinRequestProcessor
         return _maxLifetime;
     }
 
-    @Required
+    @Autowired
     public void setMaxLifetimeUnit(TimeUnit unit) {
         _maxLifetimeUnit = unit;
     }

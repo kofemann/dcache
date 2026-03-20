@@ -39,7 +39,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class ConnectorFactoryBean implements FactoryBean<ServerConnector> {
 
@@ -107,7 +107,7 @@ public class ConnectorFactoryBean implements FactoryBean<ServerConnector> {
         return idleTimeout;
     }
 
-    @Required
+    @Autowired
     public void setIdleTimeout(long idleTimeout) {
         this.idleTimeout = idleTimeout;
     }
@@ -116,7 +116,7 @@ public class ConnectorFactoryBean implements FactoryBean<ServerConnector> {
         return idleTimeoutUnit;
     }
 
-    @Required
+    @Autowired
     public void setIdleTimeoutUnit(TimeUnit idleTimeoutUnit) {
         this.idleTimeoutUnit = idleTimeoutUnit;
     }
@@ -125,7 +125,7 @@ public class ConnectorFactoryBean implements FactoryBean<ServerConnector> {
         return server;
     }
 
-    @Required
+    @Autowired
     public void setServer(Server server) {
         this.server = server;
     }
@@ -214,7 +214,7 @@ public class ConnectorFactoryBean implements FactoryBean<ServerConnector> {
         this.excludedCipherSuites = getBannedCipherSuitesFromConfigurationValue(cipherFlags);
     }
 
-    @Required
+    @Autowired
     public void setProtocol(Protocol protocol) {
         this.protocol = protocol;
     }

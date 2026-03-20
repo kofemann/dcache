@@ -70,14 +70,12 @@ import com.google.gson.Gson;
 import com.google.gson.JsonParseException;
 import diskCacheV111.util.FsPath;
 import diskCacheV111.util.PnfsHandler;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
-import io.swagger.annotations.Example;
-import io.swagger.annotations.ExampleProperty;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -86,26 +84,26 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import javax.security.auth.Subject;
 import jakarta.servlet.http.HttpServletRequest;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.PATCH;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.PATCH;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.dcache.auth.attributes.LoginAttributes;
 import org.dcache.auth.attributes.Restriction;
 import org.dcache.auth.attributes.Restrictions;
@@ -139,7 +137,7 @@ import org.springframework.stereotype.Component;
  * @version v1.0
  */
 @Component
-@Api(value = "bulk-requests", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "bulk-requests")
 @Path("/bulk-requests")
 public final class BulkResources {
 
@@ -167,24 +165,24 @@ public final class BulkResources {
      * @owner A comma-separated list of owners to match; unspecified returns all requests.
      */
     @GET
-    @ApiOperation("Get the summary info of current bulk operations.  If nextId != -1 "
+    @Operation(summary = "Get the summary info of current bulk operations.  If nextId != -1 "
           + "retry using the offset = nextId to fetch more requests.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Produces(MediaType.APPLICATION_JSON)
     public List<BulkRequestSummary> getRequests(
-          @ApiParam("A comma-separated list of non-repeating elements, "
+          @Parameter(description = "A comma-separated list of non-repeating elements, "
                 + "each of which is one of: queued, started, completed, "
                 + "cancelled.")
           @QueryParam("status") String status,
-          @ApiParam("A comma-separated list of owners to match; unspecified returns all requests.")
+          @Parameter(description = "A comma-separated list of owners to match; unspecified returns all requests.")
           @QueryParam("owner") String owner,
-          @ApiParam("Offset for the request list (max length = 10K).")
+          @Parameter(description = "Offset for the request list (max length = 10K).")
           @DefaultValue("0")
           @QueryParam("offset") long offset,
-          @ApiParam("A path to match (as parent or full path); unspecified returns all requests.")
+          @Parameter(description = "A path to match (as parent or full path); unspecified returns all requests.")
           @QueryParam("path") String path) {
 
         final Set<BulkRequestStatus> statusSet;
@@ -218,19 +216,19 @@ public final class BulkResources {
      * absolute URL for the resource associated with this bulk request.
      */
     @POST
-    @ApiOperation(value = "Submit a bulk request.")
+    @Operation(summary = "Submit a bulk request.")
     @ApiResponses({
-          @ApiResponse(code = 201, message = "Created"),
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 429, message = "Too many requests"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "201", description = "Created"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "429", description = "Too many requests"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
     public Response submit(
-          @ApiParam(value = "Description of the request, which defines the following:\n\n"
+          @Parameter(description = "Description of the request, which defines the following:\n\n"
                 + "**target** - Array of file paths.  Required.\n"
                 + "**targetPrefix** - String path prefix, applied to all targets. Optional.\n"
                 + "**activity** - String, name of the activity (PIN, UNPIN, DELETE, UPDATE_QOS). Required.\n"
@@ -273,19 +271,19 @@ public final class BulkResources {
      * data fields.
      */
     @GET
-    @ApiOperation("Get the status information for an individual bulk request.")
+    @Operation(summary = "Get the status information for an individual bulk request.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not found"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public BulkRequestInfo getBulkRequestStatus(@ApiParam("The unique id of the request.")
+    public BulkRequestInfo getBulkRequestStatus(@Parameter(description = "The unique id of the request.")
     @PathParam("id") String id,
-          @ApiParam("Offset for the target list (max length = 10K).")
+          @Parameter(description = "Offset for the target list (max length = 10K).")
           @DefaultValue("0")
           @QueryParam("offset") long offset) {
         Subject subject = getSubject();
@@ -299,31 +297,31 @@ public final class BulkResources {
     }
 
     @GET
-    @ApiOperation("List the status information for an individual bulk request matching"
+    @Operation(summary = "List the status information for an individual bulk request matching"
           + " the query parameters (if any).")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not found"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/archived")
     @Produces(MediaType.APPLICATION_JSON)
     public List<BulkArchivedSummaryInfo> getArchivedSummaryList(
-          @ApiParam("A datetime string formatted as 'yyyy/MM/dd-HH:mm:ss'.")
+          @Parameter(description = "A datetime string formatted as 'yyyy/MM/dd-HH:mm:ss'.")
           @QueryParam("before") String before,
-          @ApiParam("A datetime string formatted as 'yyyy/MM/dd-HH:mm:ss'.")
+          @Parameter(description = "A datetime string formatted as 'yyyy/MM/dd-HH:mm:ss'.")
           @QueryParam("after") String after,
-          @ApiParam("A comma-separated list of non-repeating elements, "
+          @Parameter(description = "A comma-separated list of non-repeating elements, "
                 + "each of which is an activity type.")
           @QueryParam("activity") String activity,
-          @ApiParam("A comma-separated list of non-repeating elements, "
+          @Parameter(description = "A comma-separated list of non-repeating elements, "
           + "each of which is one of: completed, cancelled.")
           @QueryParam("status") String status,
-          @ApiParam("A comma-separated list of owners to match; unspecified returns all requests.")
+          @Parameter(description = "A comma-separated list of owners to match; unspecified returns all requests.")
           @QueryParam("owner") String owner,
-          @ApiParam("Max number of entries to return for the request list (default = 5K).")
+          @Parameter(description = "Max number of entries to return for the request list (default = 5K).")
           @DefaultValue("5000")
           @QueryParam("limit") int limit) {
         BulkArchivedSummaryFilter filter = new BulkArchivedSummaryFilter();
@@ -357,17 +355,17 @@ public final class BulkResources {
      * data fields.
      */
     @GET
-    @ApiOperation("Get the information for a bulk request which has been archived.")
+    @Operation(summary = "Get the information for a bulk request which has been archived.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not found"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/archived/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public BulkArchivedRequestInfo getArchivedRequestInfo(@ApiParam("The unique id of the request.")
+    public BulkArchivedRequestInfo getArchivedRequestInfo(@Parameter(description = "The unique id of the request.")
     @PathParam("id") String id) {
         Subject subject = getSubject();
         Restriction restriction = getRestriction();
@@ -393,24 +391,22 @@ public final class BulkResources {
      * @return response
      */
     @PATCH
-    @ApiOperation("Take some action on a bulk request.")
+    @Operation(summary = "Take some action on a bulk request.")
     @ApiResponses({
-          @ApiResponse(code = 200, message = "Successful"),
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not found"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "200", description = "Successful"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/{id}")
     @Consumes(MediaType.APPLICATION_JSON)
     @Produces(MediaType.APPLICATION_JSON)
-    public Response update(@ApiParam("The unique id of the request.")
+    public Response update(@Parameter(description = "The unique id of the request.")
     @PathParam("id") String id,
-          @ApiParam(value = "A JSON Object with an 'action' item specifying an "
-                + "action to take.", examples = @Example({
-                @ExampleProperty("{\"action\" : "
-                      + "\"cancel\" }")}))
+          @Parameter(description = "A JSON Object with an 'action' item specifying an "
+                + "action to take.")
                 String requestPayload) {
         Subject subject = getSubject();
         Restriction restriction = getRestriction();
@@ -458,19 +454,19 @@ public final class BulkResources {
      * @return response
      */
     @DELETE
-    @ApiOperation("Clear all resources pertaining to the given bulk request id.")
+    @Operation(summary = "Clear all resources pertaining to the given bulk request id.")
     @ApiResponses({
-          @ApiResponse(code = 204, message = "No content"),
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "204", description = "No content"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response clearRequest(@ApiParam("The unique id of the request.")
-    @PathParam("id") String id, @ApiParam("If request is still being processed, cancel it first.")
+    public Response clearRequest(@Parameter(description = "The unique id of the request.")
+    @PathParam("id") String id, @Parameter(description = "If request is still being processed, cancel it first.")
     @DefaultValue("false")
     @QueryParam("cancelIfRunning") boolean cancelIfRunning) {
         Subject subject = getSubject();

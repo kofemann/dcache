@@ -35,7 +35,7 @@ import org.apache.curator.framework.recipes.leader.LeaderLatchListener;
 import org.dcache.cells.CellStub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
@@ -70,38 +70,38 @@ public abstract class AbstractCleaner implements LeaderLatchListener {
 
     protected boolean _hasHaLeadership = false;
 
-    @Required
+    @Autowired
     public void setExecutor(ScheduledThreadPoolExecutor executor) {
         _executor = executor;
     }
 
-    @Required
+    @Autowired
     public void setPoolStub(CellStub stub) {
         _poolStub = stub;
     }
 
-    @Required
+    @Autowired
     public void setPoolInformationBase(PoolInformationBase pools) {
         _pools = pools;
     }
 
-    @Required
+    @Autowired
     public void setDataSource(DataSource dataSource) {
         _dataSource = dataSource;
         _db = new JdbcTemplate(_dataSource);
     }
 
-    @Required
+    @Autowired
     public void setRefreshInterval(long refreshInterval) {
         _refreshInterval = refreshInterval;
     }
 
-    @Required
+    @Autowired
     public void setRefreshIntervalUnit(TimeUnit refreshIntervalUnit) {
         _refreshIntervalUnit = refreshIntervalUnit;
     }
 
-    @Required
+    @Autowired
     public void setGracePeriod(Duration gracePeriod) {
         _gracePeriod = gracePeriod;
     }

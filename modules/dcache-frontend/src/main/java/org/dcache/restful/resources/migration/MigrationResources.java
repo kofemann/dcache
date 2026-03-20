@@ -4,31 +4,30 @@ import diskCacheV111.poolManager.PoolSelectionUnit;
 import diskCacheV111.util.CacheException;
 import dmg.cells.nucleus.CellPath;
 import dmg.cells.nucleus.NoRouteToCellException;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
-import io.swagger.annotations.ResponseHeader;
+import io.swagger.v3.oas.annotations.headers.Header;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.NoSuchElementException;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.dcache.auth.attributes.Restrictions;
 import org.dcache.cells.CellStub;
 import org.dcache.poolmanager.PoolMonitor;
@@ -47,7 +46,7 @@ import org.springframework.stereotype.Component;
  * @author Lukas Mansour
  */
 @Component
-@Api(value = "migrations", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "migrations")
 @Path("/migrations")
 public final class MigrationResources {
 
@@ -67,18 +66,21 @@ public final class MigrationResources {
      * @return response which will confirm the execution of the command (no output).
      */
     @POST
-    @ApiOperation(value = "Submit a migration copy request. (See Pool Operator Commands 'migration copy')")
+    @Operation(summary = "Submit a migration copy request. (See Pool Operator Commands 'migration copy')")
     @ApiResponses({
-          @ApiResponse(code = 201, message = "Created", responseHeaders = @ResponseHeader(name = "migration-job-id", description = "The migration job ID (if request valid).", response = Integer.class)),
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 429, message = "Too many requests"),
-          @ApiResponse(code = 500, message = "Internal Server Error")})
+          @ApiResponse(responseCode = "201", description = "Created",
+                headers = @Header(name = "migration-job-id",
+                      description = "The migration job ID (if request valid).",
+                      schema = @io.swagger.v3.oas.annotations.media.Schema(type = "integer"))),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "429", description = "Too many requests"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")})
     @Path("/copy")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
-    public Response submitMigrationCopy(@ApiParam(
+    public Response submitMigrationCopy(@Parameter( description =
           "Description of the request. Which contains the following:\n"
                 + "**sourcePool** - String - Name of the pool to migrate from.\n"
                 + "**targetPools** - Array of Pools (Strings) - Possible target pools.\n"
@@ -322,19 +324,19 @@ public final class MigrationResources {
      * Gets migration information for the specified migration job id on the specified pool.
      */
     @GET
-    @ApiOperation(value = "Gets migration information for the specified migration job id on the specified pool. (See Pool Operator Commands 'migration info')")
+    @Operation(summary = "Gets migration information for the specified migration job id on the specified pool. (See Pool Operator Commands 'migration info')")
     @ApiResponses({
-          @ApiResponse(code = 200, message = "OK"),
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 429, message = "Too many requests"),
-          @ApiResponse(code = 500, message = "Internal Server Error")})
+          @ApiResponse(responseCode = "200", description = "OK"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "429", description = "Too many requests"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")})
     @Path("/{poolName}/{id}")
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
-    public MigrationInfo getMigrationInformation(@ApiParam("Name of the pool") @PathParam("poolName") String poolName,
-          @ApiParam("Migration Job ID") @PathParam("id") Integer jobId) {
+    public MigrationInfo getMigrationInformation(@Parameter(description = "Name of the pool") @PathParam("poolName") String poolName,
+          @Parameter(description = "Migration Job ID") @PathParam("id") Integer jobId) {
         // If no credentials were passed.
         if (RequestUser.isAnonymous()) {
             throw new NotAuthorizedException("Anonymous user is not authorized.");

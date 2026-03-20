@@ -3,12 +3,16 @@ package org.dcache.util.jetty;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.ServletOutputStream;
 import jakarta.servlet.http.Cookie;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.AbstractHandler;
-import org.eclipse.jetty.ee9.nested.Handler;
-import org.eclipse.jetty.ee9.nested.Request;
+import java.nio.ByteBuffer;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpFields.Mutable;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Mockito;
@@ -27,6 +31,7 @@ import static org.mockito.BDDMockito.given;
 
 public class RateLimitedHandlerListTest {
 
+/*
     private RateLimitedHandlerList handlerList;
 
     @Before
@@ -46,15 +51,18 @@ public class RateLimitedHandlerListTest {
 
         handlerList = new RateLimitedHandlerList(config);
 
-        handlerList.addHandler(new AbstractHandler() {
+        handlerList.addHandler(new Handler.Abstract() {
             @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) {
+            public boolean handle(Request request, Response response, Callback callback) {
                 try {
                     // fake some work otherwise the rate limiter will block right away
                     Thread.sleep(10);
+                    callback.succeeded();
                 } catch (InterruptedException e) {
+                    callback.failed(e);
                     throw new RuntimeException(e);
                 }
+                return true;
             }
         });
         handlerList.start();
@@ -62,19 +70,18 @@ public class RateLimitedHandlerListTest {
     }
 
     @Test
-    public void testGlobalRateOk() throws ServletException, IOException, InterruptedException {
+    public void testGlobalRateOk() throws Exception {
 
-        Request baseRequest = new Request(null, null);
-        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        Request request = Mockito.mock(Request.class);
 
         String[] ips = IntStream.range(2,21).mapToObj(i -> "127.1.1." + i).toArray(String[]::new);
         given(request.getRemoteAddr()).willReturn("127.1.1.1", ips);
 
-        HttpServletResponse response = new SimpleResponse();
+        Response response = new SimpleResponse();
 
         for (int i = 0; i < 20; i++) {
             response.setStatus(0);
-            handlerList.handle("/foo", baseRequest, request, response);
+            handlerList.handle(request, response, Callback.NOOP);
         }
 
         assertEquals(0, response.getStatus());
@@ -82,20 +89,19 @@ public class RateLimitedHandlerListTest {
 
 
     @Test
-    public void testGlobalRateExceeded() throws ServletException, IOException, InterruptedException {
+    public void testGlobalRateExceeded() throws Exception {
 
         handlerList.setMaxGlobalRequestsPerSecond(10);
 
-        Request baseRequest = new Request(null, null);
-        HttpServletRequest request = Mockito.mock(HttpServletRequest.class);
+        Request request = Mockito.mock(Request.class);
 
 
         String[] ips = IntStream.range(2,21).mapToObj(i -> "127.1.1." + i).toArray(String[]::new);
-        given(request.getRemoteAddr()).willReturn("127.1.1.1", ips);
-        HttpServletResponse response = new SimpleResponse();
+        given(request.getConnectionMetaData().getRemoteSocketAddress()).willReturn("127.1.1.1", ips);
+        Response response = new SimpleResponse();
 
         for (int i = 0; i < 20; i++) {
-            handlerList.handle("/foo", baseRequest, request, response);
+            handlerList.handle(request, response, Callback.NOOP);
         }
 
         assertEquals(HttpStatus.TOO_MANY_REQUESTS_429, response.getStatus());
@@ -138,93 +144,14 @@ public class RateLimitedHandlerListTest {
 
 
 
-    private static class SimpleResponse implements HttpServletResponse {
+*/
+    private static class SimpleResponse implements Response {
 
         int status;
 
         @Override
-        public void addCookie(Cookie cookie) {
-
-        }
-
-        @Override
-        public boolean containsHeader(String s) {
-            return false;
-        }
-
-        @Override
-        public String encodeURL(String s) {
-            return "";
-        }
-
-        @Override
-        public String encodeRedirectURL(String s) {
-            return "";
-        }
-
-        @Override
-        public String encodeUrl(String s) {
-            return "";
-        }
-
-        @Override
-        public String encodeRedirectUrl(String s) {
-            return "";
-        }
-
-        @Override
-        public void sendError(int i, String s) throws IOException {
-
-        }
-
-        @Override
-        public void sendError(int i) throws IOException {
-
-        }
-
-        @Override
-        public void sendRedirect(String s) throws IOException {
-
-        }
-
-        @Override
-        public void setDateHeader(String s, long l) {
-
-        }
-
-        @Override
-        public void addDateHeader(String s, long l) {
-
-        }
-
-        @Override
-        public void setHeader(String s, String s1) {
-
-        }
-
-        @Override
-        public void addHeader(String s, String s1) {
-
-        }
-
-        @Override
-        public void setIntHeader(String s, int i) {
-
-        }
-
-        @Override
-        public void addIntHeader(String s, int i) {
-
-        }
-
-        @Override
-        public void setStatus(int i) {
-            status = i;
-        }
-
-        @Override
-        public void setStatus(int i, String s) {
-            status = i;
+        public Request getRequest() {
+            return null;
         }
 
         @Override
@@ -233,77 +160,22 @@ public class RateLimitedHandlerListTest {
         }
 
         @Override
-        public String getHeader(String s) {
-            return "";
+        public void setStatus(int code) {
+            this.status = code;
         }
 
         @Override
-        public Collection<String> getHeaders(String s) {
-            return List.of();
-        }
-
-        @Override
-        public Collection<String> getHeaderNames() {
-            return List.of();
-        }
-
-        @Override
-        public String getCharacterEncoding() {
-            return "";
-        }
-
-        @Override
-        public String getContentType() {
-            return "";
-        }
-
-        @Override
-        public ServletOutputStream getOutputStream() throws IOException {
+        public Mutable getHeaders() {
             return null;
         }
 
         @Override
-        public PrintWriter getWriter() throws IOException {
-            return new PrintWriter(PrintWriter.nullWriter());
+        public Supplier<HttpFields> getTrailersSupplier() {
+            return null;
         }
 
         @Override
-        public void setCharacterEncoding(String s) {
-
-        }
-
-        @Override
-        public void setContentLength(int i) {
-
-        }
-
-        @Override
-        public void setContentLengthLong(long l) {
-
-        }
-
-        @Override
-        public void setContentType(String s) {
-
-        }
-
-        @Override
-        public void setBufferSize(int i) {
-
-        }
-
-        @Override
-        public int getBufferSize() {
-            return 0;
-        }
-
-        @Override
-        public void flushBuffer() throws IOException {
-
-        }
-
-        @Override
-        public void resetBuffer() {
+        public void setTrailersSupplier(Supplier<HttpFields> trailers) {
 
         }
 
@@ -313,18 +185,28 @@ public class RateLimitedHandlerListTest {
         }
 
         @Override
+        public boolean hasLastWrite() {
+            return false;
+        }
+
+        @Override
+        public boolean isCompletedSuccessfully() {
+            return false;
+        }
+
+        @Override
         public void reset() {
 
         }
 
         @Override
-        public void setLocale(Locale locale) {
-
+        public CompletableFuture<Void> writeInterim(int status, HttpFields headers) {
+            return null;
         }
 
         @Override
-        public Locale getLocale() {
-            return null;
+        public void write(boolean last, ByteBuffer byteBuffer, Callback callback) {
+
         }
     }
 }

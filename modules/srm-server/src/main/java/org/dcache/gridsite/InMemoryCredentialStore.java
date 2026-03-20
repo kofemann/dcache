@@ -32,7 +32,7 @@ import org.dcache.auth.FQAN;
 import org.dcache.delegation.gridsite2.DelegationException;
 import org.italiangrid.voms.VOMSAttribute;
 import org.italiangrid.voms.ac.VOMSACValidator;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * An implementation of CredentialStore that holds credentials in-memory. This is meant as a quick
@@ -45,7 +45,7 @@ public class InMemoryCredentialStore implements CredentialStore {
 
     private VOMSACValidator validator;
 
-    @Required
+    @Autowired
     public void setVomsValidator(VOMSACValidator validator) {
         this.validator = validator;
     }

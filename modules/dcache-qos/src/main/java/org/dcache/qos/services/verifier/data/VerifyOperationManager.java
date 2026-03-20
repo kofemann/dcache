@@ -102,7 +102,7 @@ import org.dcache.util.RunnableModule;
 import org.dcache.util.SignalAware;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *  Responsible for the entire lifecycle of a given verification operation.
@@ -726,62 +726,62 @@ public class VerifyOperationManager extends RunnableModule implements CellInfoPr
         LOGGER.info("Exiting manager thread.");
     }
 
-    @Required
+    @Autowired
     public void setCounters(QoSVerifierCounters counters) {
         this.counters = counters;
     }
 
-    @Required
+    @Autowired
     public void setDao(VerifyOperationDao operationDao) {
         this.operationDao = operationDao;
     }
 
-    @Required
+    @Autowired
     public void setHandler(VerifyAndUpdateHandler updateHandler) {
         this.updateHandler = updateHandler;
     }
 
-    @Required
+    @Autowired
     public void setHistory(QoSHistory history) {
         this.history = history;
     }
 
-    @Required
+    @Autowired
     public void setMaxRunning(int maxRunning) {
         this.maxRunning = maxRunning;
     }
 
-    @Required
+    @Autowired
     public void setMaxRetries(int maxRetries) {
         this.maxRetries = maxRetries;
     }
 
-    @Required
+    @Autowired
     public void setPoolInfoMap(PoolInfoMap poolInfoMap) {
         this.poolInfoMap = poolInfoMap;
     }
 
-    @Required
+    @Autowired
     public void setPostProcessExecutor(ExecutorService postProcessExecutor) {
         this.postProcessExecutor = postProcessExecutor;
     }
 
-    @Required
+    @Autowired
     public void setQueueIndex(VerifyOperationQueueIndex queueIndex) {
         this.queueIndex = queueIndex;
     }
 
-    @Required
+    @Autowired
     public void setReloadGracePeriod(int reloadGracePeriod) {
         this.reloadGracePeriod = reloadGracePeriod;
     }
 
-    @Required
+    @Autowired
     public void setReloadGracePeriodUnit(TimeUnit reloadGracePeriodUnit) {
         this.reloadGracePeriodUnit = reloadGracePeriodUnit;
     }
 
-    @Required
+    @Autowired
     public void setRemovalExecutor(ExecutorService removalExecutor) {
         this.removalExecutor = removalExecutor;
     }

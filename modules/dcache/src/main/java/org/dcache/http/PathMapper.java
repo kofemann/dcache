@@ -30,6 +30,7 @@ import java.io.PrintWriter;
 import java.util.function.Function;
 import org.dcache.auth.attributes.LoginAttributes;
 import org.dcache.vehicles.PnfsResolveSymlinksMessage;
+import org.eclipse.jetty.server.Request;
 
 /**
  * This Class is responsible for the mapping between client requested paths and corresponding dCache
@@ -74,6 +75,11 @@ public class PathMapper implements CellInfoProvider {
         return effectiveRoot(userRoot, asException);
     }
 
+    private <E extends Exception> FsPath effectiveRoot(Request request,
+          Function<String, E> asException) throws E {
+        FsPath userRoot = LoginAttributes.getUserRoot(getLoginAttributes(request));
+        return effectiveRoot(userRoot, asException);
+    }
     /**
      * Return the dCache path that corresponds to the request path.  This is evaluated relative to
      * the effective root.  An exception is thrown if the user is not allowed to use this door.
@@ -84,11 +90,41 @@ public class PathMapper implements CellInfoProvider {
     }
 
     /**
+     * Return the dCache path that corresponds to the request path.  This is evaluated relative to
+     * the effective root.  An exception is thrown if the user is not allowed to use this door.
+     */
+    public <E extends Exception> FsPath asDcachePath(Request request, String path,
+          Function<String, E> asException) throws E {
+        return effectiveRoot(request, asException).chroot(path);
+    }
+
+    /**
      * The dCache path that corresponds to the supplied client request path. It is expected that the
      * caller has already checked whether the user is allowed to use this door.
      */
     public FsPath asDcachePath(HttpServletRequest request, String path) {
         return asDcachePath(request, path, RuntimeException::new);
+    }
+
+    /**
+     * The dCache path that corresponds to the supplied client request path. It is expected that the
+     * caller has already checked whether the user is allowed to use this door.
+     */
+    public FsPath asDcachePath(Request request, String path) {
+        return asDcachePath(request, path, RuntimeException::new);
+    }
+
+    public <E extends Exception> FsPath asDcachePath(Request request, String path,
+          Function<String, E> asException, PnfsHandler handler) throws E, CacheException {
+        FsPath root = effectiveRoot(request, asException);
+        PnfsResolveSymlinksMessage message = handler.request(
+              new PnfsResolveSymlinksMessage(path, root.toString()));
+        root = FsPath.create(message.getResolvedPrefix());
+        FsPath fullPath = FsPath.create(message.getResolvedPath());
+        if (fullPath.hasPrefix(root)) {
+            path = fullPath.stripPrefix(root);
+        }
+        return root.chroot(path);
     }
 
     public <E extends Exception> FsPath asDcachePath(HttpServletRequest request, String path,

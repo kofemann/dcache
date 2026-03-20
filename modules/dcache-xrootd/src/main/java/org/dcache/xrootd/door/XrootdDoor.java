@@ -137,7 +137,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 
@@ -248,58 +248,58 @@ public class XrootdDoor
         return proxied;
     }
 
-    @Required
+    @Autowired
     public void setPortRange(NettyPortRange portRange) {
         this.portRange = portRange;
     }
 
-    @Required
+    @Autowired
     public void setProxied(boolean proxied) {
         this.proxied = proxied;
     }
 
-    @Required
+    @Autowired
     public void setProxyResponseTimeoutInSeconds(int proxyResponseTimeoutInSeconds) {
         this.proxyResponseTimeoutInSeconds = proxyResponseTimeoutInSeconds;
     }
 
-    @Required
+    @Autowired
     public void setPnfsStub(CellStub pnfsStub) {
         _pnfsStub = pnfsStub;
     }
 
-    @Required
+    @Autowired
     public void setPoolStub(CellStub stub) {
         _poolStub = stub;
     }
 
-    @Required
+    @Autowired
     public void setPoolManagerStub(PoolManagerStub stub) {
         _poolManagerStub = stub;
     }
 
-    @Required
+    @Autowired
     public void setBillingStub(CellStub stub) {
         _billingStub = stub;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         _poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setServerProtocolFlags(ServerProtocolFlags serverProtocolFlags) {
         this.serverProtocolFlags = serverProtocolFlags;
     }
 
-    @Required
+    @Autowired
     public void setSslHandlerFactories(
           List<ChannelHandlerFactory> sslHandlerFactories) {
         this.sslHandlerFactories = sslHandlerFactories;
     }
 
-    @Required
+    @Autowired
     public void setProxyTimerExecutor(ScheduledExecutorService proxyTimerExecutor) {
         this.proxyTimerExecutor = proxyTimerExecutor;
     }
@@ -323,7 +323,7 @@ public class XrootdDoor
     /**
      * The list of paths which are authorized for xrootd write access.
      */
-    @Required
+    @Autowired
     public void setWritePaths(String s) {
         _writePaths = toFsPaths(s);
     }
@@ -335,7 +335,7 @@ public class XrootdDoor
      * getter returns a different type than set by the setter, and hence we must not use the same
      * property name (otherwise Spring complains).
      */
-    @Required
+    @Autowired
     public List<FsPath> getWritePathsList() {
         return _writePaths;
     }
@@ -343,7 +343,7 @@ public class XrootdDoor
     /**
      * The list of paths which are authorized for xrootd write access.
      */
-    @Required
+    @Autowired
     public void setReadPaths(String s) {
         _readPaths = toFsPaths(s);
     }
@@ -359,7 +359,7 @@ public class XrootdDoor
         return _readPaths;
     }
 
-    @Required
+    @Autowired
     public void setPnfsHandler(PnfsHandler pnfs) {
         _pnfs = pnfs;
     }
@@ -367,7 +367,7 @@ public class XrootdDoor
     /**
      * The actual mover queue on the pool onto which this request gets scheduled.
      */
-    @Required
+    @Autowired
     public void setIoQueue(String ioQueue) {
         _ioQueue = ioQueue;
     }
@@ -388,7 +388,7 @@ public class XrootdDoor
      *
      * @param timeout The mover timeout in milliseconds
      */
-    @Required
+    @Autowired
     public void setMoverTimeout(int timeout) {
         if (timeout <= 0) {
             throw new IllegalArgumentException("Timeout must be positive");
@@ -400,12 +400,12 @@ public class XrootdDoor
         _moverTimeoutUnit = requireNonNull(unit);
     }
 
-    @Required
+    @Autowired
     public void setTriedHostsEnabled(boolean triedHostsEnabled) {
         this.triedHostsEnabled = triedHostsEnabled;
     }
 
-    @Required
+    @Autowired
     public void setLoginBrokerPublisher(LoginBrokerPublisher lb) {
         lb.addConsumer(this::acceptLoginBrokerInfo);
     }
@@ -422,7 +422,7 @@ public class XrootdDoor
     /**
      * Sets the ScheduledExecutorService used for periodic tasks.
      */
-    @Required
+    @Autowired
     public void setExecutor(ScheduledExecutorService executor) {
         _scheduledExecutor = executor;
         executor.scheduleAtFixedRate(
@@ -435,7 +435,7 @@ public class XrootdDoor
               TimeUnit.MILLISECONDS);
     }
 
-    @Required
+    @Autowired
     public void setAnonymousAccess(AccessLevel level) {
         anonymousUserAccess = level;
     }

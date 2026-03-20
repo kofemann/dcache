@@ -40,7 +40,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.dcache.cells.CellStub;
 import org.dcache.notification.BillingMessageSerializerVisitor;
 import org.dcache.services.billing.text.StringTemplateInfoMessageVisitor;
@@ -51,7 +51,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.stringtemplate.v4.ST;
@@ -462,12 +462,12 @@ public final class BillingCell
         }
     }
 
-    @Required
+    @Autowired
     public void setPoolManagerStub(CellStub poolManagerStub) {
         _poolManagerStub = poolManagerStub;
     }
 
-    @Required
+    @Autowired
     public void setLogsDir(File dir) {
         if (!dir.isDirectory()) {
             throw new IllegalArgumentException("No such directory: " + dir);
@@ -482,11 +482,11 @@ public final class BillingCell
         _flatTextDir = flatTextDir;
     }
 
-    @Required
+    @Autowired
     public void setEnableTxt(boolean enableText) {
         _enableText = enableText;
     }
-    @Required
+    @Autowired
     public void setEnableKafka(boolean enableKafka) {
         _enableKafka = enableKafka;
     }

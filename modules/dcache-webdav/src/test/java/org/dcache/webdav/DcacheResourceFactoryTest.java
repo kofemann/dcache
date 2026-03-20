@@ -5,10 +5,10 @@ import static org.hamcrest.Matchers.is;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.Mockito.mock;
 
+import jakarta.servlet.http.HttpServletRequest;
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
-import javax.servlet.http.HttpServletRequest;
 import org.junit.Test;
 
 public class DcacheResourceFactoryTest {

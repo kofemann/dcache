@@ -66,29 +66,29 @@ import diskCacheV111.util.FileNotFoundCacheException;
 import diskCacheV111.util.PnfsId;
 import dmg.cells.nucleus.NoRouteToCellException;
 import dmg.util.Exceptions;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import jakarta.servlet.http.HttpServletResponse;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import org.dcache.restful.providers.PagedList;
 import org.dcache.restful.providers.billing.BillingDataGrid;
 import org.dcache.restful.providers.billing.BillingDataGridEntry;
@@ -100,14 +100,14 @@ import org.dcache.restful.util.RequestUser;
 import org.dcache.util.histograms.Histogram;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
  * <p>RestFul API for providing billing records and histograms.</p>
  */
 @Component
-@Api(value = "billing", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "billing")
 @Path("/billing")
 public class BillingResources {
 
@@ -121,32 +121,32 @@ public class BillingResources {
     private boolean unlimitedOperationVisibility;
 
     @GET
-    @ApiOperation("Provides a list of read transfers for a specific PNFS-ID.")
+    @Operation(summary = "Provides a list of read transfers for a specific PNFS-ID.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("reads/{pnfsid}")
-    public List<DoorTransferRecord> getReads(@ApiParam("The file to list.")
+    public List<DoorTransferRecord> getReads(@Parameter(description = "The file to list.")
     @PathParam("pnfsid") PnfsId pnfsid,
-          @ApiParam("Return no reads after this datestamp.")
+          @Parameter(description = "Return no reads after this datestamp.")
           @QueryParam("before") String before,
-          @ApiParam("Return no reads before this datestamp.")
+          @Parameter(description = "Return no reads before this datestamp.")
           @QueryParam("after") String after,
-          @ApiParam("Maximum number of reads to return.")
+          @Parameter(description = "Maximum number of reads to return.")
           @QueryParam("limit") Integer limit,
-          @ApiParam("Number of reads to skip.")
+          @Parameter(description = "Number of reads to skip.")
           @DefaultValue("0")
           @QueryParam("offset") Integer offset,
-          @ApiParam("Only select reads from the specified pool.")
+          @Parameter(description = "Only select reads from the specified pool.")
           @QueryParam("pool") String pool,
-          @ApiParam("Only select reads initiated by the specified door.")
+          @Parameter(description = "Only select reads initiated by the specified door.")
           @QueryParam("door") String door,
-          @ApiParam("Only select reads requested by the client.")
+          @Parameter(description = "Only select reads requested by the client.")
           @QueryParam("client") String client,
-          @ApiParam("How to sort responses.")
+          @Parameter(description = "How to sort responses.")
           @DefaultValue("date")
           @QueryParam("sort") String sort) {
         try {
@@ -178,32 +178,32 @@ public class BillingResources {
 
 
     @GET
-    @ApiOperation("Provides a list of write transfers for a specific PNFS-ID.")
+    @Operation(summary = "Provides a list of write transfers for a specific PNFS-ID.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("writes/{pnfsid}")
-    public List<DoorTransferRecord> getWrites(@ApiParam("The file to list.")
+    public List<DoorTransferRecord> getWrites(@Parameter(description = "The file to list.")
     @PathParam("pnfsid") PnfsId pnfsid,
-          @ApiParam("Return no writes after this datestamp.")
+          @Parameter(description = "Return no writes after this datestamp.")
           @QueryParam("before") String before,
-          @ApiParam("Return no writes before this datestamp.")
+          @Parameter(description = "Return no writes before this datestamp.")
           @QueryParam("after") String after,
-          @ApiParam("Maximum number of writes to return.")
+          @Parameter(description = "Maximum number of writes to return.")
           @QueryParam("limit") Integer limit,
-          @ApiParam("Number of writes to skip.")
+          @Parameter(description = "Number of writes to skip.")
           @DefaultValue("0")
           @QueryParam("offset") int offset,
-          @ApiParam("Only select writes from the specified pool.")
+          @Parameter(description = "Only select writes from the specified pool.")
           @QueryParam("pool") String pool,
-          @ApiParam("Only select writes initiated by the specified door.")
+          @Parameter(description = "Only select writes initiated by the specified door.")
           @QueryParam("door") String door,
-          @ApiParam("Only select writes requested by the client.")
+          @Parameter(description = "Only select writes requested by the client.")
           @QueryParam("client") String client,
-          @ApiParam("How to sort responses.")
+          @Parameter(description = "How to sort responses.")
           @DefaultValue("date")
           @QueryParam("sort") String sort) {
         try {
@@ -235,34 +235,34 @@ public class BillingResources {
 
 
     @GET
-    @ApiOperation("Provides a list of pool-to-pool transfers for a specific "
+    @Operation(summary = "Provides a list of pool-to-pool transfers for a specific "
           + "PNFS-ID.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 403, message = "p2p records are only available to admin users."),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "403", description = "p2p records are only available to admin users."),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("p2ps/{pnfsid}")
-    public List<P2PTransferRecord> getP2ps(@ApiParam("The file to list.")
+    public List<P2PTransferRecord> getP2ps(@Parameter(description = "The file to list.")
     @PathParam("pnfsid") PnfsId pnfsid,
-          @ApiParam("Return no transfers after this datestamp.")
+          @Parameter(description = "Return no transfers after this datestamp.")
           @QueryParam("before") String before,
-          @ApiParam("Return no transfers before this datestamp.")
+          @Parameter(description = "Return no transfers before this datestamp.")
           @QueryParam("after") String after,
-          @ApiParam("Maximum number of transfers to return.")
+          @Parameter(description = "Maximum number of transfers to return.")
           @QueryParam("limit") Integer limit,
-          @ApiParam("Number of transfers to skip.")
+          @Parameter(description = "Number of transfers to skip.")
           @DefaultValue("0")
           @QueryParam("offset") int offset,
-          @ApiParam("Only select transfers from the specified pool.")
+          @Parameter(description = "Only select transfers from the specified pool.")
           @QueryParam("serverPool") String serverPool,
-          @ApiParam("Only select transfers to the specified pool.")
+          @Parameter(description = "Only select transfers to the specified pool.")
           @QueryParam("clientPool") String clientPool,
-          @ApiParam("Only select transfers triggered by the specified client.")
+          @Parameter(description = "Only select transfers triggered by the specified client.")
           @QueryParam("client") String client,
-          @ApiParam("How to sort responses.")
+          @Parameter(description = "How to sort responses.")
           @DefaultValue("date")
           @QueryParam("sort") String sort) {
         if (!RequestUser.canViewFileOperations(unlimitedOperationVisibility)) {
@@ -295,29 +295,29 @@ public class BillingResources {
 
 
     @GET
-    @ApiOperation("Provides a list of tape writes for a specific PNFS-ID.")
+    @Operation(summary = "Provides a list of tape writes for a specific PNFS-ID.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 403, message = "store records are only available to admin users."),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "403", description = "store records are only available to admin users."),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("stores/{pnfsid}")
-    public List<HSMTransferRecord> getStores(@ApiParam("The file to list.")
+    public List<HSMTransferRecord> getStores(@Parameter(description = "The file to list.")
     @PathParam("pnfsid") PnfsId pnfsid,
-          @ApiParam("Return no tape writes after this datestamp.")
+          @Parameter(description = "Return no tape writes after this datestamp.")
           @QueryParam("before") String before,
-          @ApiParam("Return no tape writes before this datestamp.")
+          @Parameter(description = "Return no tape writes before this datestamp.")
           @QueryParam("after") String after,
-          @ApiParam("Maximum number of tape writes to return.")
+          @Parameter(description = "Maximum number of tape writes to return.")
           @QueryParam("limit") Integer limit,
-          @ApiParam("Number of tape writes to skip.")
+          @Parameter(description = "Number of tape writes to skip.")
           @DefaultValue("0")
           @QueryParam("offset") int offset,
-          @ApiParam("Only select tape writes involving the specified pool.")
+          @Parameter(description = "Only select tape writes involving the specified pool.")
           @QueryParam("pool") String pool,
-          @ApiParam("How to sort responses.")
+          @Parameter(description = "How to sort responses.")
           @DefaultValue("date")
           @QueryParam("sort") String sort) {
         if (!RequestUser.canViewFileOperations(unlimitedOperationVisibility)) {
@@ -348,29 +348,29 @@ public class BillingResources {
 
 
     @GET
-    @ApiOperation("Provide a list of tape reads for a specific PNFS-ID.")
+    @Operation(summary = "Provide a list of tape reads for a specific PNFS-ID.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 403, message = "restore records are only available to admin users."),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "403", description = "restore records are only available to admin users."),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("restores/{pnfsid}")
-    public List<HSMTransferRecord> getRestores(@ApiParam("The file to list.")
+    public List<HSMTransferRecord> getRestores(@Parameter(description = "The file to list.")
     @PathParam("pnfsid") PnfsId pnfsid,
-          @ApiParam("Return no tape reads after this datestamp.")
+          @Parameter(description = "Return no tape reads after this datestamp.")
           @QueryParam("before") String before,
-          @ApiParam("Return no tape reads before this datestamp.")
+          @Parameter(description = "Return no tape reads before this datestamp.")
           @QueryParam("after") String after,
-          @ApiParam("Maximum number of tape reads to return.")
+          @Parameter(description = "Maximum number of tape reads to return.")
           @QueryParam("limit") Integer limit,
-          @ApiParam("Number of tape reads to skip.")
+          @Parameter(description = "Number of tape reads to skip.")
           @DefaultValue("0")
           @QueryParam("offset") int offset,
-          @ApiParam("Only select tape reads involving the specified pool.")
+          @Parameter(description = "Only select tape reads involving the specified pool.")
           @QueryParam("pool") String pool,
-          @ApiParam("How to sort responses.")
+          @Parameter(description = "How to sort responses.")
           @DefaultValue("date")
           @QueryParam("sort") String sort) {
         if (!RequestUser.canViewFileOperations(unlimitedOperationVisibility)) {
@@ -401,9 +401,9 @@ public class BillingResources {
 
 
     @GET
-    @ApiOperation("Provide the full \"grid\" of time series data in one pass.")
+    @Operation(summary = "Provide the full \"grid\" of time series data in one pass.")
     @ApiResponses({
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("histograms")
@@ -446,16 +446,16 @@ public class BillingResources {
      * @return the data (array of doubles).
      */
     @GET
-    @ApiOperation("Request the time series data for a particular specification. "
+    @Operation(summary = "Request the time series data for a particular specification. "
           + "The available specifications can be obtained via GET on "
           + "histograms/grid/description.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("histograms/{key}")
-    public Histogram getData(@ApiParam("The specification identifier for which to fetch data.")
+    public Histogram getData(@Parameter(description = "The specification identifier for which to fetch data.")
     @PathParam("key") String key) {
         /*
          *  No admin privileges necessary for billing histogram data.
@@ -472,10 +472,10 @@ public class BillingResources {
 
 
     @GET
-    @ApiOperation("Provides the list of available histograms with their "
+    @Operation(summary = "Provides the list of available histograms with their "
           + "corresponding identifer.")
     @ApiResponses({
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Produces(MediaType.APPLICATION_JSON)
     @Path("histograms/grid/description")
@@ -491,7 +491,7 @@ public class BillingResources {
         }
     }
 
-    @Required
+    @Autowired
     public void setUnlimitedOperationVisibility(boolean visibility) {
         unlimitedOperationVisibility = visibility;
     }

@@ -239,7 +239,7 @@ import org.dcache.vehicles.pool.CacheEntryInfoMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 
@@ -327,37 +327,37 @@ public final class Storage
         attributesRequiredForRmdir.addAll(permissionHandler.getRequiredAttributes());
     }
 
-    @Required
+    @Autowired
     public void setRoot(String path) {
         root = FsPath.create(path);
     }
 
-    @Required
+    @Autowired
     public void setSrmProtocol(String protocol) {
         srmProtocol = protocol;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(Executor executor) {
         _executor = executor;
     }
 
-    @Required
+    @Autowired
     public void setSpaceLookupCache(LoadingCache<String, Optional<Space>> cache) {
         spaces = cache;
     }
 
-    @Required
+    @Autowired
     public void setOwnerDescriptionLookupCache(LoadingCache<GetSpaceTokensKey, long[]> cache) {
         spaceTokens = cache;
     }
 
-    @Required
+    @Autowired
     public void setPnfsStub(CellStub pnfsStub) {
         _pnfsStub = pnfsStub;
     }
 
-    @Required
+    @Autowired
     public void setIsSpaceManagerEnabled(boolean isEnabled) {
         _isSpaceManagerEnabled = isEnabled;
     }
@@ -366,27 +366,27 @@ public final class Storage
         _spaceManagerStub = spaceManagerStub;
     }
 
-    @Required
+    @Autowired
     public void setPoolManagerStub(CellStub poolManagerStub) {
         _poolManagerStub = poolManagerStub;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         _poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setTransferManagerStub(CellStub transferManagerStub) {
         _transferManagerStub = transferManagerStub;
     }
 
-    @Required
+    @Autowired
     public void setPinManagerStub(CellStub pinManagerStub) {
         _pinManagerStub = pinManagerStub;
     }
 
-    @Required
+    @Autowired
     public void setBillingStub(CellStub billingStub) {
         _billingStub = billingStub;
     }
@@ -396,12 +396,12 @@ public final class Storage
         _kafkaSender = kafkaTemplate::sendDefault;
     }
 
-    @Required
+    @Autowired
     public void setPnfsHandler(PnfsHandler pnfs) {
         _pnfs = pnfs;
     }
 
-    @Required
+    @Autowired
     public void setConfiguration(Configuration config) {
         this.config = config;
     }
@@ -410,7 +410,7 @@ public final class Storage
         return srmPutNotSupportedProtocols;
     }
 
-    @Required
+    @Autowired
     public void setSrmPutNotSupportedProtocols(String[] srmPutNotSupportedProtocols) {
         this.srmPutNotSupportedProtocols = srmPutNotSupportedProtocols;
     }
@@ -419,7 +419,7 @@ public final class Storage
         return srmGetNotSupportedProtocols;
     }
 
-    @Required
+    @Autowired
     public void setSrmGetNotSupportedProtocols(String[] srmGetNotSupportedProtocols) {
         this.srmGetNotSupportedProtocols = srmGetNotSupportedProtocols;
     }
@@ -428,7 +428,7 @@ public final class Storage
         return srmPreferredProtocols;
     }
 
-    @Required
+    @Autowired
     public void setSrmPreferredProtocols(String[] srmPreferredProtocols) {
         this.srmPreferredProtocols = srmPreferredProtocols;
     }
@@ -437,7 +437,7 @@ public final class Storage
         _isOnlinePinningEnabled = value;
     }
 
-    @Required
+    @Autowired
     public void setLoginBrokerSource(LoginBrokerSource provider) {
         loginBrokerSource = provider;
     }
@@ -450,7 +450,7 @@ public final class Storage
         customGetHostByAddr = value;
     }
 
-    @Required
+    @Autowired
     public void setDirectoryListSource(DirectoryListSource source) {
         _listSource = source;
     }

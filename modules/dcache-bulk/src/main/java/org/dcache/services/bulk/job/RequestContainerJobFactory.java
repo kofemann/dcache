@@ -85,7 +85,7 @@ import org.dcache.util.list.ListDirectoryHandler;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Constructs the request job.
@@ -151,57 +151,57 @@ public final class RequestContainerJobFactory {
         return inFlightSemaphore.availablePermits();
     }
 
-    @Required
+    @Autowired
     public void setActivityFactory(BulkActivityFactory activityFactory) {
         this.activityFactory = activityFactory;
     }
 
-    @Required
+    @Autowired
     public void setCallbackExecutor(BoundedCachedExecutor callbackExecutor) {
         this.callbackExecutor = callbackExecutor;
     }
 
-    @Required
+    @Autowired
     public void setListHandler(ListDirectoryHandler listHandler) {
         this.listHandler = listHandler;
     }
 
-    @Required
+    @Autowired
     public void setListExecutor(BoundedCachedExecutor listExecutor) {
         this.listExecutor = listExecutor;
     }
 
-    @Required
+    @Autowired
     public void setDirListSemaphore(int permits) {
         dirListSemaphore = new Semaphore(permits);
     }
 
-    @Required
+    @Autowired
     public void setInFlightSemaphore(int permits) {
         inFlightSemaphore = new Semaphore(permits);
     }
 
-    @Required
+    @Autowired
     public void setPnfsManager(CellStub pnfsManager) {
         this.pnfsManager = pnfsManager;
     }
 
-    @Required
+    @Autowired
     public void setRequestStore(BulkRequestStore requestStore) {
         this.requestStore = requestStore;
     }
 
-    @Required
+    @Autowired
     public void setStatistics(BulkServiceStatistics statistics) {
         this.statistics = statistics;
     }
 
-    @Required
+    @Autowired
     public void setTargetStore(BulkTargetStore targetStore) {
         this.targetStore = targetStore;
     }
 
-    @Required
+    @Autowired
     public void setTaskExecutor(BoundedCachedExecutor taskExecutor) {
         this.taskExecutor = taskExecutor;
     }

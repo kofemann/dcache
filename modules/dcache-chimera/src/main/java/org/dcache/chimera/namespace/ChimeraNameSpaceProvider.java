@@ -123,7 +123,7 @@ import org.dcache.util.Glob;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class ChimeraNameSpaceProvider
       implements NameSpaceProvider, CellInfoProvider, CellCommandListener {
@@ -178,39 +178,39 @@ public class ChimeraNameSpaceProvider
     private final RequestExecutionTimeGauges<Method> _gauges =
           new RequestExecutionTimeGauges<>(ChimeraNameSpaceProvider.class.getSimpleName());
 
-    @Required
+    @Autowired
     public void setExtractor(ChimeraStorageInfoExtractable extractor) {
         _extractor = extractor;
     }
 
-    @Required
+    @Autowired
     public void setInheritFileOwnership(boolean inherit) {
         _inheritFileOwnership = inherit;
     }
 
-    @Required
+    @Autowired
     public void setVerifyAllLookups(boolean verify) {
         _verifyAllLookups = verify;
     }
 
-    @Required
+    @Autowired
     public void setAllowMoveToDirectoryWithDifferentStorageClass(boolean allow) {
         _allowMoveToDirectoryWithDifferentStorageClass = allow;
     }
 
-    @Required
+    @Autowired
     public void setPermissionHandler(PermissionHandler handler) {
         _permissionHandler = handler;
     }
 
-    @Required
+    @Autowired
     public void setFileSystem(FileSystemProvider fs) {
         _fs = MonitoringProxy.decorateWithMonitoringProxy(new Class[]{FileSystemProvider.class}, fs,
               _counters,
               _gauges);
     }
 
-    @Required
+    @Autowired
     public void setAclEnabled(boolean isEnabled) {
         _aclEnabled = isEnabled;
     }

@@ -26,7 +26,7 @@ import diskCacheV111.util.PnfsHandler;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Set;
 import javax.security.auth.Subject;
-import javax.ws.rs.BadRequestException;
+import jakarta.ws.rs.BadRequestException;
 import org.dcache.auth.Subjects;
 import org.dcache.auth.attributes.LoginAttribute;
 import org.dcache.auth.attributes.LoginAttributes;

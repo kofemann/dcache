@@ -66,32 +66,32 @@ import static org.dcache.restful.providers.SuccessfulResponse.successfulResponse
 import diskCacheV111.util.CacheException;
 import diskCacheV111.util.PermissionDeniedCacheException;
 import dmg.util.Exceptions;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import javax.security.auth.Subject;
 import jakarta.servlet.http.HttpServletRequest;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
 import org.dcache.cells.CellStub;
 import org.dcache.qos.DefaultQoSPolicyJsonDeserializer;
 import org.dcache.qos.QoSPolicy;
@@ -108,7 +108,7 @@ import org.springframework.stereotype.Component;
 /**
  * RestFul API to manage dCache QoS Policy descriptions.
  */
-@Api(value = "qos-policy", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "qos-policy")
 @Component
 @Path("/qos-policy")
 public class QoSPolicyResource {
@@ -123,12 +123,12 @@ public class QoSPolicyResource {
     private CellStub qosEngine;
 
     @GET
-    @ApiOperation(value = "List all the registered QoSPolicy names.")
+    @Operation(summary = "List all the registered QoSPolicy names.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad Request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad Request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Produces(MediaType.APPLICATION_JSON)
     public List<String> listPolicies() {
@@ -152,18 +152,18 @@ public class QoSPolicyResource {
     }
 
     @GET
-    @ApiOperation(value = "Retrieve the QoSPolicy by this name.")
+    @Operation(summary = "Retrieve the QoSPolicy by this name.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad Request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad Request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Path("{name}")
     @Produces(MediaType.APPLICATION_JSON)
     public QoSPolicy getPolicy(
-          @ApiParam("The name of the policy (unique to this dCache instance).")
+          @Parameter(description = "The name of the policy (unique to this dCache instance).")
           @PathParam("name")String name) {
         PnfsManagerGetQoSPolicyMessage message = new PnfsManagerGetQoSPolicyMessage(name);
         message.setSubject(getSubject());
@@ -191,17 +191,17 @@ public class QoSPolicyResource {
     }
 
     @DELETE
-    @ApiOperation(value = "Delete the QoSPolicy by this name.")
+    @Operation(summary = "Delete the QoSPolicy by this name.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad Request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad Request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Path("{name}")
     public Response deletePolicy(
-          @ApiParam("The name of the policy (unique to this dCache instance).")
+          @Parameter(description = "The name of the policy (unique to this dCache instance).")
           @PathParam("name")String name) {
         PnfsManagerRmQoSPolicyMessage message = new PnfsManagerRmQoSPolicyMessage(name);
         message.setSubject(getSubject());
@@ -229,19 +229,19 @@ public class QoSPolicyResource {
     }
 
     @POST
-    @ApiOperation(value = "Add a QoSPolicy by this name; if a policy is currently "
+    @Operation(summary = "Add a QoSPolicy by this name; if a policy is currently "
           + "mapped to that name, an error is returned.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad Request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad Request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
     public Response submit(
-          @ApiParam(value = "Description of the QoS policy, which defines the following:\n\n"
+          @Parameter(description = "Description of the QoS policy, which defines the following:\n\n"
                 + "**name** - String identifier.  Required.\n"
                 + "**states** - Ordered list (array) of states. Required\n\n"
                 + "Each state consists of:\n"

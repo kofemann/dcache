@@ -24,7 +24,7 @@ import org.dcache.xrootd.security.GSIProxyDelegationClientFactory;
 import org.dcache.xrootd.security.ProxyDelegationStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * A Spring FactoryBean that creates ChannelHandlerFactory instances.
@@ -54,7 +54,7 @@ public class GplazmaAwareChannelHandlerFactoryFactoryBean
     private LoginStrategy _anonymousLoginStrategy;
     private ProxyDelegationStore _gsiDelegationProvider;
 
-    @Required
+    @Autowired
     public void setPlugins(String plugins) {
         super.setPlugins(plugins);
 
@@ -77,12 +77,12 @@ public class GplazmaAwareChannelHandlerFactoryFactoryBean
         }
     }
 
-    @Required
+    @Autowired
     public void setLoginStrategy(LoginStrategy loginStrategy) {
         _loginStrategy = loginStrategy;
     }
 
-    @Required
+    @Autowired
     public void setAnonymousLoginStrategy(
           LoginStrategy anonymousLoginStrategy) {
         _anonymousLoginStrategy = anonymousLoginStrategy;

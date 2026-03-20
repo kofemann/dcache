@@ -35,7 +35,7 @@ import java.util.Set;
 import java.util.concurrent.DelayQueue;
 import java.util.concurrent.Delayed;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.cache.ChildData;
 import org.apache.curator.framework.recipes.cache.PathChildrenCache;
@@ -51,7 +51,7 @@ import org.dcache.poolmanager.PoolMgrGetUpdatedHandler;
 import org.dcache.poolmanager.RemotePoolManagerHandler;
 import org.dcache.poolmanager.RendezvousPoolManagerHandler;
 import org.dcache.poolmanager.SerializablePoolManagerHandler;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This class responds to requests to provide a PoolManagerHandler.
@@ -119,7 +119,7 @@ public class PoolManagerHandlerPublisher
         this.client = client;
     }
 
-    @Required
+    @Autowired
     public void setServiceName(String serviceName) {
         this.serviceName = serviceName;
     }

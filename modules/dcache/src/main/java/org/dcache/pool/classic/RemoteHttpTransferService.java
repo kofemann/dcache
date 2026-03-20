@@ -43,7 +43,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.X509ExtendedTrustManager;

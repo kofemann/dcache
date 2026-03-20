@@ -68,7 +68,7 @@ import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import org.dcache.poolmanager.PoolManagerGetRestoreHandlerInfo;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Front-end plug-in for receiving notifications of request listings
@@ -115,12 +115,12 @@ public class RestoreRequestsReceiver implements CellMessageReceiver {
         restores.put(message.getPoolManagerKey(), message.getResult());
     }
 
-    @Required
+    @Autowired
     public void setLifetime(long lifetime) {
         this.lifetime = lifetime;
     }
 
-    @Required
+    @Autowired
     public void setLifetimeUnit(TimeUnit lifetimeUnit) {
         this.lifetimeUnit = lifetimeUnit;
     }

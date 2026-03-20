@@ -62,17 +62,17 @@ package org.dcache.restful.resources.selection;
 import diskCacheV111.poolManager.PoolSelectionUnit;
 import diskCacheV111.poolManager.PoolSelectionUnit.SelectionLink;
 import diskCacheV111.poolManager.PoolSelectionUnit.SelectionLinkGroup;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.restful.providers.selection.Link;
 import org.dcache.restful.providers.selection.LinkGroup;
@@ -85,7 +85,7 @@ import org.springframework.stereotype.Component;
  * @version v1.0
  */
 @Component
-@Api(value = "poolmanager", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "poolmanager")
 @Path("/links")
 public final class LinkResources {
 
@@ -94,7 +94,7 @@ public final class LinkResources {
 
 
     @GET
-    @ApiOperation("Get information about all links."
+    @Operation(summary = "Get information about all links."
           + " Results sorted lexicographically by link name.")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Link> getLinks() {
@@ -106,7 +106,7 @@ public final class LinkResources {
     }
 
     @GET
-    @ApiOperation("Get information about all linkgroups."
+    @Operation(summary = "Get information about all linkgroups."
           + " Results sorted lexicographically by link group name.")
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/groups")

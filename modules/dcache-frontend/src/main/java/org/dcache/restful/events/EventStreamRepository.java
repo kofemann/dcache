@@ -19,7 +19,7 @@
 package org.dcache.restful.events;
 
 import com.fasterxml.jackson.databind.node.ObjectNode;
-import io.swagger.annotations.ApiModelProperty;
+import io.swagger.v3.oas.annotations.media.Schema;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -28,7 +28,7 @@ import java.util.stream.Collectors;
 import org.dcache.restful.events.spi.EventStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * The collection of known EventStream instances.
@@ -37,7 +37,7 @@ public class EventStreamRepository {
 
     public class EventStreamMetadata {
 
-        @ApiModelProperty("Provide a short (typically single sentence) "
+        @Schema(description = "Provide a short (typically single sentence) "
               + "description of the generated events.")
         public final String description;
 
@@ -50,7 +50,7 @@ public class EventStreamRepository {
 
     private final Map<String, EventStream> streams = new HashMap<>();
 
-    @Required
+    @Autowired
     public void setPlugins(List<EventStream> streams) {
         LOGGER.debug("Received plugins: {}", streams);
 

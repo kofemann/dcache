@@ -46,7 +46,7 @@ import org.dcache.util.Glob;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 
 /**
@@ -67,12 +67,12 @@ public class MonitoringNameSpaceProvider extends ForwardingNameSpaceProvider {
     private NameSpaceProvider delegate;
     private EventReceiver eventReceiver;
 
-    @Required
+    @Autowired
     public void setNameSpaceProvider(NameSpaceProvider namespace) {
         delegate = requireNonNull(namespace);
     }
 
-    @Required
+    @Autowired
     public void setEventReceiver(EventReceiver receiver) {
         eventReceiver = requireNonNull(receiver);
     }

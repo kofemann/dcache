@@ -58,7 +58,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 
@@ -82,17 +82,17 @@ public class DefaultPostTransferService extends AbstractCellComponent implements
 
     private TransferLifeCycle transferLifeCycle;
 
-    @Required
+    @Autowired
     public void setBillingStub(CellStub billing) {
         _billing = billing;
     }
 
-    @Required
+    @Autowired
     public void setPoolName(String poolName) {
         _poolName = poolName;
     }
 
-    @Required
+    @Autowired
     public void setChecksumModule(ChecksumModule checksumModule) {
         _checksumModule = checksumModule;
     }

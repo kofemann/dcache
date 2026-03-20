@@ -169,7 +169,7 @@ import org.dcache.vehicles.quota.PnfsManagerRemoveQuotaMessage;
 import org.dcache.vehicles.quota.PnfsManagerSetQuotaMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -309,62 +309,62 @@ public class PnfsManagerV3
         populateRequestMap();
     }
 
-    @Required
+    @Autowired
     public void setUpdateFsStatInterval(long updateFsStatInterval) {
         this.updateFsStatInterval = updateFsStatInterval;
     }
 
-    @Required
+    @Autowired
     public void setUpdateFsStatIntervalUnit(TimeUnit updateFsStatIntervalUnit) {
         this.updateFsStatIntervalUnit = updateFsStatIntervalUnit;
     }
 
-    @Required
+    @Autowired
     public void setUpdateQuotaInterval(long updateQuotaInterval) {
         this.updateQuotaInterval = updateQuotaInterval;
     }
 
-    @Required
+    @Autowired
     public void setUpdateQuotaIntervalUnit(TimeUnit updateQuotaIntervalUnit) {
         this.updateQuotaIntervalUnit = updateQuotaIntervalUnit;
     }
 
-    @Required
+    @Autowired
     public void setQuotaEnabled(boolean quotaEnabled) {
         this.quotaEnabled = quotaEnabled;
     }
 
-    @Required
+    @Autowired
     public void setUseParentHashOnCreate(boolean useParentHashOnCreate) {
         this.useParentHashOnCreate = useParentHashOnCreate;
     }
 
-    @Required
+    @Autowired
     public void setUseParallelListing(boolean useParallelListing) {
         this.useParallelListing = useParallelListing;
     }
 
-    @Required
+    @Autowired
     public void setMaxListRequestsInQueue(int maxListRequestsInQueue) {
         this.maxListRequestsInQueue = maxListRequestsInQueue;
     }
 
-    @Required
+    @Autowired
     public void setScheduledExecutor(ScheduledExecutorService executor) {
         scheduledExecutor = executor;
     }
 
-    @Required
+    @Autowired
     public void setThreads(int threads) {
         _threads = threads;
     }
 
-    @Required
+    @Autowired
     public void setListThreads(int threads) {
         _listThreads = threads;
     }
 
-    @Required
+    @Autowired
     public void setCacheModificationRelay(String path) {
         _cacheModificationRelay =
               Strings.isNullOrEmpty(path) ? null : new CellPath(path);
@@ -372,7 +372,7 @@ public class PnfsManagerV3
               (_cacheModificationRelay == null) ? "NONE" : _cacheModificationRelay.toString());
     }
 
-    @Required
+    @Autowired
     public void setFileAttributesRelay(String path) {
         _attributesRelay =
               Strings.isNullOrEmpty(path) ? null : new CellPath(path);
@@ -380,7 +380,7 @@ public class PnfsManagerV3
               (_attributesRelay == null) ? "NONE" : _attributesRelay.toString());
     }
 
-    @Required
+    @Autowired
     public void setLogSlowThreshold(long threshold) {
         _logSlowThreshold = threshold;
         LOGGER.info("logSlowThreshold {}",
@@ -388,12 +388,12 @@ public class PnfsManagerV3
                     : String.valueOf(_logSlowThreshold));
     }
 
-    @Required
+    @Autowired
     public void setPermissionHandler(PermissionHandler handler) {
         _permissionHandler = handler;
     }
 
-    @Required
+    @Autowired
     public void setNameSpaceProvider(NameSpaceProvider provider) {
         _nameSpaceProvider = provider;
     }
@@ -402,22 +402,22 @@ public class PnfsManagerV3
         return _nameSpaceProvider;
     }
 
-    @Required
+    @Autowired
     public void setQueueMaxSize(int maxSize) {
         _queueMaxSize = maxSize;
     }
 
-    @Required
+    @Autowired
     public void setFolding(boolean folding) {
         _canFold = folding;
     }
 
-    @Required
+    @Autowired
     public void setDirectoryListLimit(int limit) {
         _directoryListLimit = limit;
     }
 
-    @Required
+    @Autowired
     public void setAtimeGap(long gap) {
         if (gap < 0) {
             _atimeGap = -1;
@@ -426,22 +426,22 @@ public class PnfsManagerV3
         }
     }
 
-    @Required
+    @Autowired
     public void setFlushNotificationTarget(String target) {
         _flushNotificationTargets = Splitter.on(",").omitEmptyStrings().splitToList(target);
     }
 
-    @Required
+    @Autowired
     public void setCancelUploadNotificationTarget(String target) {
         _cancelUploadNotificationTargets = Splitter.on(',').omitEmptyStrings().splitToList(target);
     }
 
-    @Required
+    @Autowired
     public void setQuotaSystem(JdbcQuota quota) {
         quotaSystem = quota;
     }
 
-    @Required
+    @Autowired
     public QuotaHandler getQuotaSystem() {
         return quotaSystem;
     }
@@ -606,7 +606,7 @@ public class PnfsManagerV3
         pw.println(_foldedCounters.toString());
     }
 
-    @Required
+    @Autowired
     public void setQosManager(JdbcQos qosManager) {
         this.qosManager = qosManager;
     }

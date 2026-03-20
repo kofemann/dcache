@@ -19,7 +19,7 @@ import java.util.Collection;
 import org.dcache.util.Strings;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Class that acts as a facade to the Macaroon library.
@@ -72,7 +72,7 @@ public class MacaroonProcessor {
         }
     }
 
-    @Required
+    @Autowired
     public void setSecretHandler(SecretHandler supplier) {
         _secretHandler = supplier;
     }

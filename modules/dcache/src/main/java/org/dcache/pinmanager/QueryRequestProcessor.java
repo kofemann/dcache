@@ -7,7 +7,7 @@ import static org.dcache.pinmanager.model.Pin.State.UNPINNING;
 import diskCacheV111.util.CacheException;
 import dmg.cells.nucleus.CellMessageReceiver;
 import org.dcache.pinmanager.PinDao.PinCriterion;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 
 /**
@@ -18,7 +18,7 @@ public class QueryRequestProcessor
 
     private PinDao _dao;
 
-    @Required
+    @Autowired
     public void setDao(PinDao dao) {
         _dao = dao;
     }

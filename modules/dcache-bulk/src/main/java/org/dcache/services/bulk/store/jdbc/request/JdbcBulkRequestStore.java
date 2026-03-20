@@ -126,7 +126,7 @@ import org.dcache.services.bulk.util.BulkServiceStatistics;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Uses underlying JDBC Dao implementations to satisfy the API.  Maintains a cache of request
@@ -576,54 +576,54 @@ public final class JdbcBulkRequestStore implements BulkRequestStore {
         return count.get();
     }
 
-    @Required
+    @Autowired
     public void setArchiveDao(JdbcBulkArchiveDao archiveDao) {
         this.archiveDao = archiveDao;
     }
 
-    @Required
+    @Autowired
     public void setCapacity(long capacity) {
         this.capacity = capacity;
     }
 
-    @Required
+    @Autowired
     public void setExpiry(long expiry) {
         this.expiry = expiry;
     }
 
-    @Required
+    @Autowired
     public void setExpiryUnit(TimeUnit expiryUnit) {
         this.expiryUnit = expiryUnit;
     }
 
-    @Required
+    @Autowired
     public void setPnfsManager(CellStub pnfsManager) {
         pnfsHandler = new PnfsHandler(pnfsManager);
         pnfsHandler.setSubject(Subjects.ROOT);
         pnfsHandler.setRestriction(Restrictions.none());
     }
 
-    @Required
+    @Autowired
     public void setTargetStore(JdbcBulkTargetStore targetStore) {
         this.targetStore = targetStore;
     }
 
-    @Required
+    @Autowired
     public void setRequestDao(JdbcBulkRequestDao requestDao) {
         this.requestDao = requestDao;
     }
 
-    @Required
+    @Autowired
     public void setRequestTargetDao(JdbcRequestTargetDao requestTargetDao) {
         this.requestTargetDao = requestTargetDao;
     }
 
-    @Required
+    @Autowired
     public void setRequestPermissionsDao(JdbcBulkRequestPermissionsDao requestPermissionsDao) {
         this.requestPermissionsDao = requestPermissionsDao;
     }
 
-    @Required
+    @Autowired
     public void setStatistics(BulkServiceStatistics statistics) {
         this.statistics = statistics;
     }

@@ -69,7 +69,7 @@ import org.dcache.pool.json.PoolInfoWrapper;
 import org.dcache.restful.services.pool.PoolInfoServiceImpl;
 import org.dcache.util.collector.RequestFutureProcessor;
 import org.dcache.vehicles.pool.PoolDataRequestMessage;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Handles the transformation of message content from pools into a cached
@@ -85,12 +85,12 @@ public final class PoolDataRequestProcessor
     private PoolInfoServiceImpl service;
     private PoolHistoriesHandler handler;
 
-    @Required
+    @Autowired
     public void setHandler(PoolHistoriesHandler handler) {
         this.handler = handler;
     }
 
-    @Required
+    @Autowired
     public void setService(PoolInfoServiceImpl service) {
         this.service = service;
     }

@@ -100,7 +100,7 @@ import org.dcache.qos.data.QoSMessageType;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Standard provisioning of (fixed) file requirements.  Uses access latency, retention policy, and
@@ -385,7 +385,7 @@ public class ALRPStorageUnitQoSProvider implements QoSRequirementsProvider, Cell
         return enableRoles;
     }
 
-    @Required
+    @Autowired
     public void setEnableRoles(boolean enableRoles) {
         this.enableRoles = enableRoles;
     }

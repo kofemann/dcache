@@ -41,7 +41,7 @@ import org.dcache.gplazma.monitor.RecordingLoginMonitor;
 import org.dcache.util.Args;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * A LoginStrategy that delegates login requests to an instance of org.dcache.gplazma.GPlazma.
@@ -116,7 +116,7 @@ public class Gplazma2LoginStrategy implements LoginStrategy, CellCommandListener
         LOGGER.debug("gPlazma2 principal scanning completed: {}", reflectionTimer);
     }
 
-    @Required
+    @Autowired
     public void setConfigurationFile(String configurationFile) {
         if ((configurationFile == null) || (configurationFile.length() == 0)) {
             throw new IllegalArgumentException(
@@ -128,7 +128,7 @@ public class Gplazma2LoginStrategy implements LoginStrategy, CellCommandListener
         _configurationFile = configurationFile;
     }
 
-    @Required
+    @Autowired
     public void setGplazma(GPlazma gplazma) {
         _gplazma = requireNonNull(gplazma);
     }
@@ -328,7 +328,7 @@ public class Gplazma2LoginStrategy implements LoginStrategy, CellCommandListener
         return printer.print();
     }
 
-    @Required
+    @Autowired
     public void setUploadPath(String s) {
         _uploadPath = Optional.ofNullable(Strings.emptyToNull(s));
         /*

@@ -22,6 +22,8 @@ import jakarta.servlet.http.HttpServletResponse;
 import org.dcache.http.AbstractLoggingHandler;
 import org.dcache.restful.interceptors.LoggingInterceptor;
 import org.dcache.util.NetLoggerBuilder;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,7 +46,7 @@ public class LoggingHandler extends AbstractLoggingHandler {
 
     @Override
     protected void describeOperation(NetLoggerBuilder log,
-          HttpServletRequest request, HttpServletResponse response) {
+          Request request, Response response) {
         super.describeOperation(log, request, response);
 
         log.add("request.entity", LoggingInterceptor.getRequestEntity(request));

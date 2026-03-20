@@ -22,7 +22,7 @@ import org.dcache.util.Args;
 import org.dcache.vehicles.InfoGetSerialisedDataMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class InfoProvider implements CellCommandListener, CellInfoProvider,
       CellMessageReceiver {
@@ -77,22 +77,22 @@ public class InfoProvider implements CellCommandListener, CellInfoProvider,
     }
 
 
-    @Required
+    @Autowired
     public void setState(State state) {
         _state = state;
     }
 
-    @Required
+    @Autowired
     public void setStateObservatory(StateObservatory observatory) {
         _observatory = observatory;
     }
 
-    @Required
+    @Autowired
     public void setDataGatheringScheduler(DataGatheringScheduler scheduler) {
         _scheduler = scheduler;
     }
 
-    @Required
+    @Autowired
     public void setSerialisers(Iterable<StateSerialiser> serialisers) {
         Map<String, StateSerialiser> available = new HashMap<>();
 
@@ -107,7 +107,7 @@ public class InfoProvider implements CellCommandListener, CellInfoProvider,
         }
     }
 
-    @Required
+    @Autowired
     public void setDefaultSerialiser(String name) {
         _defaultSerialiser = name;
 
@@ -117,7 +117,7 @@ public class InfoProvider implements CellCommandListener, CellInfoProvider,
     }
 
 
-    @Required
+    @Autowired
     public void setConduits(Iterable<Conduit> conduits) {
         _conduits = new HashMap<>();
 
@@ -172,7 +172,7 @@ public class InfoProvider implements CellCommandListener, CellInfoProvider,
     }
 
 
-    @Required
+    @Autowired
     public void setMessageHandlerChain(MessageHandlerChain mhc) {
         _msgHandlerChain = mhc;
     }

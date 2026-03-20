@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2014 - 2024 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2014 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -53,6 +53,8 @@ import dmg.cells.nucleus.DelayedReply;
 import dmg.util.command.Argument;
 import dmg.util.command.Command;
 import dmg.util.command.Option;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -85,8 +87,6 @@ import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nonnull;
 import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
 import javax.annotation.concurrent.Immutable;
 import org.dcache.auth.Subjects;
 import org.dcache.cells.CellStub;
@@ -121,7 +121,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 
@@ -206,7 +206,7 @@ public class NearlineStorageHandler
         cellAddress = address;
     }
 
-    @Required
+    @Autowired
     public void setScheduledExecutor(ScheduledExecutorService executor) {
         this.scheduledExecutor = requireNonNull(executor);
     }
@@ -218,54 +218,54 @@ public class NearlineStorageHandler
         _kafkaSender = kafkaTemplate::sendDefault;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(ListeningExecutorService executor) {
         this.executor = requireNonNull(executor);
     }
 
-    @Required
+    @Autowired
     public void setRepository(Repository repository) {
         this.repository = requireNonNull(repository);
     }
 
-    @Required
+    @Autowired
     public void setChecksumModule(ChecksumModule checksumModule) {
         this.checksumModule = requireNonNull(checksumModule);
     }
 
-    @Required
+    @Autowired
     public void setPnfsHandler(PnfsHandler pnfs) {
         this.pnfs = requireNonNull(pnfs);
     }
 
-    @Required
+    @Autowired
     public void setBillingStub(CellStub billingStub) {
         this.billingStub = requireNonNull(billingStub);
     }
 
-    @Required
+    @Autowired
     public void setHsmSet(HsmSet hsmSet) {
         this.hsmSet = requireNonNull(hsmSet);
     }
 
-    @Required
+    @Autowired
     public void setAllocator(Allocator allocator) {
         this.allocator = allocator;
     }
 
-    @Required
+    @Autowired
     public void setFileStore(FileStore fileStore) {
         this.fileStore = fileStore;
     }
 
-    @Required
+    @Autowired
     public void setStickyOnStageDuration(long stickyOnStageDuration) {
 	checkArgument(stickyOnStageDuration >= -1,
 		      "Sticky on stage duration must be >= -1");
         this.stickyOnStageDuration = stickyOnStageDuration;
     }
 
-    @Required
+    @Autowired
     public void setStickyOnStageDurationUnit(TimeUnit stickyOnStageDurationUnit) {
         this.stickyOnStageDurationUnit = stickyOnStageDurationUnit;
     }

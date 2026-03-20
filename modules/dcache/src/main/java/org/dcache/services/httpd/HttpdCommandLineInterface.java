@@ -20,11 +20,11 @@ import org.dcache.services.httpd.handlers.RedirectHandler;
 import org.dcache.services.httpd.handlers.ResponseEngineHandler;
 import org.dcache.services.httpd.util.AliasEntry;
 import org.dcache.util.Args;
-import org.eclipse.jetty.ee9.nested.Handler;
+import org.eclipse.jetty.server.Handler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.config.AutowireCapableBeanFactory;
 
 public class HttpdCommandLineInterface
@@ -37,7 +37,7 @@ public class HttpdCommandLineInterface
 
     private HandlerDelegator delegator;
 
-    @Required
+    @Autowired
     public void setDelegator(HandlerDelegator delegator) {
         this.delegator = delegator;
     }

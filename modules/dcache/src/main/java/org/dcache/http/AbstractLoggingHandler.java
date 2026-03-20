@@ -22,11 +22,7 @@ import static org.dcache.http.AuthenticationHandler.DCACHE_SUBJECT_ATTRIBUTE;
 import com.google.common.base.Stopwatch;
 import com.google.common.net.InetAddresses;
 import dmg.cells.nucleus.CDC;
-import jakarta.servlet.AsyncEvent;
-import jakarta.servlet.AsyncListener;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -39,10 +35,11 @@ import org.dcache.auth.JwtJtiPrincipal;
 import org.dcache.auth.OidcSubjectPrincipal;
 import org.dcache.auth.Subjects;
 import org.dcache.util.NetLoggerBuilder;
-import org.eclipse.jetty.ee9.nested.HandlerWrapper;
-import org.eclipse.jetty.ee9.nested.Request;
-import org.eclipse.jetty.ee9.nested.Response;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import static com.google.common.base.Throwables.throwIfInstanceOf;
@@ -52,7 +49,7 @@ import static com.google.common.base.Throwables.throwIfUnchecked;
  * This class act as a base logging class for logging servlet-based activity. It is expected that
  * this class is subclassed to add protocol-specific logging.
  */
-public abstract class AbstractLoggingHandler extends HandlerWrapper {
+public abstract class AbstractLoggingHandler extends Handler.Wrapper {
 
     private static final String X509_CERTIFICATE_ATTRIBUTE =
           "javax.servlet.request.X509Certificate";
@@ -60,42 +57,6 @@ public abstract class AbstractLoggingHandler extends HandlerWrapper {
     private static final String PROCESSING_TIME = "org.dcache.processing-time";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractLoggingHandler.class);
-
-    private class LogOnComplete implements AsyncListener {
-
-        @Override
-        public void onComplete(AsyncEvent event) {
-            requestCompletedNormally(
-                    (HttpServletRequest) event.getSuppliedRequest(),
-                    (HttpServletResponse) event.getSuppliedResponse());
-        }
-
-        @Override
-        public void onTimeout(AsyncEvent event) {
-            var timeout = Duration.ofMillis(event.getAsyncContext().getTimeout());
-            requestTimedOut(
-                    (HttpServletRequest) event.getSuppliedRequest(),
-                    (HttpServletResponse) event.getSuppliedResponse(),
-                    timeout);
-        }
-
-        @Override
-        public void onError(AsyncEvent event) {
-            Throwable cause = event.getThrowable();
-            if (cause instanceof Exception) {
-                requestCompletedExceptionally(
-                        (HttpServletRequest) event.getSuppliedRequest(),
-                        (HttpServletResponse) event.getSuppliedResponse(),
-                        (Exception) cause);
-            }
-        }
-
-        @Override
-        public void onStartAsync(AsyncEvent event) {
-            LOGGER.warn("Unexpected reuse of async processing context for {}",
-                  event.getAsyncContext().getRequest());
-        }
-    }
 
     /**
      * The SLF4J Logger to which we send access log entries.
@@ -108,58 +69,52 @@ public abstract class AbstractLoggingHandler extends HandlerWrapper {
     protected abstract String requestEventName();
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
+    public boolean handle(Request request, Response response, Callback callback)
           throws IOException, ServletException {
-        if (isStarted() && !baseRequest.isHandled()) {
-            Stopwatch processingTime = Stopwatch.createStarted();
+        Stopwatch processingTime = Stopwatch.createStarted();
 
-            // Cache the remote client address because the client may disconnect
-            // while dCache is processing the request, in which case Jetty
-            // "forgets".
-            request.setAttribute(REMOTE_ADDRESS, remoteAddress(request).orElse(null));
-            request.setAttribute(PROCESSING_TIME, processingTime);
+        // Cache the remote client address because the client may disconnect
+        // while dCache is processing the request, in which case Jetty
+        // "forgets".
+        request.setAttribute(REMOTE_ADDRESS, remoteAddress(request).orElse(null));
+        request.setAttribute(PROCESSING_TIME, processingTime);
 
-            try {
-                super.handle(target, baseRequest, request, response);
-            } catch (IOException|RuntimeException|ServletException e) {
-                requestCompletedExceptionally(request, response, e);
+        try {
+            boolean t = super.handle(request, response, callback);
+            requestCompletedNormally(request, response);
+            return t;
+        } catch (Exception e) {
+            requestCompletedExceptionally(request, response, e);
 
-                throwIfInstanceOf(e, IOException.class);
-                throwIfInstanceOf(e, ServletException.class);
-                throwIfUnchecked(e);
-                throw new AssertionError(e);
-            }
-
-            if (request.isAsyncStarted()) {
-                request.getAsyncContext().addListener(new LogOnComplete());
-            } else {
-                requestCompletedNormally(request, response);
-            }
+            throwIfInstanceOf(e, IOException.class);
+            throwIfInstanceOf(e, ServletException.class);
+            throwIfUnchecked(e);
+            throw new AssertionError(e);
         }
+
     }
 
-    private void requestCompletedExceptionally(HttpServletRequest request, HttpServletResponse response, Exception e) {
+    private void requestCompletedExceptionally(Request request, Response response, Exception e) {
         requestCompleted(request, response, l -> {
                     l.add("failure", e);
                 });
     }
 
-    private void requestTimedOut(HttpServletRequest request, HttpServletResponse response, Duration timeout) {
+    private void requestTimedOut(Request request, Response response, Duration timeout) {
         requestCompleted(request, response, l -> {
                     l.add("timeout", timeout);
                 });
     }
 
-    private void requestCompletedNormally(HttpServletRequest request, HttpServletResponse response) {
+    private void requestCompletedNormally(Request request, Response response) {
         requestCompleted(request, response, l -> {
                     l.add("response.reason", getReason(response));
                     l.add("response.code", response.getStatus());
-                    l.add("location", response.getHeader("Location"));
+                    l.add("location", response.getHeaders().get("Location"));
                 });
     }
 
-    private void requestCompleted(HttpServletRequest request, HttpServletResponse response, Consumer<NetLoggerBuilder> logEnricher) {
+    private void requestCompleted(Request request, Response response, Consumer<NetLoggerBuilder> logEnricher) {
         var processingTime = (Stopwatch) request.getAttribute(PROCESSING_TIME);
 
         processingTime.stop();
@@ -174,12 +129,12 @@ public abstract class AbstractLoggingHandler extends HandlerWrapper {
     }
 
     protected void describeOperation(NetLoggerBuilder log,
-          HttpServletRequest request, HttpServletResponse response) {
+          Request request, Response response) {
         log.add("session", CDC.getSession());
         log.add("request.method", request.getMethod());
-        log.add("request.url", request.getRequestURL());
+        log.add("request.url", request.getHttpURI().asString());
         log.add("socket.remote", (InetSocketAddress) request.getAttribute(REMOTE_ADDRESS));
-        log.add("user-agent", request.getHeader("User-Agent"));
+        log.add("user-agent", request.getHeaders().get("User-Agent"));
 
         log.add("user.dn", getCertificateName(request));
         var subject = getSubject(request);
@@ -196,9 +151,9 @@ public abstract class AbstractLoggingHandler extends HandlerWrapper {
      * Provide this connection's remote address; that is, the address of the client.  The method
      * returns Optional.empty if this cannot be determined, for whatever reason.
      */
-    private static Optional<InetSocketAddress> remoteAddress(HttpServletRequest request) {
-        String addrString = request.getRemoteAddr();
-        int port = request.getRemotePort();
+    private static Optional<InetSocketAddress> remoteAddress(Request request) {
+        String addrString = Request.getRemoteAddr(request);
+        int port = Request.getRemotePort(request);
 
         if (addrString.isEmpty() || port == 0) { // Sometimes Jetty just doesn't know (!)
             return Optional.empty();
@@ -215,16 +170,11 @@ public abstract class AbstractLoggingHandler extends HandlerWrapper {
         return Optional.of(new InetSocketAddress(addr, port));
     }
 
-    private static String getReason(HttpServletResponse response) {
-        if (response instanceof Response) {
-            return ((Response) response).getReason();
-        } else {
-            return HttpStatus.getMessage(response.getStatus());
-        }
+    private static String getReason(Response response) {
+        return HttpStatus.getMessage(response.getStatus());
     }
 
-    protected NetLoggerBuilder.Level logLevel(HttpServletRequest request,
-          HttpServletResponse response) {
+    protected NetLoggerBuilder.Level logLevel(Request request, Response response) {
         int code = response.getStatus();
         if (code >= 500) {
             return NetLoggerBuilder.Level.ERROR;
@@ -235,7 +185,7 @@ public abstract class AbstractLoggingHandler extends HandlerWrapper {
         }
     }
 
-    private static String getCertificateName(HttpServletRequest request) {
+    private static String getCertificateName(Request request) {
         Object object = request.getAttribute(X509_CERTIFICATE_ATTRIBUTE);
 
         if (object instanceof X509Certificate[]) {
@@ -249,7 +199,7 @@ public abstract class AbstractLoggingHandler extends HandlerWrapper {
         return null;
     }
 
-    private static Optional<Subject> getSubject(HttpServletRequest request) {
+    private static Optional<Subject> getSubject(Request request) {
         Object object = request.getAttribute(DCACHE_SUBJECT_ATTRIBUTE);
         return Optional.ofNullable((object instanceof Subject) ? (Subject) object : null);
     }

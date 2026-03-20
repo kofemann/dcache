@@ -2,18 +2,19 @@ package org.dcache.services.httpd.handlers;
 
 import dmg.util.HttpException;
 import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import org.eclipse.jetty.ee9.nested.AbstractHandler;
-import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * Handles messages having to do with alias configuration errors (in the batch file).
  *
  * @author arossi
  */
-public class BadConfigHandler extends AbstractHandler {
+public class BadConfigHandler extends Handler.Abstract {
 
     private static final String BAD_CONFIG = "HTTP Server badly configured";
     private ServletException exception;
@@ -25,9 +26,9 @@ public class BadConfigHandler extends AbstractHandler {
     }
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
+    public boolean handle(Request request, Response response, Callback callback)
           throws IOException, ServletException {
+        callback.failed(exception);
         throw exception;
     }
 

@@ -74,7 +74,7 @@ import org.dcache.db.JdbcCriterion;
 import org.dcache.db.JdbcUpdate;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DuplicateKeyException;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.jdbc.core.ParameterizedPreparedStatementSetter;
@@ -195,7 +195,7 @@ public final class JdbcBulkDaoUtils {
         support.getJdbcTemplate().batchUpdate(sql, targets, 100, setter);
     }
 
-    @Required
+    @Autowired
     public void setFetchSize(int fetchSize) {
         this.fetchSize = fetchSize;
     }

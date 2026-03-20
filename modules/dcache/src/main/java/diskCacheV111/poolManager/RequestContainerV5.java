@@ -91,7 +91,7 @@ import org.dcache.util.FireAndForgetTask;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class RequestContainerV5
       extends AbstractCellComponent
@@ -271,27 +271,27 @@ public class RequestContainerV5
         }
     }
 
-    @Required
+    @Autowired
     public void setPoolSelectionUnit(PoolSelectionUnit selectionUnit) {
         _selectionUnit = selectionUnit;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitorV5 poolMonitor) {
         _poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setPnfsHandler(PnfsHandler pnfsHandler) {
         _pnfsHandler = pnfsHandler;
     }
 
-    @Required
+    @Autowired
     public void setPartitionManager(PartitionManager partitionManager) {
         _partitionManager = partitionManager;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(Executor executor) {
         _executor = executor;
     }
@@ -300,12 +300,12 @@ public class RequestContainerV5
         _sendHitInfo = sendHitInfo;
     }
 
-    @Required
+    @Autowired
     public void setBilling(CellStub billing) {
         _billing = billing;
     }
 
-    @Required
+    @Autowired
     public void setPoolStub(CellStub poolStub) {
         _poolStub = poolStub;
     }

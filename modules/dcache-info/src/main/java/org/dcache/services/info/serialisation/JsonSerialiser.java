@@ -11,7 +11,7 @@ import org.dcache.services.info.base.IntegerStateValue;
 import org.dcache.services.info.base.StateExhibitor;
 import org.dcache.services.info.base.StatePath;
 import org.dcache.services.info.base.StringStateValue;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Serialise state into a json object.
@@ -25,7 +25,7 @@ public class JsonSerialiser extends SubtreeVisitor implements StateSerialiser {
     private StringWriter _string;
     private StatePath _top;
 
-    @Required
+    @Autowired
     public void setStateExhibitor(StateExhibitor exhibitor) {
         _exhibitor = exhibitor;
     }

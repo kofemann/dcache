@@ -15,7 +15,7 @@ import org.dcache.util.NDC;
 import org.dcache.util.configuration.ConfigurationProperties;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This class represents one or more plugins that are used in concert to process missing file
@@ -40,7 +40,7 @@ public class PluginChain implements EnvironmentAware {
      * Accept a comma-separated list of plugin names.  These will be instantiated to form the chain
      * of plugins to process.
      */
-    @Required
+    @Autowired
     public void setPluginList(String plugins) {
         _pluginList = plugins;
     }
@@ -77,7 +77,7 @@ public class PluginChain implements EnvironmentAware {
     }
 
 
-    @Required
+    @Autowired
     @Override
     public void setEnvironment(Map<String, Object> environment) {
         _properties.clear();

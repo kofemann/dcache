@@ -84,7 +84,7 @@ import org.dcache.vehicles.histograms.AggregateFileLifetimeRequestMessage;
 import org.dcache.vehicles.histograms.PoolTimeseriesRequestMessage;
 import org.dcache.vehicles.histograms.PoolTimeseriesRequestMessage.TimeseriesType;
 import org.dcache.vehicles.pool.PoolLiveDataForHistoriesMessage;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>This is an implementation of the {@link PoolTimeseriesService} interface
@@ -243,17 +243,17 @@ public final class PoolTimeseriesServiceImpl extends
         return reply;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(Executor executor) {
         this.executor = executor;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor monitor) {
         this.monitor = monitor;
     }
 
-    @Required
+    @Autowired
     public void setProcessor(PoolHistoriesRequestProcessor processor) {
         this.processor = processor;
     }

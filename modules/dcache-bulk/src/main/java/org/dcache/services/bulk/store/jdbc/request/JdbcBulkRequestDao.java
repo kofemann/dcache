@@ -80,7 +80,7 @@ import org.dcache.services.bulk.store.jdbc.rtarget.JdbcRequestTargetDao;
 import org.json.JSONObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 import org.springframework.jdbc.support.KeyHolder;
 
@@ -183,7 +183,7 @@ public final class JdbcBulkRequestDao extends JdbcDaoSupport {
         return new JdbcBulkRequestUpdate();
     }
 
-    @Required
+    @Autowired
     public void setUtils(JdbcBulkDaoUtils utils) {
         this.utils = utils;
     }

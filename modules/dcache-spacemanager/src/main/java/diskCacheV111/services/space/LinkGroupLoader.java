@@ -13,6 +13,7 @@ import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
@@ -23,12 +24,11 @@ import org.dcache.util.files.LineByLineParser;
 import org.dcache.util.files.ParsableFile;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DeadlockLoserDataAccessException;
 import org.springframework.dao.RecoverableDataAccessException;
 import org.springframework.dao.TransientDataAccessException;
-import org.springframework.remoting.RemoteAccessException;
 import org.springframework.transaction.CannotCreateTransactionException;
 import org.springframework.transaction.TransactionException;
 
@@ -48,22 +48,22 @@ public class LinkGroupLoader
 
     private ScheduledExecutorService executor;
 
-    @Required
+    @Autowired
     public void setUpdateLinkGroupsPeriod(long updateLinkGroupsPeriod) {
         this.updateLinkGroupsPeriod = updateLinkGroupsPeriod;
     }
 
-    @Required
+    @Autowired
     public void setDatabase(SpaceManagerDatabase db) {
         this.db = db;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(RemotePoolMonitor poolMonitor) {
         this.poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setAuthorizationFileName(Path authorizationFileName) {
         if (authorizationFileName == null) {
             authorizationFile = Optional.empty();
@@ -107,7 +107,7 @@ public class LinkGroupLoader
             if (updateLinkGroups() > 0) {
                 period = updateLinkGroupsPeriod;
             }
-        } catch (RemoteAccessException | DataAccessException | TransactionException e) {
+        } catch (CompletionException | DataAccessException | TransactionException e) {
             LOGGER.error("Link group update failed: {}", e.getMessage());
         } catch (RuntimeException e) {
             LOGGER.error("Link group update failed: " + e.toString(), e);
@@ -119,7 +119,7 @@ public class LinkGroupLoader
     }
 
     private int updateLinkGroups()
-          throws InterruptedException, RemoteAccessException, DataAccessException, TransactionException {
+          throws InterruptedException, CompletionException, DataAccessException, TransactionException {
         long currentTime = System.currentTimeMillis();
         Collection<PoolLinkGroupInfo> linkGroupInfos =
               Utils.linkGroupInfos(poolMonitor.getPoolSelectionUnit(), poolMonitor.getCostModule())

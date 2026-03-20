@@ -110,7 +110,7 @@ import org.dcache.util.CDCExecutorServiceDecorator;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.DeadlockLoserDataAccessException;
 import org.springframework.dao.DuplicateKeyException;
@@ -158,83 +158,83 @@ public final class SpaceManagerService
         this.endpoint = endpoint;
     }
 
-    @Required
+    @Autowired
     public void setServiceAddress(CellAddressCore serviceAddress) {
         this.serviceAddress = serviceAddress;
     }
 
-    @Required
+    @Autowired
     public void setPoolManagerHandler(PoolManagerHandlerSubscriber poolManagerHandler) {
         this.poolManagerHandler = poolManagerHandler;
     }
 
-    @Required
+    @Autowired
     public void setPoolManager(CellPath poolManager) {
         this.poolManager = poolManager;
     }
 
-    @Required
+    @Autowired
     public void setPnfsHandler(PnfsHandler pnfs) {
         this.pnfs = pnfs;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         this.poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setSpaceManagerEnabled(boolean enabled) {
         this.isSpaceManagerEnabled = enabled;
     }
 
-    @Required
+    @Autowired
     public void setExpireSpaceReservationsPeriod(long expireSpaceReservationsPeriod) {
         this.expireSpaceReservationsPeriod = expireSpaceReservationsPeriod;
     }
 
-    @Required
+    @Autowired
     public void setAllowUnreservedUploadsToLinkGroups(boolean allowUnreservedUploadsToLinkGroups) {
         this.allowUnreservedUploadsToLinkGroups = allowUnreservedUploadsToLinkGroups;
     }
 
-    @Required
+    @Autowired
     public void setShouldDeleteStoredFileRecord(boolean shouldDeleteStoredFileRecord) {
         this.shouldDeleteStoredFileRecord = shouldDeleteStoredFileRecord;
     }
 
-    @Required
+    @Autowired
     public void setShouldReturnFlushedSpaceToReservation(
           boolean shouldReturnFlushedSpaceToReservation) {
         this.shouldReturnFlushedSpaceToReservation = shouldReturnFlushedSpaceToReservation;
     }
 
-    @Required
+    @Autowired
     public void setMaxThreads(int threads) {
         this.threads = threads;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(ExecutorService executor) {
         this.executor = executor;
     }
 
-    @Required
+    @Autowired
     public void setDatabase(SpaceManagerDatabase db) {
         this.db = db;
     }
 
-    @Required
+    @Autowired
     public void setAuthorizationPolicy(SpaceManagerAuthorizationPolicy authorizationPolicy) {
         this.authorizationPolicy = authorizationPolicy;
     }
 
-    @Required
+    @Autowired
     public void setLinkGroupLoader(LinkGroupLoader linkGroupLoader) {
         this.linkGroupLoader = linkGroupLoader;
     }
 
-    @Required
+    @Autowired
     public void setPerishedSpacePurgeDelay(long millis) {
         this.perishedSpacePurgeDelay = millis;
     }

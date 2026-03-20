@@ -22,9 +22,9 @@ import eu.emi.security.authn.x509.CrlCheckingMode;
 import eu.emi.security.authn.x509.OCSPCheckingMode;
 import java.nio.file.Path;
 import java.util.concurrent.Callable;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import org.dcache.ssl.CanlContextFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 abstract class AbstractSslContextFactory<C> implements Callable<C> {
 
@@ -40,27 +40,27 @@ abstract class AbstractSslContextFactory<C> implements Callable<C> {
         this.type = type;
     }
 
-    @Required
+    @Autowired
     public void setServerCertificatePath(Path serverCertificatePath) {
         this.serverCertificatePath = serverCertificatePath;
     }
 
-    @Required
+    @Autowired
     public void setServerKeyPath(Path serverKeyPath) {
         this.serverKeyPath = serverKeyPath;
     }
 
-    @Required
+    @Autowired
     public void setServerCaPath(Path serverCaPath) {
         this.serverCaPath = serverCaPath;
     }
 
-    @Required
+    @Autowired
     public void setCrlCheckingMode(CrlCheckingMode crlCheckingMode) {
         this.crlCheckingMode = crlCheckingMode;
     }
 
-    @Required
+    @Autowired
     public void setOcspCheckingMode(OCSPCheckingMode ocspCheckingMode) {
         this.ocspCheckingMode = ocspCheckingMode;
     }

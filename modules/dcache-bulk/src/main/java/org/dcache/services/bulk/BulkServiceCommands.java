@@ -121,7 +121,7 @@ import org.dcache.services.bulk.util.BulkServiceStatistics;
 import org.dcache.services.bulk.util.BulkTargetFilter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Collects all admin shell commands for convenience.
@@ -1429,47 +1429,47 @@ public final class BulkServiceCommands implements CellCommandListener {
 
     private JdbcBulkArchiveDao archiveDao;
 
-    @Required
+    @Autowired
     public void setActivityFactory(BulkActivityFactory activityFactory) {
         this.activityFactory = activityFactory;
     }
 
-    @Required
+    @Autowired
     public void setArchiver(JdbcBulkRequestArchiver archiver) {
         this.archiver = archiver;
     }
 
-    @Required
+    @Autowired
     public void setArchiveDao(JdbcBulkArchiveDao archiveDao) {
         this.archiveDao = archiveDao;
     }
 
-    @Required
+    @Autowired
     public void setRequestManager(BulkRequestManager requestManager) {
         this.requestManager = requestManager;
     }
 
-    @Required
+    @Autowired
     public void setRequestStore(BulkRequestStore requestStore) {
         this.requestStore = requestStore;
     }
 
-    @Required
+    @Autowired
     public void setService(BulkService service) {
         this.service = service;
     }
 
-    @Required
+    @Autowired
     public void setStatistics(BulkServiceStatistics statistics) {
         this.statistics = statistics;
     }
 
-    @Required
+    @Autowired
     public void setSubmissionHandler(BulkSubmissionHandler submissionHandler) {
         this.submissionHandler = submissionHandler;
     }
 
-    @Required
+    @Autowired
     public void setTargetStore(BulkTargetStore targetStore) {
         this.targetStore = targetStore;
     }

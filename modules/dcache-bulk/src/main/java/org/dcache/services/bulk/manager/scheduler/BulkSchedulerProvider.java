@@ -60,7 +60,7 @@ documents or software obtained from this server.
 package org.dcache.services.bulk.manager.scheduler;
 
 import org.dcache.services.bulk.store.BulkRequestStore;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *  Wrapper for providing the scheduler to the manager.  The implementation
@@ -86,12 +86,12 @@ public final class BulkSchedulerProvider {
         return requestScheduler;
     }
 
-    @Required
+    @Autowired
     public void setRequestScheduler(BulkRequestScheduler requestScheduler) {
         this.requestScheduler = requestScheduler;
     }
 
-    @Required
+    @Autowired
     public void setRequestStore(BulkRequestStore requestStore) {
         this.requestStore = requestStore;
     }

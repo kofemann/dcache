@@ -17,17 +17,9 @@
  */
 package org.dcache.restful.util;
 
-import static org.springframework.web.context.WebApplicationContext.ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE;
-
-import jakarta.servlet.ServletContext;
-import java.lang.annotation.Annotation;
-import org.eclipse.jetty.ee9.servlet.ServletHandler;
-import org.springframework.beans.factory.NoSuchBeanDefinitionException;
-import org.springframework.beans.factory.ObjectProvider;
+import org.eclipse.jetty.ee11.servlet.ServletHandler;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
-import org.springframework.core.ResolvableType;
-import org.springframework.web.context.WebApplicationContext;
 
 /**
  * Provide a minimal spring-web compatibility layer for a Jetty server that was instantiated from
@@ -46,39 +38,39 @@ public class SpringWebServletHandler extends ServletHandler implements Applicati
     public void doStart() throws Exception {
         super.doStart();
 
-        getServletContext().setAttribute(ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE,
-              new ForwardingWebApplicationContext());
+//        getServletContext().setAttribute(ROOT_WEB_APPLICATION_CONTEXT_ATTRIBUTE,
+//              new ForwardingWebApplicationContext());
     }
 
-    /**
-     * Bridge jetty-web with an existing Spring context and Jetty instance.
-     */
-    public class ForwardingWebApplicationContext extends ForwardingApplicationContext
-          implements WebApplicationContext {
-
-        public ForwardingWebApplicationContext() {
-            super(SpringWebServletHandler.this.context);
-        }
-
-        @Override
-        public ServletContext getServletContext() {
-            return SpringWebServletHandler.this.getServletContext();
-        }
-
-        @Override
-        public <T> ObjectProvider<T> getBeanProvider(Class<T> aClass, boolean b) {
-            return SpringWebServletHandler.this.context.getBeanProvider(aClass, b);
-        }
-
-        @Override
-        public <T> ObjectProvider<T> getBeanProvider(ResolvableType resolvableType, boolean b) {
-            return SpringWebServletHandler.this.context.getBeanProvider(resolvableType, b);
-        }
-
-        @Override
-        public <A extends Annotation> A findAnnotationOnBean(String s, Class<A> aClass, boolean b)
-              throws NoSuchBeanDefinitionException {
-            return SpringWebServletHandler.this.context.findAnnotationOnBean(s, aClass, b);
-        }
-    }
+//    /**
+//     * Bridge jetty-web with an existing Spring context and Jetty instance.
+//     */
+//    public class ForwardingWebApplicationContext extends ForwardingApplicationContext
+//          implements WebApplicationContext {
+//
+//        public ForwardingWebApplicationContext() {
+//            super(SpringWebServletHandler.this.context);
+//        }
+//
+//        @Override
+//        public ServletContext getServletContext() {
+//            return SpringWebServletHandler.this.getServletContext();
+//        }
+//
+//        @Override
+//        public <T> ObjectProvider<T> getBeanProvider(Class<T> aClass, boolean b) {
+//            return SpringWebServletHandler.this.context.getBeanProvider(aClass, b);
+//        }
+//
+//        @Override
+//        public <T> ObjectProvider<T> getBeanProvider(ResolvableType resolvableType, boolean b) {
+//            return SpringWebServletHandler.this.context.getBeanProvider(resolvableType, b);
+//        }
+//
+//        @Override
+//        public <A extends Annotation> A findAnnotationOnBean(String s, Class<A> aClass, boolean b)
+//              throws NoSuchBeanDefinitionException {
+//            return SpringWebServletHandler.this.context.findAnnotationOnBean(s, aClass, b);
+//        }
+//    }
 }

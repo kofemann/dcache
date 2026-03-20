@@ -74,7 +74,7 @@ import org.dcache.pool.repository.StickyRecord;
 import org.dcache.vehicles.qos.ChangePreciousBitMessage;
 import org.dcache.vehicles.qos.ChangeStickyBitMessage;
 import org.dcache.vehicles.qos.ReplicaStatusMessage;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Serves requests to verify records and change the sticky bit on entries from the repository.
@@ -172,7 +172,7 @@ public final class QoSMessageHandler implements CellMessageReceiver {
         return reply;
     }
 
-    @Required
+    @Autowired
     public void setExecutionService(ExecutorService executor) {
         this.executor = executor;
     }

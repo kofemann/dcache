@@ -28,7 +28,7 @@ import org.dcache.util.NDC;
 import org.dcache.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 
 public class PinManager implements CellMessageReceiver, LeaderLatchListener, CellInfoProvider {
@@ -48,32 +48,32 @@ public class PinManager implements CellMessageReceiver, LeaderLatchListener, Cel
     private Duration resetFailedUnpinsPeriod;
     private int maxUnpinsPerRun = -1;
 
-    @Required
+    @Autowired
     public void setExecutor(ScheduledExecutorService executor) {
         this.executor = executor;
     }
 
-    @Required
+    @Autowired
     public void setDao(PinDao dao) {
         this.dao = dao;
     }
 
-    @Required
+    @Autowired
     public void setPoolStub(CellStub stub) {
         poolStub = stub;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         this.poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setExpirationPeriod(long period) {
         expirationPeriod = period;
     }
 
-    @Required
+    @Autowired
     public void setExpirationPeriodUnit(TimeUnit unit) {
         expirationPeriodUnit = unit;
     }

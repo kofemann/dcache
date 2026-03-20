@@ -51,7 +51,7 @@
         <description>Embedded HTTP server</description>
         <constructor-arg ref="thread-pool"/>
         <property name="connectors" ref="connectors"/>
-        <property name="handler" ref="handler-collection"/>
+        <property name="handler" ref="delegator"/>
     </bean>
 
     <bean id="connector" abstract="true" class="org.dcache.util.jetty.ConnectorFactoryBean">
@@ -70,15 +70,6 @@
 
         <property name="port" value="${httpd.net.port}"/>
         <property name="protocol" value="PLAIN"/>
-    </bean>
-
-    <bean id="handler-collection" class="org.eclipse.jetty.server.Handler$Sequence">
-        <constructor-arg>
-            <list>
-                <ref bean="delegator"/>
-                <bean class="org.eclipse.jetty.server.handler.DefaultHandler"/>
-            </list>
-        </constructor-arg>
     </bean>
 
     <util:list id="connectors">

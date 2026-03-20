@@ -11,7 +11,7 @@ import java.util.ServiceLoader;
 import org.dcache.xrootd.plugins.ChannelHandlerFactory;
 import org.dcache.xrootd.plugins.ChannelHandlerProvider;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * A Spring FactoryBean that creates ChannelHandlerFactory instances.
@@ -28,7 +28,7 @@ public class ChannelHandlerFactoryFactoryBean
     protected Iterable<String> _plugins;
     protected Properties _properties = new Properties();
 
-    @Required
+    @Autowired
     public void setPlugins(String plugins) {
         _plugins = Splitter.on(",").omitEmptyStrings().split(plugins);
     }

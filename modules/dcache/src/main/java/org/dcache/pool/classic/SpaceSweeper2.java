@@ -45,7 +45,7 @@ import org.dcache.util.histograms.CountingHistogram;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class SpaceSweeper2
       implements Runnable, CellCommandListener, StateChangeListener, CellSetupProvider,
@@ -71,18 +71,18 @@ public class SpaceSweeper2
         pw.println("sweeper reclaim margin " + _margin);
     }
 
-    @Required
+    @Autowired
     public void setRepository(Repository repository) {
         _repository = repository;
         _repository.addListener(this);
     }
 
-    @Required
+    @Autowired
     public void setAccount(Account account) {
         _account = account;
     }
 
-    @Required
+    @Autowired
     public synchronized void setMargin(double margin) {
         Preconditions.checkArgument(margin >= 0 && margin <= 1,
               String.format("margin percentage must be a "

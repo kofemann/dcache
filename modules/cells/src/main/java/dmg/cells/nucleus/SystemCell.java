@@ -22,6 +22,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
@@ -34,7 +35,6 @@ import org.dcache.alarms.AlarmMarkerFactory;
 import org.dcache.alarms.PredefinedAlarm;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.remoting.RemoteProxyFailureException;
 
 /**
  * @author Patrick Fuhrmann
@@ -401,7 +401,7 @@ public class SystemCell
          *  runtime exception.  These should not cause a stack trace to
          *  be printed.
          */
-        if (e instanceof RemoteProxyFailureException &&
+        if (e instanceof CompletionException &&
               e.getCause() instanceof InterruptedException) {
             _log.warn("{} interrupted.", t.getName());
             return;

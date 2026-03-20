@@ -7,7 +7,7 @@ import dmg.cells.nucleus.CellMessageReceiver;
 import org.dcache.pinmanager.model.Pin;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
@@ -25,12 +25,12 @@ public class UnpinRequestProcessor
     private PinDao _dao;
     private AuthorizationPolicy _pdp;
 
-    @Required
+    @Autowired
     public void setDao(PinDao dao) {
         _dao = dao;
     }
 
-    @Required
+    @Autowired
     public void setAuthorizationPolicy(AuthorizationPolicy pdp) {
         _pdp = pdp;
     }

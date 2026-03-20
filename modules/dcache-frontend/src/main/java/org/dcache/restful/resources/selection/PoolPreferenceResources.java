@@ -63,24 +63,25 @@ import diskCacheV111.poolManager.PoolPreferenceLevel;
 import diskCacheV111.util.CacheException;
 import dmg.cells.nucleus.NoRouteToCellException;
 import dmg.util.Exceptions;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import java.util.ArrayList;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.DefaultValue;
-import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.DefaultValue;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
 import org.dcache.cells.CellStub;
 import org.dcache.restful.providers.selection.PreferenceResult;
 import org.json.JSONException;
@@ -95,7 +96,7 @@ import org.springframework.stereotype.Component;
  * @version v1.0
  */
 @Component
-@Api(value = "poolmanager", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "poolmanager")
 @Path("/pool-preferences")
 public final class PoolPreferenceResources {
 
@@ -106,36 +107,36 @@ public final class PoolPreferenceResources {
     private CellStub poolManager;
 
     @GET
-    @ApiOperation("Describe the pools selected by a particular request.")
+    @Operation(summary = "Describe the pools selected by a particular request.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad Request"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad Request"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Produces(MediaType.APPLICATION_JSON)
     public List<PreferenceResult> match(
-          @ApiParam(value = "The I/O direction.", allowableValues = "READ,CACHE,WRITE,P2P")
+          @Parameter(description = "The I/O direction.", schema = @Schema(allowableValues = {"READ","CACHE","WRITE","P2P"}))
           @DefaultValue("READ")
           @QueryParam("ioDirection") String ioDirection,
-          @ApiParam("The name of the storage class.")
+          @Parameter(description = "The name of the storage class.")
           @QueryParam("storageClass") String storageClass,
-          @ApiParam("The name of the hsm type.")
+          @Parameter(description = "The name of the hsm type.")
           @QueryParam("hsm") String hsm,
-          @ApiParam("The name of the cache class.")
+          @Parameter(description = "The name of the cache class.")
           @DefaultValue("")
           @QueryParam("cacheClass") String cacheClass,
-          @ApiParam("The link group unit.")
+          @Parameter(description = "The link group unit.")
           @DefaultValue("")
           @QueryParam("linkGroup") String linkGroup,
-          @ApiParam("The pnfsId of a file.")
+          @Parameter(description = "The pnfsId of a file.")
           @DefaultValue("")
           @QueryParam("pnfsId") String pnfsId,
-          @ApiParam("The path of a file.")
+          @Parameter(description = "The path of a file.")
           @DefaultValue("")
           @QueryParam("path") String path,
-          @ApiParam("The name of the net unit.")
+          @Parameter(description = "The name of the net unit.")
           @DefaultValue("*")
           @QueryParam("net") String net,
-          @ApiParam("The name of the protocol unit.")
+          @Parameter(description = "The name of the protocol unit.")
           @DefaultValue("*")
           @QueryParam("protocol") String protocol) {
         try {

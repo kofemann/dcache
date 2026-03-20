@@ -62,17 +62,16 @@ package org.dcache.restful.resources.selection;
 import diskCacheV111.poolManager.PoolSelectionUnit;
 import diskCacheV111.poolManager.PoolSelectionUnit.SelectionUnit;
 import diskCacheV111.poolManager.PoolSelectionUnit.SelectionUnitGroup;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
-import javax.inject.Inject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
 import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.restful.providers.selection.Unit;
 import org.dcache.restful.providers.selection.UnitGroup;
@@ -85,7 +84,7 @@ import org.springframework.stereotype.Component;
  * @version v1.0
  */
 @Component
-@Api(value = "poolmanager", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "poolmanager")
 @Path("/units")
 public final class UnitResources {
 
@@ -93,7 +92,7 @@ public final class UnitResources {
     private PoolMonitor poolMonitor;
 
     @GET
-    @ApiOperation("List all units."
+    @Operation(summary = "List all units."
           + " Results sorted lexicographically by unit name.")
     @Produces(MediaType.APPLICATION_JSON)
     public List<Unit> getUnits() {
@@ -106,7 +105,7 @@ public final class UnitResources {
 
 
     @GET
-    @ApiOperation("List all unitgroups."
+    @Operation(summary = "List all unitgroups."
           + " Results sorted lexicographically by unit group name.")
     @Path("/groups")
     @Produces(MediaType.APPLICATION_JSON)

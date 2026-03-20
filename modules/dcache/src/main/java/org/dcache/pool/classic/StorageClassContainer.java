@@ -36,7 +36,7 @@ import org.dcache.pool.nearline.NearlineStorageHandler;
 import org.dcache.pool.repository.CacheEntry;
 import org.dcache.pool.repository.Repository;
 import org.dcache.vehicles.FileAttributes;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Manages tape flush queues.
@@ -56,12 +56,12 @@ public class StorageClassContainer
     private NearlineStorageHandler _storageHandler;
     private boolean _poolStatusInfoChanged = true;
 
-    @Required
+    @Autowired
     public void setRepository(Repository repository) {
         _repository = repository;
     }
 
-    @Required
+    @Autowired
     public void setNearlineStorageHandler(NearlineStorageHandler storageHandler) {
         _storageHandler = storageHandler;
     }

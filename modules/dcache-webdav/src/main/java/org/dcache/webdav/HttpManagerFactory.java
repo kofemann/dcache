@@ -19,7 +19,7 @@ import java.util.Date;
 import org.dcache.http.PathMapper;
 import org.dcache.webdav.federation.FederationResponseHandler;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class HttpManagerFactory extends HttpManagerBuilder implements FactoryBean {
 
@@ -138,7 +138,7 @@ public class HttpManagerFactory extends HttpManagerBuilder implements FactoryBea
         return true;
     }
 
-    @Required
+    @Autowired
     public void setPathMapper(PathMapper mapper) {
         _pathMapper = requireNonNull(mapper);
     }
@@ -146,12 +146,12 @@ public class HttpManagerFactory extends HttpManagerBuilder implements FactoryBea
     /**
      * Sets the resource containing the StringTemplateGroup for directory listing.
      */
-    @Required
+    @Autowired
     public void setTemplate(ReloadableTemplate template) {
         _template = template;
     }
 
-    @Required
+    @Autowired
     public void setTemplateConfig(ImmutableMap<String, String> config) {
         _templateConfig = config;
     }

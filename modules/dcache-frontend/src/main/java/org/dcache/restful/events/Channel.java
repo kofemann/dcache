@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2018 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2018 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -30,6 +30,7 @@ import com.google.common.collect.EvictingQueue;
 import com.google.common.primitives.Ints;
 import jakarta.servlet.http.HttpServletRequest;
 import java.io.EOFException;
+import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayList;
 import java.util.List;
@@ -46,11 +47,11 @@ import java.util.function.BiFunction;
 import javax.annotation.concurrent.GuardedBy;
 import javax.security.auth.Subject;
 import jakarta.servlet.http.HttpServletRequest;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.sse.OutboundSseEvent;
-import javax.ws.rs.sse.Sse;
-import javax.ws.rs.sse.SseEventSink;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.sse.OutboundSseEvent;
+import jakarta.ws.rs.sse.Sse;
+import jakarta.ws.rs.sse.SseEventSink;
 import org.dcache.auth.Subjects;
 import org.dcache.restful.events.spi.EventStream;
 import org.dcache.restful.events.spi.SelectionContext;
@@ -158,7 +159,11 @@ public class Channel extends CloseableWithTasks {
             synchronized (Channel.this) {
                 if (sink != null && !sink.isClosed()) {
                     LOGGER.debug("Channel close triggering closure of connection with client");
-                    sink.close();
+                    try {
+                        sink.close();
+                    } catch (IOException e) {
+                        LOGGER.warn("Failed to close connection with client: {}", e.toString());
+                    }
                     sink = null;
                     sse = null;
                 }
@@ -281,7 +286,11 @@ public class Channel extends CloseableWithTasks {
                   .build();
             sendEvent(event).thenAccept(wasSent -> {
                 if (wasSent) {
-                    sink.close();
+                    try {
+                        sink.close();
+                    } catch (IOException e) {
+                        LOGGER.warn("Failed to close sink: {}", e.toString());
+                    }
                 }
             });
         }

@@ -103,7 +103,7 @@ import org.dcache.vehicles.pool.PoolMoverListingMessage;
 import org.dcache.vehicles.pool.PoolP2PListingMessage;
 import org.dcache.vehicles.pool.PoolRemoveListingMessage;
 import org.dcache.vehicles.pool.PoolStageListingMessage;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Serves requests from frontend pool info service for info relating to the
@@ -477,82 +477,82 @@ public final class PoolInfoRequestHandler implements CellMessageReceiver,
         this.supplier = supplier;
     }
 
-    @Required
+    @Autowired
     public void setChecksumModule(PoolDataBeanProvider<ChecksumModuleData> provider) {
         checksumModule = provider;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(ExecutorService executor) {
         this.executor = executor;
     }
 
-    @Required
+    @Autowired
     public void setFlushController(PoolDataBeanProvider<FlushControllerData> provider) {
         flushController = provider;
     }
 
-    @Required
+    @Autowired
     public void setHsmFlushQueueManager(PoolDataBeanProvider<HSMFlushQManagerData> provider) {
         hsmFlushQueueManager = provider;
     }
 
-    @Required
+    @Autowired
     public void setJobTimeoutManager(PoolDataBeanProvider<JobTimeoutManagerData> provider) {
         jobTimeoutManager = provider;
     }
 
-    @Required
+    @Autowired
     public void setMigrationClient(PoolDataBeanProvider<MigrationData> provider) {
         migrationClient = provider;
     }
 
-    @Required
+    @Autowired
     public void setMigrationServer(PoolDataBeanProvider<MigrationData> provider) {
         migrationServer = provider;
     }
 
-    @Required
+    @Autowired
     public void setP2pClient(PoolDataBeanProvider<P2PData> provider) {
         p2pClient = provider;
     }
 
-    @Required
+    @Autowired
     public void setPool(PoolV4 pool) {
         this.pool = pool;
     }
 
-    @Required
+    @Autowired
     public void setQueueManager(IoQueueManager manager) {
         queueManager = manager;
     }
 
-    @Required
+    @Autowired
     public void setRepositoryDataProvider(PoolDataBeanProvider<RepositoryData> provider) {
         repositoryProvider = provider;
     }
 
-    @Required
+    @Autowired
     public void setRepository(Repository repository) {
         this.repository = repository;
     }
 
-    @Required
+    @Autowired
     public void setStatisticsListener(StatisticsListener statisticsListener) {
         this.statisticsListener = statisticsListener;
     }
 
-    @Required
+    @Autowired
     public void setStorageHandler(NearlineStorageHandler handler) {
         storageHandler = handler;
     }
 
-    @Required
+    @Autowired
     public void setSweeper(PoolDataBeanProvider<SweeperData> provider) {
         sweeper = provider;
     }
 
-    @Required
+    @Autowired
     public void setTransferServices(PoolDataBeanProvider<TransferServicesData> provider) {
         transferServices = provider;
     }

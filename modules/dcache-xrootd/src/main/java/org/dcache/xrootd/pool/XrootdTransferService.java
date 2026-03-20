@@ -41,6 +41,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.logging.LoggingHandler;
 
+import jakarta.annotation.Resource;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.SocketException;
@@ -57,7 +58,6 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import javax.annotation.Resource;
 import org.dcache.cells.CellStub;
 import org.dcache.namespace.CreateOption;
 import org.dcache.namespace.FileAttribute;
@@ -79,7 +79,7 @@ import org.dcache.xrootd.stream.ChunkedResponseWriteHandler;
 import org.dcache.xrootd.util.ServerProtocolFlags;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * xrootd transfer service.
@@ -195,7 +195,7 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
         reconnectTimers = new HashMap<>();
     }
 
-    @Required
+    @Autowired
     public void setAccessLogPlugins(List<ChannelHandlerFactory> plugins) {
         this.accessLogPlugins = plugins;
     }
@@ -252,17 +252,17 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
         this.pnfsStub = requireNonNull(pnfsStub);
     }
 
-    @Required
+    @Autowired
     public void setReadReconnectTimeout(long readReconnectTimeout) {
         this.readReconnectTimeout = readReconnectTimeout;
     }
 
-    @Required
+    @Autowired
     public void setReadReconnectTimeoutUnit(TimeUnit readReconnectTimeoutUnit) {
         this.readReconnectTimeoutUnit = readReconnectTimeoutUnit;
     }
 
-    @Required
+    @Autowired
     public void setPlugins(List<ChannelHandlerFactory> plugins) {
         this.plugins = plugins;
     }
@@ -271,17 +271,17 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
         return plugins;
     }
 
-    @Required
+    @Autowired
     public void setSigningPolicy(SigningPolicy signingPolicy) {
         this.signingPolicy = signingPolicy;
     }
 
-    @Required
+    @Autowired
     public void setServerProtocolFlags(ServerProtocolFlags serverProtocolFlags) {
         this.serverProtocolFlags = serverProtocolFlags;
     }
 
-    @Required
+    @Autowired
     public void setSslHandlerFactories(List<ChannelHandlerFactory> sslHandlerFactories) {
         this.sslHandlerFactories = sslHandlerFactories;
     }
@@ -296,13 +296,13 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
         this.tpcServerResponseTimeoutUnit = unit;
     }
 
-    @Required
+    @Autowired
     public void setThirdPartyShutdownExecutor(
           ScheduledExecutorService thirdPartyShutdownExecutor) {
         this.thirdPartyShutdownExecutor = thirdPartyShutdownExecutor;
     }
 
-    @Required
+    @Autowired
     public void setTpcClientPlugins(List<ChannelHandlerFactory> tpcClientPlugins) {
         this.tpcClientPlugins = tpcClientPlugins;
     }
@@ -311,7 +311,7 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
         return tpcClientPlugins;
     }
 
-    @Required
+    @Autowired
     public void setMaxFrameSize(int maxFrameSize) {
         this.maxFrameSize = maxFrameSize;
     }
@@ -320,12 +320,12 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
         return maxFrameSize;
     }
 
-    @Required
+    @Autowired
     public void setMaxWriteBufferSize(int maxWriteBufferSize) {
         this.maxWriteBufferSize = maxWriteBufferSize;
     }
 
-    @Required
+    @Autowired
     public void setTpcClientChunkSize(int tpcClientChunkSize) {
         this.tpcClientChunkSize = tpcClientChunkSize;
     }
@@ -338,7 +338,7 @@ public class XrootdTransferService extends NettyTransferService<XrootdProtocolIn
         return queryConfig;
     }
 
-    @Required
+    @Autowired
     public void setQueryConfig(Map<String, String> queryConfig) {
         this.queryConfig = queryConfig;
     }

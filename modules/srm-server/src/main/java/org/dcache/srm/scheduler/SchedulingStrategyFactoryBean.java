@@ -22,7 +22,7 @@ import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 import org.dcache.srm.scheduler.spi.SchedulingStrategyProvider;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Spring factory bean to create SchedulingStrategyProviders.
@@ -38,12 +38,12 @@ public class SchedulingStrategyFactoryBean implements FactoryBean<SchedulingStra
         return name;
     }
 
-    @Required
+    @Autowired
     public void setName(String name) {
         this.name = name;
     }
 
-    @Required
+    @Autowired
     public void setConfiguration(Map<String, String> configuration) {
         this.configuration = configuration;
     }

@@ -66,7 +66,7 @@ import org.dcache.namespace.events.InotifyEvent;
 import org.dcache.util.RepeatableTaskRunner;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This class is responsible for accepting inotify(7)-like events and sending them to event
@@ -277,22 +277,22 @@ public class EventNotifier implements EventReceiver, CellMessageReceiver,
         this.cache = cache;
     }
 
-    @Required
+    @Autowired
     public void setDispatchExecutor(Executor executor) {
         dispatchExecutor = executor;
     }
 
-    @Required
+    @Autowired
     public void setSenderExecutor(Executor executor) {
         sender = new RepeatableTaskRunner(executor, this::sendQueuedEvents);
     }
 
-    @Required
+    @Autowired
     public void setMaximumQueuedEvents(int maximum) {
         maximumQueuedEvents = maximum;
     }
 
-    @Required
+    @Autowired
     public void setEventBatchSize(int size) {
         checkArgument(size > 0, "Cannot be zero or negative value");
         batchSize = size;
@@ -356,7 +356,7 @@ public class EventNotifier implements EventReceiver, CellMessageReceiver,
         }
     }
 
-    @Required
+    @Autowired
     public void setCellStub(CellStub subscribers) {
         this.eventSender = subscribers;
     }

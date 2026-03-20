@@ -71,31 +71,32 @@ import diskCacheV111.util.RetentionPolicy;
 import diskCacheV111.util.VOInfo;
 import dmg.cells.nucleus.NoRouteToCellException;
 import dmg.util.Exceptions;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.QueryParam;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.QueryParam;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 import org.dcache.cells.CellStub;
 import org.dcache.restful.providers.space.LinkGroupInfo;
 import org.dcache.restful.providers.space.SpaceToken;
@@ -111,7 +112,7 @@ import org.springframework.stereotype.Component;
  * @version v1.0
  */
 @Component
-@Api(value = "spacemanager", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "spacemanager")
 @Path("/space")
 public final class SpaceManagerResources {
 
@@ -125,34 +126,34 @@ public final class SpaceManagerResources {
     private boolean spaceReservationEnabled;
 
     @GET
-    @ApiOperation("Get information about link groups."
+    @Operation(summary = "Get information about link groups."
           + " Results sorted lexicographically by link group name.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad Request Error"),
-          @ApiResponse(code = 404, message = "DCache not configured for space management."),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "400", description = "Bad Request Error"),
+          @ApiResponse(responseCode = "404", description = "DCache not configured for space management."),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/linkgroups")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<LinkGroupInfo> getLinkGroups(@ApiParam(value = "The name of the link group.")
+    public List<LinkGroupInfo> getLinkGroups(@Parameter(description = "The name of the link group.")
     @QueryParam("name") String name,
-          @ApiParam(value = "The id of the link group.")
+          @Parameter(description = "The id of the link group.")
           @QueryParam("id") Long id,
-          @ApiParam(value = "Whether the link group allows online access latency.")
+          @Parameter(description = "Whether the link group allows online access latency.")
           @QueryParam("onlineAllowed") Boolean onlineAllowed,
-          @ApiParam(value = "Whether the link group allows nearline access latency.")
+          @Parameter(description = "Whether the link group allows nearline access latency.")
           @QueryParam("nearlineAllowed") Boolean nearlineAllowed,
-          @ApiParam(value = "Whether the link group allows replica retention policy.")
+          @Parameter(description = "Whether the link group allows replica retention policy.")
           @QueryParam("replicaAllowed") Boolean replicaAllowed,
-          @ApiParam(value = "Whether the link group allows output retention policy.")
+          @Parameter(description = "Whether the link group allows output retention policy.")
           @QueryParam("outputAllowed") Boolean outputAllowed,
-          @ApiParam(value = "Whether the link group allows custodial retention policy.")
+          @Parameter(description = "Whether the link group allows custodial retention policy.")
           @QueryParam("custodialAllowed") Boolean custodialAllowed,
-          @ApiParam(value = "VO group associated with the link.")
+          @Parameter(description = "VO group associated with the link.")
           @QueryParam("voGroup") String voGroup,
-          @ApiParam(value = "VO role associated with the link.")
+          @Parameter(description = "VO role associated with the link.")
           @QueryParam("voRole") String voRole,
-          @ApiParam(value = "Minimum amount of space (in bytes) still available via the link.")
+          @Parameter(description = "Minimum amount of space (in bytes) still available via the link.")
           @QueryParam("minAvailableSpace") Long minAvailableSpace) {
         if (!spaceReservationEnabled) {
             throw new NotFoundException();
@@ -186,31 +187,31 @@ public final class SpaceManagerResources {
     }
 
     @GET
-    @ApiOperation("Get information about space tokens.  "
+    @Operation(summary = "Get information about space tokens.  "
           + "Results sorted by token id.")
     @ApiResponses({
-          @ApiResponse(code = 404, message = "DCache not configured for space management."),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "404", description = "DCache not configured for space management."),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/tokens")
     @Produces(MediaType.APPLICATION_JSON)
-    public List<SpaceToken> getTokensForGroup(@ApiParam(value = "The id of the space token.")
+    public List<SpaceToken> getTokensForGroup(@Parameter(description = "The id of the space token.")
     @QueryParam("id") Long id,
-          @ApiParam(value = "VO group associated with the token.")
+          @Parameter(description = "VO group associated with the token.")
           @QueryParam("voGroup") String voGroup,
-          @ApiParam(value = "VO role associated with the token.")
+          @Parameter(description = "VO role associated with the token.")
           @QueryParam("voRole") String voRole,
-          @ApiParam(value = "Access Latency associated with the token.")
+          @Parameter(description = "Access Latency associated with the token.")
           @QueryParam("accessLatency") String accessLatency,
-          @ApiParam(value = "Retention Policy associated with the token.")
+          @Parameter(description = "Retention Policy associated with the token.")
           @QueryParam("retentionPolicy") String retentionPolicy,
-          @ApiParam(value = "Id of link group to which token belongs.")
+          @Parameter(description = "Id of link group to which token belongs.")
           @QueryParam("groupId") Long groupId,
-          @ApiParam(value = "State of the token.")
+          @Parameter(description = "State of the token.")
           @QueryParam("state") String state,
-          @ApiParam(value = "Minimum size (in bytes) of token.")
+          @Parameter(description = "Minimum size (in bytes) of token.")
           @QueryParam("minSize") Long minSize,
-          @ApiParam(value = "Minimum amount of space (in bytes) still free for token.")
+          @Parameter(description = "Minimum amount of space (in bytes) still free for token.")
           @QueryParam("minFreeSpace") Long minFreeSpace) {
         if (!spaceReservationEnabled) {
             throw new NotFoundException();
@@ -244,26 +245,26 @@ public final class SpaceManagerResources {
 
 
     @POST
-    @ApiOperation("Create a new space reservation.")
+    @Operation(summary = "Create a new space reservation.")
     @ApiResponses({
-          @ApiResponse(code = 201, message = "Created"),
-          @ApiResponse(code = 400, message = "Bad Request Error"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "DCache not configured for space management."),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "201", description = "Created"),
+          @ApiResponse(responseCode = "400", description = "Bad Request Error"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "DCache not configured for space management."),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/tokens")
     @Produces(MediaType.APPLICATION_JSON)
     public Response reserverSpace(
-          @ApiParam(value = "Access Latency associated with the token.", allowableValues = "ONLINE, NEARLINE")
+          @Parameter(description = "Access Latency associated with the token.", schema = @Schema(allowableValues =  {"ONLINE", "NEARLINE"}))
           @QueryParam("accessLatency") String accessLatency,
-          @ApiParam(value = "Retention Policy associated with the token.", allowableValues = "REPLICA, OUTPUT, CUSTODIAL")
+          @Parameter(description = "Retention Policy associated with the token.")
           @QueryParam("retentionPolicy") String retentionPolicy,
-          @ApiParam(value = "Minimum size (in bytes) of token.")
+          @Parameter(description = "Minimum size (in bytes) of token.")
           @QueryParam("minSize") Long minSize,
-          @ApiParam(value = "Reservation lifetime as ISO8601 Duration (for instance, P2DT3H4M, for 2 days, 3 hours and 4 minutes). If not specified, the reservation will be valid indefinitely.")
+          @Parameter(description = "Reservation lifetime as ISO8601 Duration (for instance, P2DT3H4M, for 2 days, 3 hours and 4 minutes). If not specified, the reservation will be valid indefinitely.")
           @QueryParam("lifeTime") String lifeTime,
-          @ApiParam(value = "Description of the reservation.")
+          @Parameter(description = "Description of the reservation.")
           @QueryParam("description") String description) {
 
         if (RequestUser.isAnonymous()) {

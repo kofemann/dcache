@@ -15,9 +15,10 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import org.dcache.services.httpd.exceptions.OnErrorException;
 import org.dcache.services.httpd.util.AliasEntry;
-import org.eclipse.jetty.ee9.nested.AbstractHandler;
-import org.eclipse.jetty.ee9.nested.Handler;
-import org.eclipse.jetty.ee9.nested.Request;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -27,7 +28,7 @@ import org.slf4j.LoggerFactory;
  *
  * @author arossi
  */
-public class HandlerDelegator extends AbstractHandler {
+public class HandlerDelegator extends Handler.Abstract {
 
     private static final Logger LOGGER
           = LoggerFactory.getLogger(HandlerDelegator.class);
@@ -39,7 +40,7 @@ public class HandlerDelegator extends AbstractHandler {
     }
 
     private static void handleException(Exception e, String uri,
-          HttpServletResponse response) {
+          Response response) {
         if (e instanceof ServletException) {
             final Throwable cause = e.getCause();
             if (cause instanceof HttpException) {
@@ -61,29 +62,27 @@ public class HandlerDelegator extends AbstractHandler {
     }
 
     private static void printHttpException(HttpException exception,
-          HttpServletResponse response) {
+          Response response) {
         if (exception instanceof HttpBasicAuthenticationException) {
             final String realm
                   = ((HttpBasicAuthenticationException) exception).getRealm();
-            response.setHeader("WWW-Authenticate", "Basic realm=\""
+            response.getHeaders().add("WWW-Authenticate", "Basic realm=\""
                   + realm + "\"");
         }
-        response.setStatus(exception.getErrorCode(), exception.getMessage());
+        response.setStatus(exception.getErrorCode());
     }
 
     private final Map<String, AliasEntry> aliases = new ConcurrentHashMap<>();
 
     @Override
-    public void handle(String target, Request baseRequest,
-          HttpServletRequest request, HttpServletResponse response)
-          throws IOException {
+    public boolean handle(Request request, Response response, Callback callback) throws IOException {
 
         String uri = null;
         String alias;
         AliasEntry entry = null;
 
         try {
-            uri = request.getRequestURI();
+            uri = request.getHttpURI().getPath();
             alias = extractAlias(uri);
 
             LOGGER.debug("handle {}, {}", uri, alias);
@@ -125,7 +124,7 @@ public class HandlerDelegator extends AbstractHandler {
             final Handler handler = entry.getHandler();
             LOGGER.debug("got handler: {}", handler);
             if (handler != null) {
-                handler.handle(target, baseRequest, request, response);
+                handler.handle(request, response, callback);
             }
 
         } catch (final Exception e) {
@@ -141,8 +140,8 @@ public class HandlerDelegator extends AbstractHandler {
                         final Handler handler = entry.getHandler();
                         if (handler != null) {
                             try {
-                                handler.handle(target, baseRequest, request, response);
-                            } catch (final ServletException t) {
+                                handler.handle(request, response, callback);
+                            } catch (final Exception t) {
                                 handleException(t, uri, response);
                             }
                         }
@@ -158,6 +157,7 @@ public class HandlerDelegator extends AbstractHandler {
         }
 
         LOGGER.info("Finished");
+        return true;
     }
 
     public AliasEntry removeAlias(String name) throws InvocationTargetException {

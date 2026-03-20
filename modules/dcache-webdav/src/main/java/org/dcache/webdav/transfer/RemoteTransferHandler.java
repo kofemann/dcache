@@ -122,7 +122,7 @@ import java.util.function.Function;
 import java.util.function.Predicate;
 import java.util.stream.Collectors;
 import javax.annotation.Nullable;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PreDestroy;
 import javax.security.auth.Subject;
 import org.dcache.acl.enums.AccessMask;
 import org.dcache.auth.OpenIdCredential;
@@ -144,12 +144,10 @@ import org.dcache.util.URIs;
 import org.dcache.util.Xattrs;
 import org.dcache.vehicles.FileAttributes;
 import org.dcache.webdav.transfer.CopyFilter.CredentialSource;
-import org.eclipse.jetty.ee9.nested.Request;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.io.EndPoint;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import static diskCacheV111.services.TransferManagerHandler.RECEIVED_FIRST_POOL_REPLY_STATE;
 import static dmg.util.CommandException.checkCommand;
@@ -287,17 +285,17 @@ public class RemoteTransferHandler implements CellMessageReceiver, CellCommandLi
     /** The time when the most recent message was received. */
     private volatile Instant _lastMessageArrived = Instant.now();
 
-    @Required
+    @Autowired
     public void setTransferManagerStub(CellStub stub) {
         _genericTransferManager = stub;
     }
 
-    @Required
+    @Autowired
     public void setPnfsStub(CellStub stub) {
         _pnfs = new PnfsHandler(stub);
     }
 
-    @Required
+    @Autowired
     public void setPerformanceMarkerPeroid(long peroid) {
         _performanceMarkerPeriod = peroid;
     }
@@ -1140,7 +1138,8 @@ public class RemoteTransferHandler implements CellMessageReceiver, CellCommandLi
                 while (response instanceof ServletResponseWrapper) {
                     response = (HttpServletResponse) ((ServletResponseWrapper) response).getResponse();
                 }
-                ((org.eclipse.jetty.ee9.nested.Response) response).setTrailers(this::getTrailers);
+                // FIXME: migrate to EE11
+                //((org.eclipse.jetty.ee9.nested.Response) response).setTrailers(this::getTrailers);
             }
         }
 

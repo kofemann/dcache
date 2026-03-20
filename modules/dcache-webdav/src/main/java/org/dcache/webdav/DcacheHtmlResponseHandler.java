@@ -27,7 +27,7 @@ import javax.security.auth.Subject;
 import org.eclipse.jetty.io.EofException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.stringtemplate.v4.ST;
 
 /**
@@ -68,7 +68,7 @@ public class DcacheHtmlResponseHandler extends AbstractWrappingResponseHandler {
         _template = template;
     }
 
-    @Required
+    @Autowired
     public void setTemplateConfig(ImmutableMap<String, String> config) {
         _templateConfig = config;
     }

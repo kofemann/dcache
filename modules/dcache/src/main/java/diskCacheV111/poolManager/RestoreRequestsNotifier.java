@@ -67,7 +67,7 @@ import java.util.concurrent.TimeUnit;
 import org.dcache.cells.CellStub;
 import org.dcache.poolmanager.PoolManagerGetRestoreHandlerInfo;
 import org.dcache.util.FireAndForgetTask;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Periodically publishes a list of the restore requests for this
@@ -103,29 +103,29 @@ public final class RestoreRequestsNotifier implements CellLifeCycleAware, CellId
         this.address = address;
     }
 
-    @Required
+    @Autowired
     public void setExecutorService(
           ScheduledExecutorService executorService) {
         this.executorService = executorService;
     }
 
-    @Required
+    @Autowired
     public void setRequestContainer(
           RequestContainerV5 requestContainer) {
         this.requestContainer = requestContainer;
     }
 
-    @Required
+    @Autowired
     public void setRestoreRequests(CellStub restoreRequests) {
         this.restoreRequests = restoreRequests;
     }
 
-    @Required
+    @Autowired
     public void setTimeout(long timeout) {
         this.timeout = timeout;
     }
 
-    @Required
+    @Autowired
     public void setTimeoutUnit(TimeUnit timeoutUnit) {
         this.timeoutUnit = timeoutUnit;
     }

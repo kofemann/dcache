@@ -91,8 +91,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 import java.util.stream.Stream;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import javax.security.auth.Subject;
 import org.apache.axis.types.URI;
 import org.apache.curator.framework.CuratorFramework;
@@ -227,7 +227,7 @@ import org.dcache.util.CertificateFactories;
 import org.dcache.util.NetLoggerBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Utility class to submit requests to the SRM backend service.
@@ -289,12 +289,12 @@ public class SrmHandler implements CellInfoProvider, CuratorFrameworkAware {
         isClientDNSLookup = clientDNSLookup;
     }
 
-    @Required
+    @Autowired
     public void setSrmManagerStub(CellStub srmManagerStub) {
         this.srmManagerStub = srmManagerStub;
     }
 
-    @Required
+    @Autowired
     public void setPingExtraInfo(ImmutableMap<String, String> pingExtraInfo) {
         this.pingExtraInfo = buildExtraInfo(pingExtraInfo);
     }

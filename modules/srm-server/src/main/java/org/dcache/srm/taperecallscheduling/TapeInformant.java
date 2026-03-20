@@ -29,13 +29,13 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 import org.dcache.srm.taperecallscheduling.spi.TapeInfoProvider;
 import org.dcache.srm.taperecallscheduling.spi.TapeInfoProviderProvider;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class TapeInformant implements CellMessageReceiver, CellInfoProvider, CellCommandListener {
 
     private TapeInfoProvider tapeInfoProvider;
 
-    @Required
+    @Autowired
     public void setTapeInfoProviderProvider(TapeInfoProviderProvider provider) {
         setTapeInfoProvider(provider.createProvider());
     }

@@ -52,7 +52,7 @@ import org.dcache.srm.SrmAbortTransfersRequest;
 import org.dcache.srm.SrmAbortTransfersResponse;
 import org.dcache.srm.SrmQueryPutRequest;
 import org.dcache.srm.SrmQueryPutResponse;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 
 /**
@@ -100,7 +100,7 @@ public class DcacheSrm extends SRM implements CuratorFrameworkAware, CellIdentit
         this.client = client;
     }
 
-    @Required
+    @Autowired
     public void setSrmManagerStub(CellStub srmManagerStub) {
         this.srmManagerStub = srmManagerStub;
     }

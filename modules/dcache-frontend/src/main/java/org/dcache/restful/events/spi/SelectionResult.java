@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2018 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2018 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,7 +20,7 @@ package org.dcache.restful.events.spi;
 
 import static java.util.Objects.requireNonNull;
 
-import javax.validation.constraints.NotNull;
+import jakarta.validation.constraints.NotNull;
 
 /**
  * This class describes the result of a selection request.

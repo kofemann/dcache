@@ -60,7 +60,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.function.BiConsumer;
 import javax.annotation.concurrent.GuardedBy;
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 import org.apache.curator.framework.CuratorFramework;
 import org.apache.curator.framework.recipes.nodes.PersistentNode;
 import org.apache.curator.utils.ZKPaths;
@@ -86,7 +86,7 @@ import org.dcache.util.RepeatableTaskRunner;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * An EventStream that provides the client with events based on namespace activity.  The
@@ -317,12 +317,12 @@ public class Inotify implements EventStream, CellMessageReceiver,
         return "notification of namespace activity, modelled after inotify(7)";
     }
 
-    @Required
+    @Autowired
     public void setPnfsHandler(PnfsHandler handler) {
         pnfsHandler = handler;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(Executor executor) {
         this.executor = executor;
     }

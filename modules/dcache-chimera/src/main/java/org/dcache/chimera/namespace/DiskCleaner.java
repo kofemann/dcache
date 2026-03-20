@@ -45,7 +45,7 @@ import org.dcache.util.CacheExceptionFactory;
 import org.dcache.util.TimeUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 
@@ -68,18 +68,18 @@ public class DiskCleaner extends AbstractCleaner implements CellCommandListener,
 
     private int _processAtOnce;
 
-    @Required
+    @Autowired
     public void setProcessAtOnce(int processAtOnce) {
         _processAtOnce = processAtOnce;
     }
 
-    @Required
+    @Autowired
     public void setNotificationStub(CellStub stub) {
         _notificationStub = stub;
     }
 
 
-    @Required
+    @Autowired
     public void setReportRemove(String[] reportRemove) {
         _deleteNotificationTargets = Arrays.stream(reportRemove)
               .filter(t -> !t.isEmpty())

@@ -18,7 +18,7 @@ import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.util.Version;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This class contains information about the dCache-instance. These are the storage, version, an ID
@@ -39,12 +39,12 @@ public class InstanceData implements CellLifeCycleAware {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(InstanceData.class);
 
-    @Required
+    @Autowired
     public void setPoolManagerStub(CellStub poolManagerStub) {
         this.poolManagerStub = poolManagerStub;
     }
 
-    @Required
+    @Autowired
     public void setSiteName(String siteName) {
         if (!siteName.equals("")) {
             this.siteName = siteName;
@@ -53,7 +53,7 @@ public class InstanceData implements CellLifeCycleAware {
         }
     }
 
-    @Required
+    @Autowired
     public void setLongitude(String longitude) {
         if (!longitude.equals("")) {
             try {
@@ -72,7 +72,7 @@ public class InstanceData implements CellLifeCycleAware {
         }
     }
 
-    @Required
+    @Autowired
     public void setLatitude(String latitude) {
 
         if (!latitude.equals("")) {

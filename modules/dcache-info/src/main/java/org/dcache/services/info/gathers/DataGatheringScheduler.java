@@ -15,7 +15,7 @@ import org.dcache.services.info.base.StateUpdateManager;
 import org.dcache.util.NDC;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This thread is responsible for scheduling various data-gathering activity. Multiple
@@ -228,27 +228,27 @@ public class DataGatheringScheduler implements Runnable, EnvironmentAware, CellL
         _environment = environment;
     }
 
-    @Required
+    @Autowired
     public void setDgaFactories(Iterable<DgaFactoryService> factories) {
         _factories = factories;
     }
 
-    @Required
+    @Autowired
     public void setStateUpdateManager(StateUpdateManager sum) {
         _sum = sum;
     }
 
-    @Required
+    @Autowired
     public void setStateExhibitor(StateExhibitor exhibitor) {
         _exhibitor = exhibitor;
     }
 
-    @Required
+    @Autowired
     public void setMessageSender(MessageSender sender) {
         _sender = sender;
     }
 
-    @Required
+    @Autowired
     public void setMessageMetadataRepository(MessageMetadataRepository<UOID> repository) {
         _repository = repository;
     }

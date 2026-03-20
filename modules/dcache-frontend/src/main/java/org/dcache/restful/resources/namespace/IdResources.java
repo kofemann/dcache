@@ -67,27 +67,26 @@ import diskCacheV111.util.PnfsHandler;
 import diskCacheV111.util.PnfsId;
 import dmg.cells.nucleus.NoRouteToCellException;
 import dmg.util.Exceptions;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import java.util.Set;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.InternalServerErrorException;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.InternalServerErrorException;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import org.dcache.cells.CellStub;
 import org.dcache.http.PathMapper;
 import org.dcache.namespace.FileAttribute;
@@ -107,7 +106,7 @@ import org.springframework.stereotype.Component;
  * @version v1.0
  */
 @Component
-@Api(value = "namespace", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "namespace", description = "PNFS path mapping.")
 @Path("/id")
 public class IdResources {
 
@@ -132,19 +131,19 @@ public class IdResources {
 
 
     @GET
-    @ApiOperation(value = "Discover information about a file from the PNFS-ID.",
-          notes = "Retrieve all file attributes plus the file's path from the "
+    @Operation(summary = "Discover information about a file from the PNFS-ID.",
+          description = "Retrieve all file attributes plus the file's path from the "
                 + "given PNFS-ID.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad pnsfid"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "400", description = "Bad pnsfid"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Path("{pnfsid}")
     @Produces(MediaType.APPLICATION_JSON)
-    public JsonFileAttributes getAttributes(@ApiParam("The PNFS-ID of a file or directory.")
+    public JsonFileAttributes getAttributes(@Parameter(description = "The PNFS-ID of a file or directory.")
     @PathParam("pnfsid") String value) {
 
         if (RequestUser.isAnonymous()) {

@@ -36,7 +36,7 @@ import org.dcache.util.ByteUnit;
 import org.dcache.util.CDCExecutorServiceDecorator;
 import org.dcache.util.ColumnWriter;
 import org.dcache.util.SqlGlob;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.dao.EmptyResultDataAccessException;
 import org.springframework.transaction.annotation.Transactional;
@@ -53,22 +53,22 @@ public class SpaceManagerCommandLineInterface implements CellCommandListener {
     private LinkGroupLoader linkGroupLoader;
     private Executor executor;
 
-    @Required
+    @Autowired
     public void setExecutor(ExecutorService executor) {
         this.executor = new CDCExecutorServiceDecorator<>(executor);
     }
 
-    @Required
+    @Autowired
     public void setDatabase(SpaceManagerDatabase db) {
         this.db = db;
     }
 
-    @Required
+    @Autowired
     public void setPnfs(PnfsHandler pnfs) {
         this.pnfs = pnfs;
     }
 
-    @Required
+    @Autowired
     public void setLinkGroupLoader(LinkGroupLoader linkGroupLoader) {
         this.linkGroupLoader = linkGroupLoader;
     }

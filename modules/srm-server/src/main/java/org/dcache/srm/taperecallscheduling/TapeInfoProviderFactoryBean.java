@@ -21,7 +21,7 @@ import java.util.NoSuchElementException;
 import java.util.ServiceLoader;
 import org.dcache.srm.taperecallscheduling.spi.TapeInfoProviderProvider;
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Spring factory bean to create SchedulingStrategyProviders.
@@ -37,12 +37,12 @@ public class TapeInfoProviderFactoryBean implements FactoryBean<TapeInfoProvider
         return name;
     }
 
-    @Required
+    @Autowired
     public void setName(String name) {
         this.name = name;
     }
 
-    @Required
+    @Autowired
     public void setTapeInfoDir(String directory) {
         tapeInfoDir = directory;
     }

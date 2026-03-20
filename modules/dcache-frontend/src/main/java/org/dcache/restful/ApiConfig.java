@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2017 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2017 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,15 +18,13 @@
  */
 package org.dcache.restful;
 
-import io.swagger.annotations.BasicAuthDefinition;
-import io.swagger.annotations.Contact;
-import io.swagger.annotations.ExternalDocs;
-import io.swagger.annotations.Info;
-import io.swagger.annotations.License;
-import io.swagger.annotations.SecurityDefinition;
-import io.swagger.annotations.SwaggerDefinition;
-import io.swagger.annotations.Tag;
-import javax.ws.rs.ext.Provider;
+import io.swagger.v3.oas.annotations.OpenAPIDefinition;
+import io.swagger.v3.oas.annotations.info.Contact;
+import io.swagger.v3.oas.annotations.info.Info;
+import io.swagger.v3.oas.annotations.info.License;
+import io.swagger.v3.oas.annotations.security.SecurityRequirement;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.ws.rs.ext.Provider;
 
 /**
  * This interface exists only to give @SwaggerDefinition something to annotate that swagger will
@@ -34,7 +32,7 @@ import javax.ws.rs.ext.Provider;
  * <p>
  * https://github.com/swagger-api/swagger-core/issues/2600
  */
-@SwaggerDefinition(
+@OpenAPIDefinition(
       info = @Info(
             title = "The dCache REST interface",
             description = "User and administration interaction with dCache",
@@ -48,15 +46,9 @@ import javax.ws.rs.ext.Provider;
                   url = "http://www.apache.org/licenses/LICENSE-2.0"
             )
       ),
-      securityDefinition = @SecurityDefinition(
-            basicAuthDefinitions = {
-                  @BasicAuthDefinition(key = "basicAuth",
-                        description = "Username and password authentication.")
-            }
-      ),
-      consumes = {"application/json"},
-      produces = {"application/json"},
-      externalDocs = @ExternalDocs(value = "Wiki", url = "https://github.com/dCache/dcache/wiki/Restful-API"),
+      security = {
+            @SecurityRequirement(name = "basicAuth")
+            },
       tags = {
             @Tag(name = "alarms", description = "The log of internal problems"),
             @Tag(name = "billing", description = "The log of (significant) client activity"),

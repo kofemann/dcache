@@ -87,7 +87,7 @@ import org.dcache.services.bulk.activity.plugin.qos.QoSResponseReceiver;
 import org.dcache.services.bulk.activity.retry.BulkTargetRetryPolicy;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Creates activities on the basis of activity mappings.
@@ -188,48 +188,48 @@ public final class BulkActivityFactory implements CellMessageSender, Environment
         this.endpoint = endpoint;
     }
 
-    @Required
+    @Autowired
     public void setPinManager(CellStub pinManager) {
         this.pinManager = pinManager;
     }
 
-    @Required
+    @Autowired
     public void setPnfsManager(CellStub pnfsManager) {
         this.pnfsManager = pnfsManager;
     }
 
-    @Required
+    @Autowired
     public void setPoolManager(CellStub poolManager) {
         this.poolManager = poolManager;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         this.poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setQosEngine(CellStub qosEngine) {
         this.qosEngine = qosEngine;
     }
 
-    @Required
+    @Autowired
     public void setQoSResponseReceiver(QoSResponseReceiver qoSResponseReceiver) {
         this.qoSResponseReceiver = qoSResponseReceiver;
     }
 
-    @Required
+    @Autowired
     public void setRateLimiters(Map<String, Double> rates) {
         rateLimiters = rates.entrySet().stream()
               .collect(Collectors.toMap(Map.Entry::getKey, e -> RateLimiter.create(e.getValue())));
     }
 
-    @Required
+    @Autowired
     public void setRateLimiterActivityIndex(Map<String, String> rateLimiterActivityIndex) {
         this.rateLimiterActivityIndex = rateLimiterActivityIndex;
     }
 
-    @Required
+    @Autowired
     public void setRetryPolicies(Map<String, BulkTargetRetryPolicy> retryPolicies) {
         this.retryPolicies = retryPolicies;
     }

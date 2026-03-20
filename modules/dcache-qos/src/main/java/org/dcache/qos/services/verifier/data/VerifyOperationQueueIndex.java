@@ -70,7 +70,7 @@ import org.dcache.qos.data.QoSMessageType;
 import org.dcache.util.BoundedCachedExecutor;
 import org.dcache.util.FireAndForgetTask;
 import org.dcache.util.SignalAware;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *  Handles the configuration and lifecycle of the queues.
@@ -158,7 +158,7 @@ public class VerifyOperationQueueIndex {
         return operationQueues[typeMap.get(type).index];
     }
 
-    @Required
+    @Autowired
     public void setQueueTypes(List<QueueType> queueTypes) {
         this.queueTypes = queueTypes;
     }

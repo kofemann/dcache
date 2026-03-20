@@ -25,20 +25,18 @@ import com.google.common.util.concurrent.RateLimiter;
 import dmg.cells.nucleus.CellCommandListener;
 import dmg.util.command.Command;
 import dmg.util.command.Option;
-import jakarta.servlet.ServletException;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import org.eclipse.jetty.ee9.nested.Handler;
-import org.eclipse.jetty.ee9.nested.HandlerCollection;
-import org.eclipse.jetty.ee9.nested.Request;
+import java.util.List;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.util.Callback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
 import java.time.Duration;
 import java.time.temporal.ChronoUnit;
-import java.util.concurrent.Callable;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.google.common.base.Preconditions.checkArgument;
@@ -56,7 +54,7 @@ import static com.google.common.base.Preconditions.checkArgument;
  *
  * Based on original code by Sandro Grizzo.
  */
-public class RateLimitedHandlerList extends HandlerCollection implements CellCommandListener {
+public class RateLimitedHandlerList extends Handler.Sequence implements CellCommandListener {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RateLimitedHandlerList.class);
 
@@ -211,55 +209,49 @@ public class RateLimitedHandlerList extends HandlerCollection implements CellCom
 
 
     @Override
-    public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException {
+    public boolean handle(Request request, Response response, Callback callback) throws Exception {
 
         String client = getClientIp(request);
 
         boolean blocked = blockedClients.getIfPresent(client) != null;
         if (blocked) {
             LOGGER.debug("Blocking client with too many auth errors {}", client);
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS_429);
-            response.getWriter().write("Server is busy. Please try again later.");
-            baseRequest.setHandled(true);
-            return;
+            Response.writeError(request, response, callback, HttpStatus.TOO_MANY_REQUESTS_429, "Server is busy. Please try again later.");
+            return true;
         }
 
         if (!getClientRateLimiter(client).tryAcquire()) {
             LOGGER.debug("Blocking client with too many requests {}", client);
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS_429);
-            response.getWriter().write("Server is busy. Please try again later.");
-            baseRequest.setHandled(true);
-            return;
+            Response.writeError(request, response, callback, HttpStatus.TOO_MANY_REQUESTS_429, "Server is busy. Please try again later.");
+            return true;
         }
 
         if (!globalRateLimiter.tryAcquire()) {
             LOGGER.debug("Blocking client due to globally too many requests {}", client);
-            response.setStatus(HttpStatus.TOO_MANY_REQUESTS_429);
-            response.getWriter().write("Server is busy. Please try again later.");
-            baseRequest.setHandled(true);
-            return;
+            Response.writeError(request, response, callback, HttpStatus.TOO_MANY_REQUESTS_429, "Server is busy. Please try again later.");
+            return  true;
         }
 
-        Handler[] handlers = this.getHandlers();
-        if (handlers != null && this.isStarted()) {
-            for (Handler handler : handlers) {
-                handler.handle(target, baseRequest, request, response);
-                if (baseRequest.isHandled()) {
-                    // block clients that hammer with authentication failures
-                    if (response.getStatus() == 401) {
-                        int errors = getClientErrorRateLimiter(client).incrementAndGet();
-                        if (errors >= maxErrorsPerClient) {
-                            LOGGER.warn("Blocking client due to too many auth errors: {}", client);
-                            blockedClients.put(client, BLOCK);
-                            // as client blocked, no reason to keep track of further errors
-                            perClientErrorCount.invalidate(client);
-                            perClientRates.invalidate(client);
-                        }
+        List<Handler> handlers = this.getHandlers();
+        for (Handler handler : handlers) {
+            boolean b = handler.handle(request, response, callback);
+            if (b) {
+                // block clients that hammer with authentication failures
+                if (response.getStatus() == 401) {
+                    int errors = getClientErrorRateLimiter(client).incrementAndGet();
+                    if (errors >= maxErrorsPerClient) {
+                        LOGGER.warn("Blocking client due to too many auth errors: {}", client);
+                        blockedClients.put(client, BLOCK);
+                        // as client blocked, no reason to keep track of further errors
+                        perClientErrorCount.invalidate(client);
+                        perClientRates.invalidate(client);
                     }
-                    return;
                 }
+                break;
             }
         }
+
+        return true;
     }
 
     /**
@@ -268,10 +260,10 @@ public class RateLimitedHandlerList extends HandlerCollection implements CellCom
      * @param request the HTTP request
      * @return the client IP address
      */
-    private String getClientIp(HttpServletRequest request) {
-        String forwardedIp = request.getHeader("X-Forwarded-For");
+    private String getClientIp(Request request) {
+        String forwardedIp = request.getHeaders().get(HttpHeader.X_FORWARDED_FOR);
         if (forwardedIp == null) {
-            return request.getRemoteAddr();
+            return Request.getRemoteAddr(request);
         }
         return forwardedIp.split(",")[0];
     }
@@ -319,7 +311,7 @@ public class RateLimitedHandlerList extends HandlerCollection implements CellCom
     }
 
     @Command(name="limits reset", description="Reset all rate limiters and error counters")
-    public class LimitsResetCommand implements Callable<String> {
+    public class LimitsResetCommand implements java.util.concurrent.Callable<String> {
         @Override
         public String call() {
             perClientRates.invalidateAll();
@@ -332,7 +324,7 @@ public class RateLimitedHandlerList extends HandlerCollection implements CellCom
 
 
     @Command(name="limits info", description="Show current rate limits and statistics. The retuned information is approximate.")
-    public class LimitsShowCommand implements Callable<String> {
+    public class LimitsShowCommand implements java.util.concurrent.Callable<String> {
 
         @Option(name="l", usage="Verbose listing")
         boolean verbose = false;

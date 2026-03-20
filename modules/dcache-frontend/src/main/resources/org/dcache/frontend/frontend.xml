@@ -349,7 +349,7 @@
         </property>
     </bean>
 
-    <bean id="jersey-servlet" class="org.eclipse.jetty.servlet.ServletHolder">
+    <bean id="jersey-servlet" class="org.eclipse.jetty.ee9.servlet.ServletHolder">
         <constructor-arg name="name" value="rest"/>
         <constructor-arg name="servlet">
             <bean class="org.glassfish.jersey.servlet.ServletContainer">
@@ -360,17 +360,16 @@
         </constructor-arg>
     </bean>
 
-    <bean id="swagger-servlet" class="org.eclipse.jetty.servlet.ServletHolder">
-        <constructor-arg name="name" value="Jersey2Config"/>
-        <constructor-arg name="servlet">
-            <bean class="io.swagger.jersey.config.JerseyJaxrsConfig"/>
-        </constructor-arg>
-        <property name="initParameters">
-            <map>
-                <entry key="swagger.api.basepath" value="/api/v1"/>
-            </map>
-        </property>
-    </bean>
+<!--    <bean id="swagger-servlet" class="org.eclipse.jetty.ee9.servlet.ServletHolder">-->
+<!--        <constructor-arg name="servlet">-->
+<!--            <bean class="io.swagger.jaxrs.config.DefaultJaxrsConfig"/>-->
+<!--        </constructor-arg>-->
+<!--        <property name="initParameters">-->
+<!--            <map>-->
+<!--                <entry key="swagger.api.basepath" value="/api/v1"/>-->
+<!--            </map>-->
+<!--        </property>-->
+<!--    </bean>-->
 
     <bean id="well-known-producer-factory-provider"
       class="org.dcache.services.httpd.wellknown.WellKnownProducerFactoryProvider"
@@ -400,12 +399,11 @@
                 <bean class="org.eclipse.jetty.server.handler.ContextHandler">
                     <description>Provide access to dcache-view</description>
                     <property name="contextPath" value="/"/>
-                    <property name="allowNullPathInfo" value="true"/>
+                    <property name="allowNullPathInContext" value="true"/>
                     <property name="handler">
                         <bean class="org.eclipse.jetty.server.handler.ResourceHandler">
-                            <property name="directoriesListed" value="true"/>
-                            <property name="redirectWelcome" value="false" />
-                            <property name="resourceBase" value="${frontend.dcache-view.dir}"/>
+                            <property name="dirAllowed" value="true"/>
+                            <property name="baseResourceAsString" value="${frontend.dcache-view.dir}"/>
                         </bean>
                     </property>
                 </bean>
@@ -423,8 +421,8 @@
                     <property name="contextPath" value="/api/v1"/>
                     <property name="handler">
                         <bean class="org.eclipse.jetty.server.handler.ResourceHandler">
-                            <property name="directoriesListed" value="true"/>
-                            <property name="resourceBase" value="${dcache.paths.swagger-ui.html}"/>
+                            <property name="dirAllowed" value="true"/>
+                            <property name="baseResourceAsString" value="${dcache.paths.swagger-ui.html}"/>
                         </bean>
                     </property>
                 </bean>
@@ -433,34 +431,35 @@
                   <property name="contextPath" value="/admin"/>
                   <property name="handler">
                     <bean class="org.eclipse.jetty.server.handler.ResourceHandler">
-                      <property name="directoriesListed" value="true"/>
-                      <property name="resourceBase" value="${frontend.dcache-view-admin.dir}"/>
+                      <property name="dirAllowed" value="true"/>
+                      <property name="baseResourceAsString" value="${frontend.dcache-view-admin.dir}"/>
                     </bean>
                   </property>
                 </bean>
                 <bean class="org.eclipse.jetty.server.handler.ContextHandler">
                     <description>Provide access to standard swagger-ui library</description>
                     <property name="contextPath" value="/api/libraries/swagger-ui"/>
-                    <property name="allowNullPathInfo" value="true"/>
+                    <property name="allowNullPathInContext" value="true"/>
                     <property name="handler">
                         <bean class="org.eclipse.jetty.server.handler.ResourceHandler">
-                            <property name="directoriesListed" value="true"/>
-                            <property name="resourceBase" value="jar:file:${dcache.paths.swagger-ui.jar}!${dcache.paths.swagger-ui.jar.internal}"/>
+                            <property name="dirAllowed" value="true"/>
+                            <property name="baseResourceAsString" value="jar:file:${dcache.paths.swagger-ui.jar}!${dcache.paths.swagger-ui.jar.internal}"/>
                         </bean>
                     </property>
                 </bean>
                 <bean class="org.eclipse.jetty.server.handler.ContextHandler">
                   <property name="contextPath" value="/.well-known"/>
-                  <property name="allowNullPathInfo" value="true"/>
+                  <property name="allowNullPathInContext" value="true"/>
                   <property name="handler">
                     <bean class="org.dcache.services.httpd.handlers.WellKnownHandler">
                       <property name="factoryProvider" ref="well-known-producer-factory-provider"/>
                     </bean>
                   </property>
                 </bean>
-                  <bean class="org.dcache.restful.LoggingHandler">
-                    <property name="handler" ref="authentication-handler"/>
-                </bean>
+<!--                  <bean class="org.dcache.restful.LoggingHandler">-->
+<!--                    <property name="handler" ref="authentication-handler"/>-->
+<!--                </bean>-->
+<!--              <ref bean="authentication-handler"/>-->
             </list>
         </property>
     </bean>
@@ -476,11 +475,11 @@
                   value="${frontend.macaroons.accept-over-unencrypted-channel}"/>
     </bean>
 
-    <bean id="authorised-handlers" class="org.eclipse.jetty.server.handler.HandlerList">
+    <bean id="authorised-handlers" class="org.eclipse.jetty.server.Handler$Sequence">
         <description>All handlers that may require authentication.</description>
-        <property name="handlers">
+        <constructor-arg>
             <list>
-                <bean class="org.eclipse.jetty.servlet.ServletContextHandler">
+                <bean class="org.eclipse.jetty.ee9.servlet.ServletContextHandler">
                     <property name="contextPath" value="/api"/>
                     <property name="eventListeners">
                         <list>
@@ -491,7 +490,7 @@
                         <bean class="org.dcache.restful.util.SpringWebServletHandler">
                             <property name="servlets">
                                 <list>
-                                    <ref bean="swagger-servlet"/>
+<!--                                    <ref bean="swagger-servlet"/>-->
                                     <ref bean="jersey-servlet"/>
                                 </list>
                             </property>
@@ -513,7 +512,7 @@
 
                 <bean class="org.eclipse.jetty.server.handler.DefaultHandler"/>
             </list>
-        </property>
+        </constructor-arg>
     </bean>
 
     <bean id="banned-ciphers" class="org.dcache.util.Crypto"

@@ -9,7 +9,7 @@ import org.apache.sshd.server.command.Command;
 import org.apache.sshd.server.shell.ShellFactory;
 import org.dcache.cells.CellStub;
 import org.dcache.util.list.ListDirectoryHandler;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class AdminShellFactory implements ShellFactory, CellMessageSender {
 
@@ -23,42 +23,42 @@ public class AdminShellFactory implements ShellFactory, CellMessageSender {
     private String _prompt;
     private ListDirectoryHandler _list;
 
-    @Required
+    @Autowired
     public void setHistoryFile(File historyFile) {
         _historyFile = historyFile;
     }
 
-    @Required
+    @Autowired
     public void setHistorySize(int size) {
         _historySize = size;
     }
 
-    @Required
+    @Autowired
     public void setUseColor(boolean useColor) {
         _useColor = useColor;
     }
 
-    @Required
+    @Autowired
     public void setPnfsManager(CellStub stub) {
         _pnfsManager = stub;
     }
 
-    @Required
+    @Autowired
     public void setPoolManager(CellStub stub) {
         _poolManager = stub;
     }
 
-    @Required
+    @Autowired
     public void setAcm(CellStub stub) {
         _acm = stub;
     }
 
-    @Required
+    @Autowired
     public void setPrompt(String prompt) {
         _prompt = prompt;
     }
 
-    @Required
+    @Autowired
     public void setListHandler(ListDirectoryHandler list) {
         _list = list;
     }

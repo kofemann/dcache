@@ -88,7 +88,7 @@ import org.dcache.restful.providers.tape.ArchiveInfo;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class ArchiveInfoCollector implements CellCommandListener {
 
@@ -149,17 +149,17 @@ public class ArchiveInfoCollector implements CellCommandListener {
         return maxPaths;
     }
 
-    @Required
+    @Autowired
     public void setMaxPaths(int maxPaths) {
         this.maxPaths = maxPaths;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         this.poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setService(ExecutorService service) {
         this.service = service;
     }

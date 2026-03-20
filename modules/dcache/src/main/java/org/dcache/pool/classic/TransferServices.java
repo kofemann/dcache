@@ -22,7 +22,7 @@ import java.util.HashMap;
 import java.util.Map;
 import org.dcache.pool.PoolDataBeanProvider;
 import org.dcache.pool.classic.json.TransferServicesData;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class TransferServices
       implements PoolDataBeanProvider<TransferServicesData> {
@@ -47,12 +47,12 @@ public class TransferServices
         info.getProtocol() + "-" + info.getMajorVersion(), _defaultTransferService);
     }
 
-    @Required
+    @Autowired
     public void setDefaultTransferService(TransferService<?> defaultTransferService) {
         _defaultTransferService = defaultTransferService;
     }
 
-    @Required
+    @Autowired
     public void setTransferServices(Map<String, TransferService<?>> transferServices) {
         _transferServices = transferServices;
     }

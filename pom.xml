@@ -62,19 +62,20 @@
 
         <version.slf4j>1.7.32</version.slf4j>
         <version.milton>4.1.0.2601</version.milton>
-        <version.spring>5.3.39</version.spring>
+        <version.spring>6.2.17</version.spring>
         <!-- Remember to sync aspectj version in dcache.properties -->
         <version.aspectj>1.9.25.1</version.aspectj>
         <version.smc>7.6.0</version.smc>
         <version.xerces>2.12.0</version.xerces>
-        <version.jetty>12.0.33</version.jetty>
+        <version.jetty>12.1.7</version.jetty>
         <version.xrootd4j>4.6.0</version.xrootd4j>
-        <version.jersey>2.47</version.jersey>
+        <version.jersey>4.0.2</version.jersey>
         <version.dcache-view>3.0.0</version.dcache-view>
         <version.dcache-view-admin>3.0.0</version.dcache-view-admin>
         <version.netty>4.2.10.Final</version.netty>
         <version.dcache>${project.version}</version.dcache>
-        <version.swagger-ui>5.30.2</version.swagger-ui>
+        <version.swagger>2.2.45</version.swagger>
+        <version.swagger-ui>5.32.1</version.swagger-ui>
 
         <!-- Remember to update modules/logback-test-config/pom.xml
              when upgrading logback. -->
@@ -485,13 +486,13 @@
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.jetty.ee9</groupId>
-                <artifactId>jetty-ee9-webapp</artifactId>
+                <groupId>org.eclipse.jetty.ee11</groupId>
+                <artifactId>jetty-ee11-webapp</artifactId>
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.jetty.ee9</groupId>
-                <artifactId>jetty-ee9-servlets</artifactId>
+                <groupId>org.eclipse.jetty.ee11</groupId>
+                <artifactId>jetty-ee11-servlets</artifactId>
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
@@ -500,8 +501,8 @@
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
-                <groupId>org.eclipse.jetty.ee9</groupId>
-                <artifactId>jetty-ee9-security</artifactId>
+                <groupId>org.eclipse.jetty</groupId>
+                <artifactId>jetty-security</artifactId>
                 <version>${version.jetty}</version>
             </dependency>
             <dependency>
@@ -532,8 +533,8 @@
             </dependency>
             <dependency>
                 <groupId>org.glassfish.jersey.ext</groupId>
-                <artifactId>jersey-spring5</artifactId>
-                <version>${version.jersey}</version>
+                <artifactId>jersey-spring6</artifactId>
+                <version>4.0.2</version>
             </dependency>
             <dependency>
                 <groupId>org.glassfish.jersey.media</groupId>
@@ -943,19 +944,33 @@
             </dependency>
 
             <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-jaxrs2-jakarta</artifactId>
+                <version>${version.swagger}</version>
+            </dependency>
+
+            <dependency>
                 <groupId>org.webjars</groupId>
                 <artifactId>swagger-ui</artifactId>
                 <version>${version.swagger-ui}</version>
             </dependency>
+
             <dependency>
-                <groupId>io.swagger</groupId>
-                <artifactId>swagger-jersey2-jaxrs</artifactId>
-                <version>1.6.14</version>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-jaxrs2-servlet-initializer-jakarta</artifactId>
+                <version>${version.swagger}</version>
             </dependency>
+
+            <dependency>
+                <groupId>io.swagger.core.v3</groupId>
+                <artifactId>swagger-annotations</artifactId>
+                <version>${version.swagger}</version>
+            </dependency>
+
             <dependency>
                 <groupId>org.springframework.plugin</groupId>
                 <artifactId>spring-plugin-core</artifactId>
-                <version>1.2.0.RELEASE</version>
+                <version>3.0.0</version>
             </dependency>
             <dependency>
                 <!-- enforce version as javassist used powermock -->

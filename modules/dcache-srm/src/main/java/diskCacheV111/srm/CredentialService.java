@@ -33,14 +33,14 @@ import java.net.URISyntaxException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import javax.annotation.Nonnull;
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import org.dcache.auth.FQAN;
 import org.dcache.cells.CellStub;
 import org.dcache.gridsite.CredentialStore;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class CredentialService
       implements CellMessageReceiver, CellLifeCycleAware, CellInfoProvider, CellIdentityAware {
@@ -63,7 +63,7 @@ public class CredentialService
         _cellAddress = address;
     }
 
-    @Required
+    @Autowired
     public void setHttpsPort(int port) {
         _httpsPort = port;
     }
@@ -72,7 +72,7 @@ public class CredentialService
         return _httpsPort;
     }
 
-    @Required
+    @Autowired
     public void setHost(String host) {
         _host = requireNonNull(host);
     }
@@ -82,17 +82,17 @@ public class CredentialService
         return _host;
     }
 
-    @Required
+    @Autowired
     public void setCredentialStore(CredentialStore store) {
         _credentialStore = store;
     }
 
-    @Required
+    @Autowired
     public void setExecutor(ScheduledExecutorService executor) {
         _executor = executor;
     }
 
-    @Required
+    @Autowired
     public void setTopicStub(CellStub topic) {
         _topic = topic;
     }

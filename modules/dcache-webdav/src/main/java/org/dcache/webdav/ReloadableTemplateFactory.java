@@ -20,7 +20,7 @@ package org.dcache.webdav;
 import static java.util.Objects.requireNonNull;
 
 import org.springframework.beans.factory.FactoryBean;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.core.io.Resource;
 
 /**
@@ -52,17 +52,17 @@ public class ReloadableTemplateFactory implements FactoryBean {
         return true;
     }
 
-    @Required
+    @Autowired
     public void setResource(Resource resource) {
         _templateResource = requireNonNull(resource);
     }
 
-    @Required
+    @Autowired
     public void setAutoReload(boolean isEnabled) {
         _isAutoReloadEnabled = isEnabled;
     }
 
-    @Required
+    @Autowired
     public void setWorkaroundTemplate(String name) {
         _templateName = requireNonNull(name);
     }

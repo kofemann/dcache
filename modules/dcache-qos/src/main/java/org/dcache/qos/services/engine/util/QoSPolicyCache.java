@@ -81,7 +81,7 @@ import org.dcache.vehicles.qos.PnfsManagerListQoSPoliciesMessage;
 import org.dcache.vehicles.qos.PnfsManagerRmQoSPolicyMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  *   Serves as a write-through cache for QoS Policies.   The cache is populated
@@ -116,22 +116,22 @@ public class QoSPolicyCache implements CellMessageReceiver{
     private TimeUnit expiryUnit;
     private long capacity;
 
-    @Required
+    @Autowired
     public void setPnfs(CellStub pnfs) {
         this.pnfs = pnfs;
     }
 
-    @Required
+    @Autowired
     public void setExpiry(long expiry) {
         this.expiry = expiry;
     }
 
-    @Required
+    @Autowired
     public void setExpiryUnit(TimeUnit expiryUnit) {
         this.expiryUnit = expiryUnit;
     }
 
-    @Required
+    @Autowired
     public void setCapacity(long capacity) {
         this.capacity = capacity;
     }

@@ -68,34 +68,34 @@ import static org.dcache.restful.util.JSONUtils.newBadRequestException;
 import com.google.common.base.Strings;
 import diskCacheV111.util.FsPath;
 import diskCacheV111.util.PnfsHandler;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import javax.inject.Inject;
-import javax.inject.Named;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
 import javax.security.auth.Subject;
 import jakarta.servlet.http.HttpServletRequest;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.Consumes;
-import javax.ws.rs.DELETE;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.POST;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
-import javax.ws.rs.core.Response;
-import javax.ws.rs.core.Response.Status;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.Consumes;
+import jakarta.ws.rs.DELETE;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
+import jakarta.ws.rs.core.Response;
+import jakarta.ws.rs.core.Response.Status;
 import org.dcache.auth.attributes.LoginAttributes;
 import org.dcache.auth.attributes.Restriction;
 import org.dcache.cells.CellStub;
@@ -115,7 +115,7 @@ import org.dcache.util.TimeUtils;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 
 /**
@@ -124,7 +124,7 @@ import org.springframework.stereotype.Component;
  * @version v1.0
  */
 @Component
-@Api(value = "tape", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "tape")
 @Path("tape/stage")
 public final class StageResources {
 
@@ -154,17 +154,17 @@ public final class StageResources {
      * @return Object which describes the status of the request.
      */
     @GET
-    @ApiOperation("Get the status information for an individual stage request.")
+    @Operation(summary = "Get the status information for an individual stage request.")
     @ApiResponses({
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not found"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public StageRequestInfo getStageInfo(@ApiParam("The unique id of the request.")
+    public StageRequestInfo getStageInfo(@Parameter(description = "The unique id of the request.")
     @PathParam("id") String id) {
         Subject subject = getSubject();
         Restriction restriction = getRestriction();
@@ -203,21 +203,21 @@ public final class StageResources {
      * @return response
      */
     @POST
-    @ApiOperation(value = "Cancel a STAGE request.")
+    @Operation(summary = "Cancel a STAGE request.")
     @ApiResponses({
-          @ApiResponse(code = 201, message = "Created"),
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 429, message = "Too many requests"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "201", description = "Created"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "429", description = "Too many requests"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/{id}/cancel")
     @Consumes({MediaType.APPLICATION_JSON})
     public Response cancel(
           @PathParam("id") String id,
-          @ApiParam(value = "List of file paths belonging to this request to cancel. If any path "
+          @Parameter(description = "List of file paths belonging to this request to cancel. If any path "
                 + "does not belong to that stage request, this request will fail.", required = true)
                 String requestPayload) {
 
@@ -269,19 +269,19 @@ public final class StageResources {
      * absolute URL for the resource associated with this bulk request.
      */
     @POST
-    @ApiOperation(value = "Submit a STAGE request.")
+    @Operation(summary = "Submit a STAGE request.")
     @ApiResponses({
-          @ApiResponse(code = 201, message = "Created"),
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 429, message = "Too many requests"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "201", description = "Created"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "429", description = "Too many requests"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Consumes({MediaType.APPLICATION_JSON})
     @Produces(MediaType.APPLICATION_JSON)
     public Response submit(
-          @ApiParam(value = "Request structure:\n\n"
+          @Parameter(description = "Request structure:\n\n"
                 + "**files** - Array of File objects.  Required.\n"
                 + "File object structure:\n"
                 + "**path**:  - String.  Path of the file.  Duplicates will be sanitized.  Required.\n"
@@ -335,18 +335,18 @@ public final class StageResources {
      * @return response
      */
     @DELETE
-    @ApiOperation("Clear all resources pertaining to the given stage request id.")
+    @Operation(summary = "Clear all resources pertaining to the given stage request id.")
     @ApiResponses({
-          @ApiResponse(code = 204, message = "No content"),
-          @ApiResponse(code = 400, message = "Bad request"),
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not Found"),
-          @ApiResponse(code = 500, message = "Internal Server Error")
+          @ApiResponse(responseCode = "204", description = "No content"),
+          @ApiResponse(responseCode = "400", description = "Bad request"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not Found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error")
     })
     @Path("/{id}")
     @Produces(MediaType.APPLICATION_JSON)
-    public Response clearRequest(@ApiParam("The unique id of the request.")
+    public Response clearRequest(@Parameter(description = "The unique id of the request.")
     @PathParam("id") String id) {
         Subject subject = getSubject();
         Restriction restriction = getRestriction();
@@ -420,7 +420,7 @@ public final class StageResources {
         return request;
     }
 
-    @Required
+    @Autowired
     public void setSupportedSitenames(String supportedSitenames) {
         if (Strings.emptyToNull(supportedSitenames) != null) {
             this.supportedSitenames = supportedSitenames.split("[,]");

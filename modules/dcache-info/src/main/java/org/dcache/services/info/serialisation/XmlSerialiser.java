@@ -9,7 +9,7 @@ import org.dcache.services.info.base.State;
 import org.dcache.services.info.base.StateExhibitor;
 import org.dcache.services.info.base.StatePath;
 import org.dcache.services.info.base.StringStateValue;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 
 /**
@@ -46,7 +46,7 @@ public class XmlSerialiser extends SubtreeVisitor implements StateSerialiser {
 
     private StateExhibitor _exhibitor;
 
-    @Required
+    @Autowired
     public void setStateExhibitor(StateExhibitor exhibitor) {
         _exhibitor = exhibitor;
     }

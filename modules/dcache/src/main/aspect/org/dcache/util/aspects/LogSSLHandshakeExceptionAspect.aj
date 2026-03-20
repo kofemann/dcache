@@ -14,7 +14,7 @@ public aspect LogSSLHandshakeExceptionAspect
 
     before(Connection c, Exception e) : withincode(void Connection.onFillable()) && this(c) && handler(Exception) && args(e) {
         if (e instanceof SSLHandshakeException) {
-            InetSocketAddress remoteAddress = c.getEndPoint().getRemoteAddress();
+            InetSocketAddress remoteAddress = (InetSocketAddress)(c.getEndPoint().getRemoteSocketAddress());
             LOGGER.warn("SSL handshake with {}:{} failed: {}", remoteAddress.getAddress().getHostAddress(), remoteAddress.getPort(), e.getMessage());
         }
     }

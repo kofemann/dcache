@@ -77,10 +77,10 @@ import org.dcache.util.TryCatchTemplate;
 import org.dcache.vehicles.FileAttributes;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
+import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 
 /**
  * Abstract base class for Netty based transfer services. This class provides most methods needed by
@@ -178,7 +178,7 @@ public abstract class NettyTransferService<P extends ProtocolInfo>
         this.name = name;
     }
 
-    @Required
+    @Autowired
     public void setThreads(int threads) {
         this.threads = threads;
     }
@@ -188,7 +188,7 @@ public abstract class NettyTransferService<P extends ProtocolInfo>
         this.address = address;
     }
 
-    @Required
+    @Autowired
     public void setPostTransferService(
           PostTransferService postTransferService) {
         this.postTransferService = postTransferService;
@@ -198,7 +198,7 @@ public abstract class NettyTransferService<P extends ProtocolInfo>
         return connectTimeout;
     }
 
-    @Required
+    @Autowired
     public void setConnectTimeout(long connectTimeout) {
         this.connectTimeout = connectTimeout;
     }
@@ -207,17 +207,17 @@ public abstract class NettyTransferService<P extends ProtocolInfo>
         return connectTimeoutUnit;
     }
 
-    @Required
+    @Autowired
     public void setConnectTimeoutUnit(TimeUnit connectTimeoutUnit) {
         this.connectTimeoutUnit = connectTimeoutUnit;
     }
 
-    @Required
+    @Autowired
     public void setDoorStub(CellStub stub) {
         this.doorStub = stub;
     }
 
-    @Required
+    @Autowired
     public void setPortRange(NettyPortRange portRange) {
         this.portRange = portRange;
     }

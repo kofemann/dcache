@@ -26,7 +26,7 @@ import com.google.common.cache.RemovalListener;
 import org.dcache.delegation.gridsite2.DelegationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * An in-memory storage of in-progress delegations.  This implementation has no persistent backing
@@ -66,7 +66,7 @@ public class InMemoryCredentialDelegationStore implements
     private long _expireAfter;
     private long _maxOngoing;
 
-    @Required
+    @Autowired
     public void setExpireAfter(long expire) {
         _expireAfter = expire;
     }
@@ -75,7 +75,7 @@ public class InMemoryCredentialDelegationStore implements
         return _expireAfter;
     }
 
-    @Required
+    @Autowired
     public void setMaxOngoing(long value) {
         _maxOngoing = value;
     }

@@ -50,7 +50,7 @@ import org.dcache.xrootd.security.TLSSessionInfo;
 import org.dcache.xrootd.util.ServerProtocolFlags;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Netty based xrootd redirector. Could possibly be replaced by pure spring configuration once we
@@ -91,17 +91,17 @@ public class NettyXrootdServer implements CellIdentityAware {
         return _port;
     }
 
-    @Required
+    @Autowired
     public void setPort(int port) {
         _port = port;
     }
 
-    @Required
+    @Autowired
     public void setSigningPolicy(SigningPolicy config) {
         _signingPolicy = config;
     }
 
-    @Required
+    @Autowired
     public void setServerProtocolFlags(ServerProtocolFlags serverProtocolFlags) {
         _serverProtocolFlags = serverProtocolFlags;
     }
@@ -118,22 +118,22 @@ public class NettyXrootdServer implements CellIdentityAware {
         return _backlog;
     }
 
-    @Required
+    @Autowired
     public void setBacklog(int backlog) {
         _backlog = backlog;
     }
 
-    @Required
+    @Autowired
     public void setRequestExecutor(ExecutorService executor) {
         _requestExecutor = executor;
     }
 
-    @Required
+    @Autowired
     public void setConnectionTracker(ConnectionTracker connectionTracker) {
         _connectionTracker = connectionTracker;
     }
 
-    @Required
+    @Autowired
     public void setDoor(XrootdDoor door) {
         _door = door;
     }
@@ -143,19 +143,19 @@ public class NettyXrootdServer implements CellIdentityAware {
         _myAddress = address;
     }
 
-    @Required
+    @Autowired
     public void setChannelHandlerFactories(
           List<ChannelHandlerFactory> channelHandlerFactories) {
         _channelHandlerFactories = channelHandlerFactories;
     }
 
-    @Required
+    @Autowired
     public void setAccessLogHandlerFactories(
           List<ChannelHandlerFactory> channelHandlerFactories) {
         _accessLogHandlerFactories = channelHandlerFactories;
     }
 
-    @Required
+    @Autowired
     public void setSSLHandlerFactories(List<ChannelHandlerFactory> channelHandlerFactories) {
         _sslHandlerFactories = channelHandlerFactories;
     }
@@ -163,7 +163,7 @@ public class NettyXrootdServer implements CellIdentityAware {
     /**
      * Sets the root path of the name space exported by this xrootd door.
      */
-    @Required
+    @Autowired
     public void setRootPath(String s) {
         _rootPath = FsPath.create(s);
     }
@@ -176,12 +176,12 @@ public class NettyXrootdServer implements CellIdentityAware {
         return _queryConfig;
     }
 
-    @Required
+    @Autowired
     public void setQueryConfig(Map<String, String> queryConfig) {
         _queryConfig = queryConfig;
     }
 
-    @Required
+    @Autowired
     public void setAppIoQueues(Map<String, String> appIoQueues) {
         _appIoQueues = appIoQueues;
     }

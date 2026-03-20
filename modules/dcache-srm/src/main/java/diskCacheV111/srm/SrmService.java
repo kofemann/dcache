@@ -103,7 +103,7 @@ import org.dcache.srm.request.RequestCredential;
 import org.dcache.srm.request.RequestCredentialStorage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * SRM 2.2 backend message processor.
@@ -134,27 +134,27 @@ public class SrmService implements CellMessageReceiver, CuratorFrameworkAware, C
         this.address = address;
     }
 
-    @Required
+    @Autowired
     public void setSrmId(String id) {
         this.id = requireNonNull(id);
     }
 
-    @Required
+    @Autowired
     public void setStorage(AbstractStorageElement storage) {
         this.storage = storage;
     }
 
-    @Required
+    @Autowired
     public void setSrm(SRM srm) {
         this.srm = srm;
     }
 
-    @Required
+    @Autowired
     public void setRequestCredentialStorage(RequestCredentialStorage requestCredentialStorage) {
         this.requestCredentialStorage = requestCredentialStorage;
     }
 
-    @Required
+    @Autowired
     public void setUserManager(DcacheUserManager userManager) {
         this.userManager = userManager;
     }

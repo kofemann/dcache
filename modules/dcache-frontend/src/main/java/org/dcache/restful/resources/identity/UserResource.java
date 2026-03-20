@@ -20,9 +20,9 @@ package org.dcache.restful.resources.identity;
 
 import static org.dcache.restful.util.HttpServletRequests.getLoginAttributes;
 
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+
 import jakarta.servlet.http.HttpServletRequest;
 import java.security.Principal;
 import java.util.ArrayList;
@@ -31,11 +31,11 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import javax.security.auth.Subject;
-import javax.ws.rs.GET;
-import javax.ws.rs.Path;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.Context;
-import javax.ws.rs.core.MediaType;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.Context;
+import jakarta.ws.rs.core.MediaType;
 import org.dcache.auth.RolePrincipal;
 import org.dcache.auth.RolePrincipal.Role;
 import org.dcache.auth.Subjects;
@@ -50,13 +50,13 @@ import org.springframework.stereotype.Component;
  * Provide services related to the identity the user is currently operating.
  */
 @Component
-@Api(value = "identity", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "identity")
 @Path("/user")
 public class UserResource {
 
     @GET
-    @ApiOperation(value = "Provide information about the current user.",
-          notes = "An introspection endpoint to allow the client to discover "
+    @Operation(summary = "Provide information about the current user.",
+          description = "An introspection endpoint to allow the client to discover "
                 + "information about the current user.")
     @Produces(MediaType.APPLICATION_JSON)
     public UserAttributes getUserAttributes(@Context HttpServletRequest request) {

@@ -41,7 +41,7 @@ import org.dcache.namespace.FileAttribute;
 import org.dcache.pinmanager.model.Pin;
 import org.dcache.poolmanager.PoolMonitor;
 import org.dcache.vehicles.FileAttributes;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class PinManagerCLI
       implements CellCommandListener, CellInfoProvider {
@@ -60,37 +60,37 @@ public class PinManagerCLI
     private UnpinRequestProcessor _unpinProcessor;
     private MovePinRequestProcessor _moveProcessor;
 
-    @Required
+    @Autowired
     public void setPnfsStub(CellStub stub) {
         _pnfs = new PnfsHandler(stub);
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         _poolMonitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setPinManager(PinManager pinManager) {
         _pinManager = pinManager;
     }
 
-    @Required
+    @Autowired
     public void setPinProcessor(PinRequestProcessor processor) {
         _pinProcessor = processor;
     }
 
-    @Required
+    @Autowired
     public void setUnpinProcessor(UnpinRequestProcessor processor) {
         _unpinProcessor = processor;
     }
 
-    @Required
+    @Autowired
     public void setMoveProcessor(MovePinRequestProcessor processor) {
         _moveProcessor = processor;
     }
 
-    @Required
+    @Autowired
     public void setDao(PinDao dao) {
         _dao = dao;
     }

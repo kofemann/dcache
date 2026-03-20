@@ -1,7 +1,8 @@
 package org.dcache.restful;
 
-import io.swagger.jaxrs.listing.ApiListingResource;
-import io.swagger.jaxrs.listing.SwaggerSerializers;
+import io.swagger.v3.jaxrs2.SwaggerSerializers;
+import io.swagger.v3.jaxrs2.integration.resources.OpenApiResource;
+import io.swagger.v3.jaxrs2.integration.resources.AcceptHeaderOpenApiResource;
 import org.dcache.restful.interceptors.LoggingInterceptor;
 import org.dcache.restful.providers.ErrorResponseProvider;
 import org.dcache.restful.providers.ObjectMapperProvider;
@@ -70,8 +71,9 @@ public class DcacheRestApplication extends ResourceConfig {
         register(ArchiveInfoResources.class);
         register(ReleaseResources.class);
         register(StageResources.class);
-        register(ApiListingResource.class);
+        register(OpenApiResource.class);
         register(SwaggerSerializers.class);
+        register(AcceptHeaderOpenApiResource.class);
         register(EventResources.class);
         register(MigrationResources.class);
 

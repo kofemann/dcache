@@ -74,7 +74,7 @@ import org.dcache.services.billing.db.IBillingInfoAccess;
 import org.dcache.services.billing.db.data.IHistogramData;
 import org.dcache.services.billing.db.exceptions.RetryException;
 import org.dcache.services.billing.db.impl.AbstractBillingInfoAccess;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Implements {@link IBillingInfoAccess} using <href a="http://www.datanucleus.org">DataNucleus</a>.
@@ -253,17 +253,17 @@ public class DataNucleusBillingInfo extends AbstractBillingInfoAccess {
         }
     }
 
-    @Required
+    @Autowired
     public void setPersistenceManagerFactory(PersistenceManagerFactory pmf) {
         this.pmf = pmf;
     }
 
-    @Required
+    @Autowired
     public void setTruncationCutoff(long truncationCutoff) {
         this.truncationCutoff = truncationCutoff;
     }
 
-    @Required
+    @Autowired
     public void setTruncationCutoffUnit(TimeUnit truncationCutoffUnit) {
         this.truncationCutoffUnit = truncationCutoffUnit;
     }

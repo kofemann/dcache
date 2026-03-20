@@ -66,7 +66,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.TimeUnit;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class BulkShutdownManager {
 
@@ -95,22 +95,22 @@ public class BulkShutdownManager {
         }
     }
 
-    @Required
+    @Autowired
     public void setExecutorList(List<ExecutorService> executorServices) {
         this.executorServices = executorServices;
     }
 
-    @Required
+    @Autowired
     public void setDataSource(Closeable dataSource) {
         this.dataSource = dataSource;
     }
 
-    @Required
+    @Autowired
     public void setAwait(long await) {
         this.await = await;
     }
 
-    @Required
+    @Autowired
     public void setAwaitUnit(TimeUnit awaitUnit) {
         this.awaitUnit = awaitUnit;
     }

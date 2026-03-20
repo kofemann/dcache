@@ -54,7 +54,7 @@ import org.dcache.util.NetLoggerBuilder;
 import org.dcache.util.Subnet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * This class starts the ssh server. It is however not started in the constructor, but in
@@ -149,27 +149,27 @@ public class Ssh2Admin implements CellCommandListener, CellLifeCycleAware {
         _authorizedKeyList = authorizedKeyList;
     }
 
-    @Required
+    @Autowired
     public void setShellFactory(ShellFactory shellCommand) {
         _server.setShellFactory(shellCommand);
     }
 
-    @Required
+    @Autowired
     public void setCommandFactory(CommandFactory commandFactory) {
         _server.setCommandFactory(commandFactory);
     }
 
-    @Required
+    @Autowired
     public void setIdleTimeout(long timeout) {
         _idleTimeout = timeout;
     }
 
-    @Required
+    @Autowired
     public void setIdleTimeoutUnit(TimeUnit unit) {
         _idleTimeoutUnit = unit;
     }
 
-    @Required
+    @Autowired
     public void setEnabledAuthenticationMechanisms(String mechanisms) {
         enabledAuthenticationMechanisms = EnumSet.copyOf(
               Arrays.stream(
@@ -182,7 +182,7 @@ public class Ssh2Admin implements CellCommandListener, CellLifeCycleAware {
                     .collect(Collectors.toList()));
     }
 
-    @Required
+    @Autowired
     public void setKeyTabFile(String name) {
         keyTabFile = name;
     }

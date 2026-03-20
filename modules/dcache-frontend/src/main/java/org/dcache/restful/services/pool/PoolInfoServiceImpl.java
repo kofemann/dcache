@@ -103,7 +103,7 @@ import org.dcache.vehicles.pool.PoolNearlineListingMessage;
 import org.dcache.vehicles.pool.PoolP2PListingMessage;
 import org.dcache.vehicles.pool.PoolRemoveListingMessage;
 import org.dcache.vehicles.pool.PoolStageListingMessage;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Responsible for serving up data from the cache.</p>
@@ -576,17 +576,17 @@ public class PoolInfoServiceImpl extends
         return PoolInfoCollectorUtils.listPools(group, getSelectionUnit());
     }
 
-    @Required
+    @Autowired
     public void setMaxPoolActivityListSize(int maxPoolActivityListSize) {
         this.maxPoolActivityListSize = maxPoolActivityListSize;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor poolMonitor) {
         this.monitor = poolMonitor;
     }
 
-    @Required
+    @Autowired
     public void setProcessor(PoolDataRequestProcessor processor) {
         this.processor = processor;
     }

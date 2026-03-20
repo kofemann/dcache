@@ -9,7 +9,7 @@ import javax.security.auth.Subject;
 import org.dcache.auth.LoginReply;
 import org.dcache.auth.LoginStrategy;
 import org.dcache.cells.CellStub;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 public class RemoteLoginStrategy implements LoginStrategy {
 
@@ -22,7 +22,7 @@ public class RemoteLoginStrategy implements LoginStrategy {
         setCellStub(stub);
     }
 
-    @Required
+    @Autowired
     public void setCellStub(CellStub stub) {
         if (stub == null) {
             throw new NullPointerException();

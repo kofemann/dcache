@@ -16,6 +16,12 @@ import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.StringTokenizer;
+import java.util.stream.Collectors;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,9 +39,9 @@ public class StandardHttpRequest implements HttpRequest {
 
     private final OutputStream out;
     private final PrintWriter pw;
-    private final HttpServletRequest request;
-    private final HttpServletResponse response;
-    private final Map<String, String> map = new HashMap<>();
+    private final Request request;
+    private final Response response;
+    private final Map<String, String> map;
     private final int tokenOffset;
     private final String[] tokens;
     private final boolean isDirectory;
@@ -44,18 +50,13 @@ public class StandardHttpRequest implements HttpRequest {
     private String password;
     private boolean authDone;
 
-    public StandardHttpRequest(HttpServletRequest request,
-          HttpServletResponse response) throws IOException, URISyntaxException {
+    public StandardHttpRequest(Request request, Response response) throws IOException, URISyntaxException {
         this.request = request;
         this.response = response;
-        out = response.getOutputStream();
+        out = Response.asBufferedOutputStream(request, response);
         pw = new PrintWriter(new OutputStreamWriter(out));
-        final Enumeration<String> names = request.getHeaderNames();
-        while (names.hasMoreElements()) {
-            final String name = names.nextElement();
-            map.put(name, request.getHeader(name));
-        }
-        final String path = new URI(request.getRequestURI()).getPath();
+        map = request.getHeaders().stream().collect(Collectors.toMap(HttpField::getName, HttpField::getValue));
+        final String path = request.getHttpURI().getPath();
         isDirectory = path.endsWith("/");
         tokens = Iterables.toArray(PATH_SPLITTER.split(path), String.class);
         tokenOffset = 1;
@@ -69,7 +70,7 @@ public class StandardHttpRequest implements HttpRequest {
 
     @Override
     public String getParameter(String parameter) {
-        return request.getParameter(parameter);
+        return request.getHttpURI().getParam();
     }
 
     @Override
@@ -117,13 +118,13 @@ public class StandardHttpRequest implements HttpRequest {
     @Override
     public void printHttpHeader(int size) {
         if (size > 0) {
-            response.setContentLength(size);
+            response.getHeaders().add(HttpHeader.CONTENT_LENGTH, String.valueOf(size));
         }
     }
 
     @Override
     public void setContentType(String type) {
-        response.setContentType(type);
+        response.getHeaders().add(HttpHeader.CONTENT_TYPE, type);
     }
 
     private synchronized void doAuthorization() {
@@ -131,7 +132,7 @@ public class StandardHttpRequest implements HttpRequest {
             return;
         }
         authDone = true;
-        String auth = request.getHeader("Authorization");
+        String auth = request.getHeaders().get("Authorization");
         if (auth == null) {
             return;
         }

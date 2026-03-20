@@ -87,7 +87,7 @@ import org.dcache.services.bulk.util.BulkRequestTarget.State;
 import org.dcache.services.bulk.util.BulkRequestTargetBuilder;
 import org.dcache.services.bulk.util.BulkServiceStatistics;
 import org.dcache.vehicles.FileAttributes;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.ParameterizedPreparedStatementSetter;
 import org.springframework.jdbc.core.support.JdbcDaoSupport;
 import org.springframework.jdbc.support.KeyHolder;
@@ -206,12 +206,12 @@ public final class JdbcRequestTargetDao extends JdbcDaoSupport {
         return new JdbcRequestTargetUpdate();
     }
 
-    @Required
+    @Autowired
     public void setStatistics(BulkServiceStatistics statistics) {
         this.statistics = statistics;
     }
 
-    @Required
+    @Autowired
     public void setUtils(JdbcBulkDaoUtils utils) {
         this.utils = utils;
     }

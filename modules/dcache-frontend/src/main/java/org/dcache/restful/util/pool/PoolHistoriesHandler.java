@@ -87,7 +87,7 @@ import org.dcache.vehicles.histograms.PoolTimeseriesRequestMessage;
 import org.dcache.vehicles.histograms.PoolTimeseriesRequestMessage.TimeseriesType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * <p>Called during the collection gathering in order to obtain
@@ -211,12 +211,12 @@ public final class PoolHistoriesHandler extends PoolInfoAggregator
         return getHistogramAndSweeperData(pool, types).getHistogramMap();
     }
 
-    @Required
+    @Autowired
     public void setHistoryService(CellStub historyService) {
         this.historyService = historyService;
     }
 
-    @Required
+    @Autowired
     public void setPoolInfoService(PoolInfoServiceImpl poolInfoService) {
         this.poolInfoService = poolInfoService;
     }

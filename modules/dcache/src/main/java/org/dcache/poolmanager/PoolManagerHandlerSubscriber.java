@@ -45,12 +45,12 @@ import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Consumer;
 import javax.annotation.Nullable;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import javax.annotation.concurrent.GuardedBy;
 import org.dcache.cells.CellStub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Client stub for obtaining implementations of PoolManagerHandler.
@@ -88,7 +88,7 @@ public class PoolManagerHandlerSubscriber
      *
      * @param poolManager
      */
-    @Required
+    @Autowired
     public void setPoolManager(CellStub poolManager) {
         this.poolManager = poolManager;
     }

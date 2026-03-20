@@ -125,7 +125,7 @@ import org.dcache.srm.scheduler.State;
 import org.dcache.srm.util.Configuration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 
 /**
@@ -198,7 +198,7 @@ public class SRM implements CellLifeCycleAware {
         LOGGER.debug("srm started :\n\t{}", configuration.toString());
     }
 
-    @Required
+    @Autowired
     public void setSrmId(@Nonnull String id) {
         srmId = requireNonNull(id);
     }
@@ -212,13 +212,13 @@ public class SRM implements CellLifeCycleAware {
         this.schedulers = requireNonNull(schedulers);
     }
 
-    @Required
+    @Autowired
     public void setRequestCredentialStorage(RequestCredentialStorage store) {
         RequestCredential.registerRequestCredentialStorage(store);
         requestCredentialStorage = store;
     }
 
-    @Required
+    @Autowired
     public void setSrmUserPersistenceManager(SRMUserPersistenceManager manager) {
         this.manager = requireNonNull(manager);
     }
@@ -286,7 +286,7 @@ public class SRM implements CellLifeCycleAware {
         databaseFactory.shutdown();
     }
 
-    @Required
+    @Autowired
     public void setExpiredJobCheckPeriod(long delay) {
         checkArgument(delay > 0, "period must be non-negative number: %s", delay);
         checkState(tasks.isEmpty(), "cannot adjust period after SRM is started");

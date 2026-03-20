@@ -115,7 +115,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
-import javax.annotation.PostConstruct;
+import jakarta.annotation.PostConstruct;
 import javax.security.auth.Subject;
 import javax.xml.stream.XMLOutputFactory;
 import javax.xml.stream.XMLStreamException;
@@ -159,7 +159,7 @@ import org.eclipse.jetty.io.EofException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.kafka.KafkaException;
 import org.springframework.kafka.core.KafkaTemplate;
 import org.stringtemplate.v4.AutoIndentWriter;
@@ -300,27 +300,27 @@ public class DcacheResourceFactory
         _kafkaSender = kafkaTemplate::sendDefault;
     }
 
-    @Required
+    @Autowired
     public void setSpaceLookupCache(LoadingCache<String, Optional<Space>> cache) {
         _spaceLookupCache = cache;
     }
 
-    @Required
+    @Autowired
     public void setWriteTokenCache(LoadingCache<FsPath, Optional<String>> cache) {
         _writeTokenCache = cache;
     }
 
-    @Required
+    @Autowired
     public void setPoolMonitor(PoolMonitor monitor) {
         _poolMonitor = monitor;
     }
 
-    @Required
+    @Autowired
     public void setRedirectToHttps(boolean redirectToHttps) {
         _redirectToHttps = redirectToHttps;
     }
 
-    @Required
+    @Autowired
     public void setRemoteTransferHandler(RemoteTransferHandler handler) {
         _remoteTransferHandler = requireNonNull(handler);
     }
@@ -364,14 +364,14 @@ public class DcacheResourceFactory
      *
      * @param timeout The mover timeout in milliseconds
      */
-    @Required
+    @Autowired
     public void setMoverTimeout(int timeout) {
         checkState(_moverTimeout == 0, "mover timeout already set");
         checkArgument(timeout > 0, "mover timeout must be positive");
         _moverTimeout = timeout;
     }
 
-    @Required
+    @Autowired
     public void setMoverTimeoutUnit(TimeUnit unit) {
         checkState(_moverTimeoutUnit == null, "mover timeout unit already set");
         _moverTimeoutUnit = requireNonNull(unit);
@@ -425,7 +425,7 @@ public class DcacheResourceFactory
     /**
      * Provide the mapping between request path and dCache internal path.
      */
-    @Required
+    @Autowired
     public void setPathMapper(PathMapper mapper) {
         _pathMapper = mapper;
     }
@@ -564,12 +564,12 @@ public class DcacheResourceFactory
     /**
      * Sets the resource containing the StringTemplateGroup for directory listing.
      */
-    @Required
+    @Autowired
     public void setTemplate(ReloadableTemplate template) {
         _template = template;
     }
 
-    @Required
+    @Autowired
     public void setTemplateConfig(ImmutableMap<String, String> config) {
         _templateConfig = config;
     }

@@ -6,26 +6,27 @@ import static org.dcache.qos.QoSTransitionEngine.Qos.TAPE;
 import static org.dcache.qos.QoSTransitionEngine.Qos.VOLATILE;
 
 import diskCacheV111.util.PermissionDeniedCacheException;
-import io.swagger.annotations.Api;
-import io.swagger.annotations.ApiOperation;
-import io.swagger.annotations.ApiParam;
-import io.swagger.annotations.ApiResponse;
-import io.swagger.annotations.ApiResponses;
-import io.swagger.annotations.Authorization;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import javax.inject.Inject;
-import javax.inject.Named;
-import javax.ws.rs.BadRequestException;
-import javax.ws.rs.ForbiddenException;
-import javax.ws.rs.GET;
-import javax.ws.rs.NotAuthorizedException;
-import javax.ws.rs.NotFoundException;
-import javax.ws.rs.Path;
-import javax.ws.rs.PathParam;
-import javax.ws.rs.Produces;
-import javax.ws.rs.core.MediaType;
+import jakarta.inject.Inject;
+import jakarta.inject.Named;
+import jakarta.ws.rs.BadRequestException;
+import jakarta.ws.rs.ForbiddenException;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.NotAuthorizedException;
+import jakarta.ws.rs.NotFoundException;
+import jakarta.ws.rs.Path;
+import jakarta.ws.rs.PathParam;
+import jakarta.ws.rs.Produces;
+import jakarta.ws.rs.core.MediaType;
 import org.dcache.qos.QoSTransitionEngine.Qos;
 import org.dcache.restful.util.RequestUser;
 import org.json.JSONArray;
@@ -38,7 +39,7 @@ import org.springframework.stereotype.Component;
  * RestFul API for querying and manipulating QoS
  */
 @Component
-@Api(value = "qos", authorizations = {@Authorization("basicAuth")})
+@Tag(name = "qos")
 @Path("/qos-management/qos/")
 public class QosManagement {
 
@@ -49,18 +50,18 @@ public class QosManagement {
     private List<String> geographicPlacement;
 
     @GET
-    @ApiOperation("List the available quality of services for a specific object "
+    @Operation(summary = "List the available quality of services for a specific object "
           + "type.  Requires authentication.")
     @ApiResponses({
-          @ApiResponse(code = 401, message = "Unauthorized."),
-          @ApiResponse(code = 403, message = "Forbidden."),
-          @ApiResponse(code = 404, message = "Not found."),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized."),
+          @ApiResponse(responseCode = "403", description = "Forbidden."),
+          @ApiResponse(responseCode = "404", description = "Not found."),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Path("{type}")
     @Produces(MediaType.APPLICATION_JSON)
-    public String getQosList(@ApiParam(value = "The kind of object to query.",
-          allowableValues = "file,directory")
+    public String getQosList(@Parameter(description = "The kind of object to query.",
+          schema = @Schema(allowableValues = {"file","directory"}))
     @PathParam("type") String qosValue) {
 
         JSONObject json = new JSONObject();
@@ -93,18 +94,18 @@ public class QosManagement {
 
 
     @GET
-    @ApiOperation("Provide information about a specific file quality of "
+    @Operation(summary = "Provide information about a specific file quality of "
           + "services.  Requires authentication.")
     @ApiResponses({
-          @ApiResponse(code = 401, message = "Unauthorized"),
-          @ApiResponse(code = 403, message = "Forbidden"),
-          @ApiResponse(code = 404, message = "Not found"),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized"),
+          @ApiResponse(responseCode = "403", description = "Forbidden"),
+          @ApiResponse(responseCode = "404", description = "Not found"),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Path("/file/{qos}")
     @Produces(MediaType.APPLICATION_JSON)
     public BackendCapabilityResponse getQueriedQosForFiles(
-          @ApiParam("The file quality of service to query.")
+          @Parameter(description = "The file quality of service to query.")
           @PathParam("qos") String qosValue) {
 
         BackendCapabilityResponse backendCapabilityResponse
@@ -178,18 +179,18 @@ public class QosManagement {
 
 
     @GET
-    @ApiOperation("Provides information about a specific directory quality of "
+    @Operation(summary = "Provides information about a specific directory quality of "
           + "services.  Requires authentication.")
     @ApiResponses({
-          @ApiResponse(code = 401, message = "Unauthorized."),
-          @ApiResponse(code = 403, message = "Forbidden."),
-          @ApiResponse(code = 404, message = "Not found."),
-          @ApiResponse(code = 500, message = "Internal Server Error"),
+          @ApiResponse(responseCode = "401", description = "Unauthorized."),
+          @ApiResponse(responseCode = "403", description = "Forbidden."),
+          @ApiResponse(responseCode = "404", description = "Not found."),
+          @ApiResponse(responseCode = "500", description = "Internal Server Error"),
     })
     @Path("/directory/{qos}")
     @Produces(MediaType.APPLICATION_JSON)
     public BackendCapabilityResponse getQueriedQosForDirectories(
-          @ApiParam("The directory quality of service to query.")
+          @Parameter(description = "The directory quality of service to query.")
           @PathParam("qos") String qosValue) {
 
         BackendCapabilityResponse backendCapabilityResponse

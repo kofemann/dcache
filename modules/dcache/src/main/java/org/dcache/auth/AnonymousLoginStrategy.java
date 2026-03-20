@@ -8,7 +8,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.security.auth.Subject;
 import org.dcache.auth.attributes.LoginAttribute;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 /**
  * Anonymous login strategy, used on the xrootd door when no authentication is specified. The
@@ -71,7 +71,7 @@ public class AnonymousLoginStrategy implements LoginStrategy {
         return subject;
     }
 
-    @Required
+    @Autowired
     public void setUser(String user) {
         switch (user) {
             case USER_ROOT:

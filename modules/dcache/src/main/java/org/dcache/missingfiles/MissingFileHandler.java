@@ -14,7 +14,7 @@ import org.dcache.missingfiles.plugins.PluginVisitor;
 import org.dcache.missingfiles.plugins.Result;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Required;
+import org.springframework.beans.factory.annotation.Autowired;
 
 
 /**
@@ -43,12 +43,12 @@ public class MissingFileHandler implements CellMessageReceiver {
     }
 
 
-    @Required
+    @Autowired
     public void setPluginChain(PluginChain chain) {
         _chain = chain;
     }
 
-    @Required
+    @Autowired
     public void setExecutorService(ExecutorService service) {
         _executor = service;
     }
