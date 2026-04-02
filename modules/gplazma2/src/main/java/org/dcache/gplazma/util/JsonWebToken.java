@@ -17,11 +17,11 @@
  */
 package org.dcache.gplazma.util;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import static com.google.common.base.Preconditions.checkArgument;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Map.Entry;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.base.Splitter;
 import com.google.common.collect.Streams;
 import java.io.IOException;
@@ -42,6 +42,7 @@ import java.util.stream.StreamSupport;
 import javax.annotation.Nullable;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.exc.JsonNodeException;
 
 /**
  * A JsonWebToken is a bearer token with three parts: a header, a payload and a signature.  This
@@ -237,15 +238,15 @@ public class JsonWebToken {
               .map(n -> {
                     try {
                         return mapper.writeValueAsString(n);
-                    } catch (JsonProcessingException e) {
+                    } catch (JsonNodeException e) {
                         return "Bad JSON: " + e;
                     }
                   });
     }
 
     public Map<String,JsonNode> getPayloadMap() {
-        return Streams.stream(payload.fields())
-                .collect(Collectors.toMap(e -> e.getKey(), e -> e.getValue()));
+        return payload.properties().stream()
+                .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
     }
 
     /**

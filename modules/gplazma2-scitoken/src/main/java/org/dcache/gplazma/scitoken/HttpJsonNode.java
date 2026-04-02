@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2019 - 2020 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2019 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -19,16 +19,17 @@ package org.dcache.gplazma.scitoken;
 
 import static org.dcache.util.Exceptions.messageOrClassName;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.core.ObjectCodec;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.MissingNode;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonPointer;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.node.JsonNodeType;
+import tools.jackson.databind.node.MissingNode;
 import com.google.common.net.MediaType;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -177,19 +178,19 @@ public class HttpJsonNode extends PreparationJsonNode {
     }
 
     @Override
-    public JsonParser traverse(ObjectCodec objectCodec) {
-        return cached.traverse();
+    public JsonParser traverse(ObjectReadContext objectReadContext) {
+        return cached.traverse(objectReadContext);
     }
 
     @Override
-    public void serialize(JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-          throws IOException {
+    public void serialize(JsonGenerator jsonGenerator, SerializationContext serializationContext)
+          throws JacksonException {
         throw new UnsupportedOperationException();
     }
 
     @Override
-    public void serializeWithType(JsonGenerator jsonGenerator,
-          SerializerProvider serializerProvider, TypeSerializer typeSerializer) throws IOException {
+    public void serializeWithType(JsonGenerator jsonGenerator, SerializationContext serializers,
+          TypeSerializer typeSerializer) throws JacksonException {
         throw new UnsupportedOperationException();
     }
 }

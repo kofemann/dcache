@@ -17,7 +17,7 @@
  */
 package org.dcache.gplazma.oidc.profiles;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.google.common.base.Splitter;
 import diskCacheV111.util.FsPath;
 import java.security.Principal;

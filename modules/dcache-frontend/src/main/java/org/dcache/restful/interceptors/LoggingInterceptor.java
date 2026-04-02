@@ -17,8 +17,8 @@
  */
 package org.dcache.restful.interceptors;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.base.Utf8;
 import jakarta.servlet.ServletRequest;
 import jakarta.servlet.http.HttpServletRequest;
@@ -39,6 +39,7 @@ import org.dcache.util.Exceptions;
 import org.eclipse.jetty.server.Request;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import tools.jackson.databind.exc.JsonNodeException;
 
 /**
  * Interceptor that supports the access log file.
@@ -127,7 +128,7 @@ public class LoggingInterceptor implements ReaderInterceptor, WriterInterceptor 
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readValue(in, JsonNode.class);
             return jsonNode.toString();
-        } catch (IOException e) {
+        } catch (JsonNodeException e) {
             LOGGER.warn("Failed to parse JSON \"{}\": {}", in,
                   Exceptions.messageOrClassName(e));
             return in;

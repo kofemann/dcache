@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2022 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2022 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,9 +17,8 @@
  */
 package org.dcache.gplazma.oidc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
@@ -29,6 +28,7 @@ import java.util.Map;
 import org.dcache.gplazma.AuthenticationException;
 import org.junit.Test;
 import org.mockito.Mockito;
+import tools.jackson.databind.exc.JsonNodeException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
@@ -49,7 +49,7 @@ public class ChainedTokenProcessorTest {
             return this;
         }
 
-        public ResultBuilder withClaim(String key, String value) throws JsonProcessingException {
+        public ResultBuilder withClaim(String key, String value) throws JsonNodeException {
             JsonNode json = mapper.readTree(value);
             claims.put(key, json);
             return this;

@@ -59,11 +59,10 @@ documents or software obtained from this server.
  */
 package org.dcache.restful.providers;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.ser.std.StdSerializer;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.ser.std.StdSerializer;
 import diskCacheV111.util.PnfsId;
-import java.io.IOException;
 
 /**
  * <p>PnfsId is now an "empty" object, so we enforce consistent
@@ -76,9 +75,7 @@ public class PnfsidSerializer extends StdSerializer<PnfsId> {
     }
 
     @Override
-    public void serialize(PnfsId pnfsId, JsonGenerator jsonGenerator,
-          SerializerProvider serializerProvider)
-          throws IOException {
+    public void serialize(PnfsId pnfsId, JsonGenerator jsonGenerator, SerializationContext provider) {
         jsonGenerator.writeString(pnfsId.toString());
     }
 }

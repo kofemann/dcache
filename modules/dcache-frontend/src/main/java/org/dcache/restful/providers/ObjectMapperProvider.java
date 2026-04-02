@@ -1,13 +1,12 @@
 package org.dcache.restful.providers;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.core.Version;
-import com.fasterxml.jackson.databind.DeserializationFeature;
-import com.fasterxml.jackson.databind.Module;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.databind.module.SimpleModule;
-import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
+import tools.jackson.core.Version;
+import tools.jackson.databind.DeserializationFeature;
+import tools.jackson.databind.JacksonModule;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.SerializationFeature;
+import tools.jackson.databind.json.JsonMapper;
+import tools.jackson.databind.module.SimpleModule;
 import jakarta.ws.rs.ext.ContextResolver;
 import jakarta.ws.rs.ext.Provider;
 
@@ -17,26 +16,27 @@ import jakarta.ws.rs.ext.Provider;
 @Provider
 public class ObjectMapperProvider implements ContextResolver<ObjectMapper> {
 
-    private final static Module PNFSID_SERIALIZER = createPnfsIdSerializer();
+    private final static JacksonModule PNFSID_SERIALIZER = createPnfsIdSerializer();
     private final ObjectMapper defaultObjectMapper = createDefaultMapper();
     private final ObjectMapper listObjectMapper = createListObjectMapper();
 
     private static ObjectMapper createListObjectMapper() {
-        return new ObjectMapper()
-              .registerModule(PNFSID_SERIALIZER)
+        return JsonMapper.builder()
+              .addModule(PNFSID_SERIALIZER)
               .enable(DeserializationFeature.UNWRAP_ROOT_VALUE)
-              .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES);
+              .disable(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES)
+              .build();
     }
 
     private static ObjectMapper createDefaultMapper() {
-        return new ObjectMapper()
-              .registerModule(PNFSID_SERIALIZER)
-              .registerModule(new Jdk8Module())
+        return JsonMapper.builder()
+              .addModule(PNFSID_SERIALIZER)
               .enable(SerializationFeature.INDENT_OUTPUT)
-              .setSerializationInclusion(JsonInclude.Include.NON_NULL);
+              //.setSerializationInclusion(JsonInclude.Include.NON_NULL);
+              .build();
     }
 
-    private static Module createPnfsIdSerializer() {
+    private static JacksonModule createPnfsIdSerializer() {
         Version version = new Version(1, 0, 0,
               null, null, null);
         SimpleModule pnfsIdModule = new SimpleModule("PnfsIdModule", version);

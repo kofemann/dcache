@@ -18,7 +18,7 @@
  */
 package org.dcache.gplazma.oidc.userinfo;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.util.Collections;
 import java.util.Map;
 import org.dcache.gplazma.oidc.IdentityProvider;

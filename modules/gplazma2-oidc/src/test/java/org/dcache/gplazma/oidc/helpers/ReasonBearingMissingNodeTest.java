@@ -17,10 +17,10 @@
  */
 package org.dcache.gplazma.oidc.helpers;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.node.JsonNodeType;
 import org.junit.Test;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -122,7 +122,7 @@ public class ReasonBearingMissingNodeTest {
         var node = new ReasonBearingMissingNode("What went wrong.");
 
         var g = mock(JsonGenerator.class);
-        var p = mock(SerializerProvider.class);
+        var p = mock(SerializationContext.class);
 
         node.serialize(g, p);
 

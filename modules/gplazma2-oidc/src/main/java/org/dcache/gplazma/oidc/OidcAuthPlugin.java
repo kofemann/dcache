@@ -1,6 +1,6 @@
 package org.dcache.gplazma.oidc;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Joiner;
 import com.google.common.base.Splitter;
@@ -244,7 +244,7 @@ public class OidcAuthPlugin implements GPlazmaAuthenticationPlugin {
 
         if (audClaim.isArray()) {
             List<String> audClaimAsList = new ArrayList<>(audClaim.size());
-            audClaim.elements().forEachRemaining(e -> audClaimAsList.add(e.textValue()));
+            audClaim.values().forEach(e -> audClaimAsList.add(e.asString()));
 
             if (!audClaimAsList.stream().anyMatch(audienceTargets::contains)) {
                 if (suppressAudience) {

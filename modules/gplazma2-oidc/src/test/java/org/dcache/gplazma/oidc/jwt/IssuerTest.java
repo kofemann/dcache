@@ -17,7 +17,7 @@
  */
 package org.dcache.gplazma.oidc.jwt;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import java.security.PublicKey;
 import java.util.Base64;
 import java.util.Optional;

@@ -19,8 +19,8 @@ package org.dcache.gplazma.oidc.jwt;
 
 import static org.dcache.gplazma.util.Preconditions.checkAuthentication;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeType;
 import com.google.common.collect.EvictingQueue;
 import java.io.IOException;
 import java.math.BigInteger;

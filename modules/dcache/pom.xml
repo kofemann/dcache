@@ -368,9 +368,9 @@
           <artifactId>logback-json-classic</artifactId>
       </dependency>
 
-      <!-- com.fasterxml.jackson.databind.ObjectMapper -->
+      <!-- tools.jackson.databind.ObjectMapper -->
       <dependency>
-          <groupId>com.fasterxml.jackson.core</groupId>
+          <groupId>tools.jackson.core</groupId>
           <artifactId>jackson-databind</artifactId>
       </dependency>
 
@@ -380,7 +380,7 @@
       </dependency>
 
       <dependency>
-          <groupId>com.fasterxml.jackson.core</groupId>
+          <groupId>tools.jackson.core</groupId>
           <artifactId>jackson-core</artifactId>
       </dependency>
 

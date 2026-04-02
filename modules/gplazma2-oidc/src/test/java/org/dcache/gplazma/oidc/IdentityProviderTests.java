@@ -34,7 +34,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
-import com.fasterxml.jackson.databind.node.JsonNodeType;
+import tools.jackson.databind.node.JsonNodeType;
 import com.google.common.collect.ImmutableList;
 import java.net.URI;
 import java.time.Duration;

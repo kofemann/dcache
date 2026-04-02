@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2018 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2018 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -20,12 +20,11 @@ package org.dcache.restful.events.streams.metronome;
 
 import static org.dcache.restful.util.transfers.Json.readFromJar;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.JsonNodeException;
+import tools.jackson.databind.node.ObjectNode;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
-import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ScheduledExecutorService;
@@ -127,14 +126,10 @@ public class Metronome implements EventStream {
     private Selector deserialise(JsonNode serialised) {
         try {
             return new ObjectMapper().readerFor(Selector.class).readValue(serialised);
-        } catch (JsonMappingException e) {
+        } catch (JsonNodeException e) {
             int index = e.getMessage().indexOf('\n');
             String msg = index == -1 ? e.getMessage() : e.getMessage().substring(0, index);
             throw new BadRequestException("Bad selector value: " + msg);
-        } catch (IOException e) {
-            String message = "Unable to process selector: " + e.getMessage();
-            LOGGER.warn(message);
-            throw new InternalServerErrorException(message);
         }
     }
 }

@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2024 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2024 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,9 +18,9 @@
  */
 package org.dcache.gplazma.alise;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.base.Stopwatch;
 import com.google.common.hash.Hashing;
@@ -130,7 +130,7 @@ public class AliseLookupAgent implements LookupAgent {
         try {
             ObjectMapper mapper = new ObjectMapper();
             json = mapper.readValue(response.body(), JsonNode.class);
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             return Result.failure("Bad JSON in response: " + e.getMessage());
         }
 

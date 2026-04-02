@@ -20,11 +20,11 @@ package org.dcache.restful.events;
 
 import static com.google.common.base.Preconditions.checkState;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.JsonNodeException;
+import tools.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.node.ObjectNode;
 import com.google.common.base.Strings;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.primitives.Ints;
@@ -205,7 +205,7 @@ public class Channel extends CloseableWithTasks {
             Event event = new Event(eventId, eventType, eventData);
             ringBuffer.add(event);
             event.sendEvent();
-        } catch (JsonProcessingException e) {
+        } catch (JsonNodeException e) {
             LOGGER.error("Failed to serialise JSON: {}", e.getMessage());
         }
     }
@@ -366,7 +366,7 @@ public class Channel extends CloseableWithTasks {
                 event.put("subscription", url);
                 String data = new ObjectMapper().writeValueAsString(event);
                 sendEvent(sse.newEventBuilder().name("SYSTEM").data(data).build());
-            } catch (JsonProcessingException e) {
+            } catch (JsonNodeException e) {
                 LOGGER.warn("Failed to build {} data: {}", type, e.toString());
             }
         }

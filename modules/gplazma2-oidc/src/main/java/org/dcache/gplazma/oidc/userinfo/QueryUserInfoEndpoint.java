@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2022 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2022 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,14 +17,13 @@
  */
 package org.dcache.gplazma.oidc.userinfo;
 
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeType;
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Throwables;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
-import com.google.common.collect.Streams;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFuture;
 import com.google.common.util.concurrent.ListenableFutureTask;
@@ -309,7 +308,7 @@ public class QueryUserInfoEndpoint implements TokenProcessor {
             if (!userInfo.isObject()) {
                 throw new OidcException("User-info endpoint returned a non-JSON object");
             }
-            return Streams.stream(userInfo.fields())
+            return userInfo.propertyStream()
                     .collect(Collectors.toMap(Entry::getKey, Entry::getValue));
         } catch (IllegalArgumentException iae) {
             throw new OidcException("Error parsing UserInfo: " + iae.getMessage());

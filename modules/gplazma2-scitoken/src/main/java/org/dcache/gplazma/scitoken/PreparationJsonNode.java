@@ -17,9 +17,9 @@
  */
 package org.dcache.gplazma.scitoken;
 
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.JsonNode;
 import java.util.List;
 
 /**
@@ -54,12 +54,6 @@ public abstract class PreparationJsonNode extends ForwardingJsonNode {
     }
 
     @Override
-    public String asText() {
-        prepare();
-        return super.asText();
-    }
-
-    @Override
     public JsonNode findValue(String fieldName) {
         prepare();
         return super.findValue(fieldName);
@@ -84,9 +78,9 @@ public abstract class PreparationJsonNode extends ForwardingJsonNode {
     }
 
     @Override
-    public List<String> findValuesAsText(String fieldName, List<String> foundSoFar) {
+    public List<String> findValuesAsString(String fieldName, List<String> foundSoFar) {
         prepare();
-        return super.findValuesAsText(fieldName, foundSoFar);
+        return super.findValuesAsString(fieldName, foundSoFar);
     }
 
     @Override
@@ -105,12 +99,6 @@ public abstract class PreparationJsonNode extends ForwardingJsonNode {
     public JsonNode path(int index) {
         prepare();
         return super.path(index);
-    }
-
-    @Override
-    public JsonParser traverse() {
-        prepare();
-        return super.traverse();
     }
 
     @Override
