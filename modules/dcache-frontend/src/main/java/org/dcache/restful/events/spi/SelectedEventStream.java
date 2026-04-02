@@ -18,7 +18,7 @@
  */
 package org.dcache.restful.events.spi;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 
 /**
  * Represents a client's subscription to some subset of an EventStream's events.

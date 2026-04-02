@@ -17,9 +17,8 @@
  */
 package org.dcache.restful.providers;
 
-import com.fasterxml.jackson.core.JsonParseException;
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.exc.UnrecognizedPropertyException;
+import tools.jackson.databind.exc.JsonNodeException;
+import tools.jackson.databind.exc.UnrecognizedPropertyException;
 import com.google.common.base.Throwables;
 import java.net.URI;
 import java.util.NoSuchElementException;
@@ -49,7 +48,7 @@ public class ErrorResponseProvider implements ExceptionMapper<Exception> {
 
     @Override
     public Response toResponse(Exception e) {
-        if (e instanceof JsonParseException) {
+        if (e instanceof JsonNodeException) {
             // Unfortunately Jackson builds multiline messages, we work around this.
             return buildResponse(Response.Status.BAD_REQUEST,
                   "Supplied JSON is invalid: " + firstLineOf(e.getMessage()));
@@ -57,10 +56,6 @@ public class ErrorResponseProvider implements ExceptionMapper<Exception> {
             return buildResponse(Response.Status.BAD_REQUEST,
                   "'" + ((UnrecognizedPropertyException) e).getPropertyName()
                         + "' is an unrecognized field.");
-        } else if (e instanceof JsonMappingException) {
-            // Unfortunately Jackson builds multiline messages, we work around this.
-            return buildResponse(Response.Status.BAD_REQUEST,
-                  "Unable to interpret JSON: " + firstLineOf(e.getMessage()));
         } else if (e instanceof BadRequestException || e instanceof NoSuchElementException) {
             return buildResponse(Response.Status.BAD_REQUEST,
                   getMessage(e, "Bad request"));

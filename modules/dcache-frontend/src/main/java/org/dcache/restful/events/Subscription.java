@@ -18,7 +18,7 @@
  */
 package org.dcache.restful.events;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import org.dcache.restful.events.spi.SelectedEventStream;
 import org.dcache.restful.util.CloseableWithTasks;
 

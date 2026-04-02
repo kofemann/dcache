@@ -63,7 +63,7 @@ import static org.dcache.restful.providers.ErrorResponseProvider.NOT_IMPLEMENTED
 import static org.dcache.restful.providers.PagedList.TOTAL_COUNT_HEADER;
 import static org.dcache.restful.providers.SuccessfulResponse.successfulResponse;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import diskCacheV111.poolManager.PoolSelectionUnit;
 import diskCacheV111.poolManager.PoolSelectionUnit.SelectionPool;
 import diskCacheV111.pools.PoolV2Mode;
@@ -82,7 +82,7 @@ import io.swagger.annotations.ApiResponse;
 import io.swagger.annotations.ApiResponses;
 import io.swagger.annotations.Authorization;
 import io.swagger.annotations.ResponseHeader;
-import java.io.IOException;
+
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -521,7 +521,7 @@ public final class PoolInfoResources {
             mode.setResilienceEnabled(update.isResilience());
             Message message = new PoolModifyModeMessage(pool, mode);
             poolStub.sendAndWait(new CellPath(pool), message);
-        } catch (JSONException | IllegalArgumentException | IOException e) {
+        } catch (JSONException | IllegalArgumentException e) {
             throw new BadRequestException(e);
         } catch (InterruptedException | NoRouteToCellException | CacheException e) {
             LOGGER.warn(Exceptions.meaningfulMessage(e));

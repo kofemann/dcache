@@ -23,8 +23,8 @@ import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.dcache.restful.events.spi.SelectionResult.badSelector;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.node.JsonNodeFactory;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.JsonNodeFactory;
 import com.google.common.base.MoreObjects;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;

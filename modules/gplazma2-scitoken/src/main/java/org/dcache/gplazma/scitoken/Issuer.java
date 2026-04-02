@@ -20,7 +20,7 @@ package org.dcache.gplazma.scitoken;
 import static com.google.common.base.Preconditions.checkArgument;
 import static org.dcache.gplazma.util.Preconditions.checkAuthentication;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import com.google.common.collect.EvictingQueue;
 import com.google.common.collect.ImmutableSet;
 import diskCacheV111.util.FsPath;

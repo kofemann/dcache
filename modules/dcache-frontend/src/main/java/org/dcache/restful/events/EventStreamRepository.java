@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2018 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2018 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,7 +18,7 @@
  */
 package org.dcache.restful.events;
 
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.node.ObjectNode;
 import io.swagger.annotations.ApiModelProperty;
 import java.util.HashMap;
 import java.util.List;

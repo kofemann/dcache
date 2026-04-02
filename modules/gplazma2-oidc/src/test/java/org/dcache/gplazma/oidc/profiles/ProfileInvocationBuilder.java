@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2022 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2022 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -18,9 +18,9 @@
  */
 package org.dcache.gplazma.oidc.profiles;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.util.HashMap;
 import java.util.Map;
 import org.dcache.gplazma.AuthenticationException;
@@ -50,7 +50,7 @@ public class ProfileInvocationBuilder {
     public ProfileInvocationBuilder withClaim(String id, String json) {
         try {
             claims.put(id, mapper.readTree(json));
-        } catch (JsonProcessingException e) {
+        } catch (JacksonException e) {
             throw new RuntimeException("Bad claim value " + json + ": " + e);
         }
         return this;

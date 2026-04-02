@@ -2,8 +2,7 @@ package org.dcache.telemetry;
 
 import static java.time.temporal.ChronoUnit.SECONDS;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import dmg.cells.nucleus.CellCommandListener;
 import dmg.cells.nucleus.CellLifeCycleAware;
 import java.io.IOException;
@@ -23,6 +22,7 @@ import org.dcache.util.FireAndForgetTask;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Required;
+import tools.jackson.databind.exc.JsonNodeException;
 
 /**
  * This is a cell, that collects information about the dCache-instance and sends it once per hour to
@@ -126,7 +126,7 @@ public class SendData implements CellCommandListener, CellLifeCycleAware {
                     "are being sent. The unit for storage is byte.")
     public class PrintTelemetryCommand implements Callable<String> {
         @Override
-        public String call() throws JsonProcessingException {
+        public String call() throws JsonNodeException {
             ObjectMapper jackson = new ObjectMapper();
             return jackson.writerWithDefaultPrettyPrinter().writeValueAsString(instanceData);
         }

@@ -1,7 +1,7 @@
 /*
  * dCache - http://www.dcache.org/
  *
- * Copyright (C) 2018 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2018 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -24,10 +24,10 @@ import static org.dcache.namespace.FileAttribute.PNFSID;
 import static org.dcache.namespace.FileAttribute.TYPE;
 import static org.dcache.restful.util.transfers.Json.readFromJar;
 
-import com.fasterxml.jackson.databind.JsonMappingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
+import tools.jackson.databind.exc.JsonNodeException;
+import tools.jackson.databind.node.ObjectNode;
 import com.google.common.collect.MultimapBuilder;
 import com.google.common.collect.Multimaps;
 import com.google.common.collect.SetMultimap;
@@ -44,7 +44,6 @@ import dmg.cells.nucleus.CellIdentityAware;
 import dmg.cells.nucleus.CellLifeCycleAware;
 import dmg.cells.nucleus.CellMessageReceiver;
 import dmg.cells.nucleus.NoRouteToCellException;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -469,12 +468,10 @@ public class Inotify implements EventStream, CellMessageReceiver,
                   select(context.channelId(), receiver, selector));
         } catch (PermissionDeniedCacheException e) {
             return SelectionResult.permissionDenied(e.getMessage());
-        } catch (JsonMappingException e) {
+        } catch (JsonNodeException e) {
             int index = e.getMessage().indexOf('\n');
             String msg = index == -1 ? e.getMessage() : e.getMessage().substring(0, index);
             return SelectionResult.badSelector("Bad selector value: %s", msg);
-        } catch (IOException e) {
-            return SelectionResult.badSelector("Unable to process selector: " + e.getMessage());
         }
     }
 

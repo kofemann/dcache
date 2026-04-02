@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2022 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2022 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,9 +17,9 @@
  */
 package org.dcache.gplazma.oidc.jwt;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.core.JacksonException;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -236,7 +236,7 @@ public class OfflineJwtVerificationTest {
         verification.extract(jwt);
     }
 
-    private JsonNode jsonString(String json) throws JsonProcessingException {
+    private JsonNode jsonString(String json) throws JacksonException {
         return mapper.readTree("\"" + json + "\"");
     }
 

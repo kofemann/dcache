@@ -17,7 +17,7 @@
  */
 package org.dcache.gplazma.oidc;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;

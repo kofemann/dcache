@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2024 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2024 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,13 +17,12 @@
  */
 package org.dcache.gplazma.oidc.helpers;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
-import com.fasterxml.jackson.databind.node.MissingNode;
-import com.fasterxml.jackson.databind.node.ValueNode;
-import java.io.IOException;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonToken;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.node.JsonNodeType;
+import tools.jackson.databind.node.ValueNode;
 import java.util.Objects;
 
 /**
@@ -44,10 +43,8 @@ public class ReasonBearingMissingNode extends ValueNode {
     }
 
     @Override
-    public final void serialize(JsonGenerator g, SerializerProvider provider)
-        throws IOException
-    {
-        g.writeNull();
+    public void serialize(JsonGenerator jgen, SerializationContext ctxt) throws JacksonException {
+        jgen.writeNull();jgen.writeNull();
     }
 
     @Override
@@ -71,11 +68,6 @@ public class ReasonBearingMissingNode extends ValueNode {
     }
 
     @Override
-    public String asText() {
-        return "";
-    }
-
-    @Override
     public String toString() {
         return "";
     }
@@ -85,6 +77,10 @@ public class ReasonBearingMissingNode extends ValueNode {
         return "";
     }
 
+    @Override
+    protected String _valueDesc() {
+        return "";
+    }
 
     @Override
     public String asText(String defaultValue) {

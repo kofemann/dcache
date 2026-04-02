@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2022 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2022 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,9 +17,8 @@
  */
 package org.dcache.gplazma.oidc;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import diskCacheV111.util.FsPath;
 import java.net.URI;
 import java.security.Principal;
@@ -51,6 +50,7 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.ArgumentMatchers;
 import org.mockito.BDDMockito;
+import tools.jackson.databind.exc.JsonNodeException;
 
 import static com.google.common.base.Preconditions.checkState;
 import static java.time.temporal.ChronoUnit.MINUTES;
@@ -913,7 +913,7 @@ public class OidcAuthPluginTest {
                 JsonNode json = mapper.readTree(jsonValue);
                 claims.put(key, json);
                 return this;
-            } catch (JsonProcessingException e) {
+            } catch (JsonNodeException e) {
                 throw new RuntimeException(e);
             }
         }

@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2019 - 2020 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2019 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,16 +17,24 @@
  */
 package org.dcache.gplazma.scitoken;
 
-import com.fasterxml.jackson.core.JsonGenerator;
-import com.fasterxml.jackson.core.JsonParser;
-import com.fasterxml.jackson.core.JsonPointer;
-import com.fasterxml.jackson.core.JsonToken;
-import com.fasterxml.jackson.core.ObjectCodec;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.SerializerProvider;
-import com.fasterxml.jackson.databind.jsontype.TypeSerializer;
-import com.fasterxml.jackson.databind.node.JsonNodeType;
-import java.io.IOException;
+import java.math.BigDecimal;
+import java.math.BigInteger;
+import java.util.Optional;
+import java.util.OptionalDouble;
+import java.util.OptionalInt;
+import java.util.OptionalLong;
+import tools.jackson.core.JacksonException;
+import tools.jackson.core.JsonGenerator;
+import tools.jackson.core.JsonParser;
+import tools.jackson.core.JsonPointer;
+import tools.jackson.core.JsonToken;
+import tools.jackson.core.ObjectReadContext;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.SerializationContext;
+import tools.jackson.databind.jsontype.TypeSerializer;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.JsonNodeType;
+import tools.jackson.databind.node.ObjectNode;
 import java.util.List;
 
 /**
@@ -57,11 +65,6 @@ public abstract class ForwardingJsonNode extends JsonNode {
     }
 
     @Override
-    public String asText() {
-        return delegate().asText();
-    }
-
-    @Override
     public JsonNode findValue(String fieldName) {
         return delegate().findValue(fieldName);
     }
@@ -82,8 +85,8 @@ public abstract class ForwardingJsonNode extends JsonNode {
     }
 
     @Override
-    public List<String> findValuesAsText(String fieldName, List<String> foundSoFar) {
-        return delegate().findValuesAsText(fieldName, foundSoFar);
+    public List<String> findValuesAsString(String fieldName, List<String> foundSoFar) {
+        return delegate().findValuesAsString(fieldName, foundSoFar);
     }
 
     @Override
@@ -102,8 +105,8 @@ public abstract class ForwardingJsonNode extends JsonNode {
     }
 
     @Override
-    public JsonParser traverse() {
-        return delegate().traverse();
+    public JsonParser traverse(ObjectReadContext objectReadContext) {
+        return delegate().traverse(objectReadContext);
     }
 
     @Override
@@ -112,7 +115,7 @@ public abstract class ForwardingJsonNode extends JsonNode {
     }
 
     @Override
-    public <T extends JsonNode> T deepCopy() {
+    public JsonNode deepCopy() {
         return delegate().deepCopy();
     }
 
@@ -132,19 +135,329 @@ public abstract class ForwardingJsonNode extends JsonNode {
     }
 
     @Override
-    public JsonParser traverse(ObjectCodec objectCodec) {
-        return delegate().traverse(objectCodec);
+    public void serialize(JsonGenerator jsonGenerator, SerializationContext serializationContext)
+          throws JacksonException {
+        delegate().serialize(jsonGenerator, serializationContext);
     }
 
     @Override
-    public void serialize(JsonGenerator jsonGenerator, SerializerProvider serializerProvider)
-          throws IOException {
-        delegate().serialize(jsonGenerator, serializerProvider);
+    public void serializeWithType(JsonGenerator jsonGenerator, SerializationContext serializers,
+          TypeSerializer typeSerializer) throws JacksonException {
+        delegate().serializeWithType(jsonGenerator, serializers, typeSerializer);
     }
 
     @Override
-    public void serializeWithType(JsonGenerator jsonGenerator,
-          SerializerProvider serializerProvider, TypeSerializer typeSerializer) throws IOException {
-        delegate().serializeWithType(jsonGenerator, serializerProvider, typeSerializer);
+    public String stringValue() {
+        return delegate().stringValue();
+    }
+
+    @Override
+    public String stringValue(String defaultValue) {
+        return delegate().stringValue(defaultValue);
+    }
+
+    @Override
+    public Optional<String> stringValueOpt() {
+        return delegate().stringValueOpt();
+    }
+
+    @Override
+    public String asString() {
+        return delegate().asString();
+    }
+
+    @Override
+    public String asString(String defaultValue) {
+        return delegate().asString(defaultValue);
+    }
+
+    @Override
+    public Optional<String> asStringOpt() {
+        return delegate().asStringOpt();
+    }
+
+    @Override
+    public byte[] binaryValue() {
+        return delegate().binaryValue();
+    }
+
+    @Override
+    public boolean booleanValue() {
+        return delegate().booleanValue();
+    }
+
+    @Override
+    public boolean booleanValue(boolean defaultValue) {
+        return delegate().booleanValue(defaultValue);
+    }
+
+    @Override
+    public Optional<Boolean> booleanValueOpt() {
+        return delegate().booleanValueOpt();
+    }
+
+    @Override
+    public boolean asBoolean() {
+        return delegate().asBoolean();
+    }
+
+    @Override
+    public boolean asBoolean(boolean defaultValue) {
+        return delegate().asBoolean(defaultValue);
+    }
+
+    @Override
+    public Optional<Boolean> asBooleanOpt() {
+        return delegate().asBooleanOpt();
+    }
+
+    @Override
+    public Number numberValue() {
+        return delegate().numberValue();
+    }
+
+    @Override
+    public short shortValue() {
+        return delegate().shortValue();
+    }
+
+    @Override
+    public short shortValue(short defaultValue) {
+        return delegate().shortValue(defaultValue);
+    }
+
+    @Override
+    public Optional<Short> shortValueOpt() {
+        return delegate().shortValueOpt();
+    }
+
+    @Override
+    public short asShort() {
+        return delegate().asShort();
+    }
+
+    @Override
+    public short asShort(short defaultValue) {
+        return delegate().asShort(defaultValue);
+    }
+
+    @Override
+    public Optional<Short> asShortOpt() {
+        return delegate().asShortOpt();
+    }
+
+    @Override
+    public int intValue() {
+        return delegate().intValue();
+    }
+
+    @Override
+    public int intValue(int defaultValue) {
+        return delegate().intValue(defaultValue);
+    }
+
+    @Override
+    public OptionalInt intValueOpt() {
+        return delegate().intValueOpt();
+    }
+
+    @Override
+    public int asInt() {
+        return delegate().asInt();
+    }
+
+    @Override
+    public int asInt(int defaultValue) {
+        return delegate().asInt(defaultValue);
+    }
+
+    @Override
+    public OptionalInt asIntOpt() {
+        return delegate().asIntOpt();
+    }
+
+    @Override
+    public long longValue() {
+        return delegate().longValue();
+    }
+
+    @Override
+    public long longValue(long defaultValue) {
+        return delegate().longValue(defaultValue);
+    }
+
+    @Override
+    public OptionalLong longValueOpt() {
+        return delegate().longValueOpt();
+    }
+
+    @Override
+    public long asLong() {
+        return delegate().asLong();
+    }
+
+    @Override
+    public long asLong(long defaultValue) {
+        return delegate().asLong(defaultValue);
+    }
+
+    @Override
+    public OptionalLong asLongOpt() {
+        return delegate().asLongOpt();
+    }
+
+    @Override
+    public BigInteger bigIntegerValue() {
+        return delegate().bigIntegerValue();
+    }
+
+    @Override
+    public BigInteger bigIntegerValue(BigInteger defaultValue) {
+        return delegate().bigIntegerValue(defaultValue);
+    }
+
+    @Override
+    public Optional<BigInteger> bigIntegerValueOpt() {
+        return delegate().bigIntegerValueOpt();
+    }
+
+    @Override
+    public BigInteger asBigInteger() {
+        return delegate().asBigInteger();
+    }
+
+    @Override
+    public BigInteger asBigInteger(BigInteger defaultValue) {
+        return delegate().asBigInteger(defaultValue);
+    }
+
+    @Override
+    public Optional<BigInteger> asBigIntegerOpt() {
+        return delegate().asBigIntegerOpt();
+    }
+
+    @Override
+    public float floatValue() {
+        return delegate().floatValue();
+    }
+
+    @Override
+    public float floatValue(float defaultValue) {
+        return delegate().floatValue(defaultValue);
+    }
+
+    @Override
+    public Optional<Float> floatValueOpt() {
+        return delegate().floatValueOpt();
+    }
+
+    @Override
+    public float asFloat() {
+        return delegate().asFloat();
+    }
+
+    @Override
+    public float asFloat(float defaultValue) {
+        return delegate().asFloat(defaultValue);
+    }
+
+    @Override
+    public Optional<Float> asFloatOpt() {
+        return delegate().asFloatOpt();
+    }
+
+    @Override
+    public double doubleValue() {
+        return delegate().doubleValue();
+    }
+
+    @Override
+    public double doubleValue(double defaultValue) {
+        return delegate().doubleValue(defaultValue);
+    }
+
+    @Override
+    public OptionalDouble doubleValueOpt() {
+        return delegate().doubleValueOpt();
+    }
+
+    @Override
+    public double asDouble() {
+        return delegate().asDouble();
+    }
+
+    @Override
+    public double asDouble(double defaultValue) {
+        return delegate().asDouble(defaultValue);
+    }
+
+    @Override
+    public OptionalDouble asDoubleOpt() {
+        return delegate().asDoubleOpt();
+    }
+
+    @Override
+    public BigDecimal decimalValue() {
+        return delegate().decimalValue();
+    }
+
+    @Override
+    public BigDecimal decimalValue(BigDecimal defaultValue) {
+        return delegate().decimalValue(defaultValue);
+    }
+
+    @Override
+    public Optional<BigDecimal> decimalValueOpt() {
+        return delegate().decimalValueOpt();
+    }
+
+    @Override
+    public BigDecimal asDecimal() {
+        return delegate().asDecimal();
+    }
+
+    @Override
+    public BigDecimal asDecimal(BigDecimal defaultValue) {
+        return delegate().asDecimal(defaultValue);
+    }
+
+    @Override
+    public Optional<BigDecimal> asDecimalOpt() {
+        return delegate().asDecimalOpt();
+    }
+
+    @Override
+    public JsonNode required(String propertyName) {
+        return delegate().required(propertyName);
+    }
+
+    @Override
+    public JsonNode required(int index) {
+        return delegate().required(index);
+    }
+
+    @Override
+    public boolean isEmbeddedValue() {
+        return delegate().isEmbeddedValue();
+    }
+
+    @Override
+    public ArrayNode asArray() {
+        return delegate().asArray();
+    }
+
+    @Override
+    public Optional<ArrayNode> asArrayOpt() {
+        return delegate().asArrayOpt();
+    }
+
+    @Override
+    public ObjectNode asObject() {
+        return delegate().asObject();
+    }
+
+    @Override
+    public Optional<ObjectNode> asObjectOpt() {
+        return delegate().asObjectOpt();
     }
 }

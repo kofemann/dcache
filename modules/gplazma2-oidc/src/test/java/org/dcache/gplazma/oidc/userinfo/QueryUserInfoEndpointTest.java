@@ -1,6 +1,6 @@
 /* dCache - http://www.dcache.org/
  *
- * Copyright (C) 2022 Deutsches Elektronen-Synchrotron
+ * Copyright (C) 2022 - 2026 Deutsches Elektronen-Synchrotron
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as
@@ -17,9 +17,8 @@
  */
 package org.dcache.gplazma.oidc.userinfo;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Collections;
@@ -41,6 +40,7 @@ import org.dcache.gplazma.oidc.helpers.JsonHttpClient;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import tools.jackson.databind.exc.JsonNodeException;
 
 import static org.apache.http.HttpStatus.SC_INTERNAL_SERVER_ERROR;
 import static org.apache.http.HttpStatus.SC_NOT_FOUND;
@@ -383,23 +383,23 @@ public class QueryUserInfoEndpointTest {
         return jwtFactory.aJwt();
     }
 
-    private JsonNode jsonOf(String json) throws JsonProcessingException {
+    private JsonNode jsonOf(String json) throws JsonNodeException {
         return mapper.readTree(json);
     }
 
-    private JsonNode jsonNull() throws JsonProcessingException {
+    private JsonNode jsonNull() throws JsonNodeException {
         return jsonOf("null");
     }
 
-    private JsonNode jsonNumber(int value) throws JsonProcessingException {
+    private JsonNode jsonNumber(int value) throws JsonNodeException {
         return jsonOf(Integer.toString(value));
     }
 
-    private JsonNode jsonString(String json) throws JsonProcessingException {
+    private JsonNode jsonString(String json) throws JsonNodeException {
         return jsonOf("\"" + json + "\"");
     }
 
-    private JsonNode jsonStringArray(String... json) throws JsonProcessingException {
+    private JsonNode jsonStringArray(String... json) throws JsonNodeException {
         return jsonOf(Stream.of(json).collect(Collectors.joining("\", \"", "[\"", "\"]")));
     }
 }

@@ -17,7 +17,7 @@
  */
 package org.dcache.gplazma.oidc.profiles;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import tools.jackson.databind.JsonNode;
 import java.security.Principal;
 import java.util.HashSet;
 import java.util.Map;
