@@ -17,7 +17,6 @@
  */
 package org.dcache.webdav.macaroons;
 
-import static com.google.common.base.Preconditions.checkArgument;
 import static com.google.common.base.Strings.emptyToNull;
 import static java.lang.Boolean.TRUE;
 import static javax.servlet.http.HttpServletResponse.SC_BAD_REQUEST;
@@ -49,6 +48,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import javax.security.auth.Subject;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -244,7 +244,7 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
         FsPath desiredPath = _pathMapper.asDcachePath(request, target);
 
         FsPath userRoot = FsPath.ROOT;
-        FsPath prefixRestrictionPath = null;
+        List<ImmutableSet<FsPath>> prefixRestrictions = new ArrayList<>();
         for (LoginAttribute attr : AuthenticationHandler.getLoginAttributes(request)) {
             if (attr instanceof HomeDirectory) {
                 context.setHome(FsPath.ROOT.resolve(((HomeDirectory) attr).getHome()));
@@ -255,16 +255,7 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
             } else if (attr instanceof DenyActivityRestriction) {
                 context.removeActivities(((DenyActivityRestriction) attr).getDenied());
             } else if (attr instanceof PrefixRestriction) {
-                ImmutableSet<FsPath> paths = ((PrefixRestriction) attr).getPrefixes();
-                if (target.equals("/")) {
-                    checkArgument(paths.size() == 1,
-                          "Cannot serialise with multiple path restrictions");
-                    prefixRestrictionPath = paths.iterator().next();
-                } else {
-                    prefixRestrictionPath = paths.stream().filter(desiredPath::hasPrefix).findFirst()
-                            .orElseThrow(() -> new ErrorResponseException(SC_BAD_REQUEST,
-                                    "Bad request path: Desired path not within existing path"));
-                }
+                prefixRestrictions.add(((PrefixRestriction) attr).getPrefixes());
             } else if (attr instanceof Restriction) {
                 throw new ErrorResponseException(SC_BAD_REQUEST,
                       "Cannot serialise restriction " + attr.getClass().getSimpleName());
@@ -288,15 +279,56 @@ public class MacaroonRequestHandler extends AbstractHandler implements CellIdent
 
         context.setRoot(effectiveRoot);
 
-        FsPath path = prefixRestrictionPath != null
-                ? prefixRestrictionPath
-                : target.equals("/") ? null : desiredPath;
+        FsPath path;
+        if (target.equals("/")) {
+            path = null;
+            for (Set<FsPath> prefixes : prefixRestrictions) {
+                FsPath prefix = prefixWithinRoot(prefixes, effectiveRoot);
+                if (prefix != null) {
+                    if (path != null && !path.equals(prefix)) {
+                        throw new ErrorResponseException(SC_BAD_REQUEST,
+                              "Cannot serialise with multiple path restrictions");
+                    }
+                    path = prefix;
+                }
+            }
+        } else {
+            for (Set<FsPath> prefixes : prefixRestrictions) {
+                if (prefixes.stream().noneMatch(desiredPath::hasPrefix)) {
+                    throw new ErrorResponseException(SC_BAD_REQUEST,
+                          "Bad request path: Desired path not within existing path");
+                }
+            }
+            path = desiredPath;
+        }
 
         if (path != null) {
             context.setPath(path.stripPrefix(effectiveRoot));
         }
 
         return context;
+    }
+
+    /**
+     * Select the prefix of a PrefixRestriction that must become the "path" caveat of a macaroon
+     * with the given root.  Prefixes outside the root, like the upload directory added by gPlazma,
+     * cannot be expressed as a path relative to the root and are ignored; gPlazma adds them again
+     * when the macaroon is used.
+     *
+     * @return the prefix, or null if the restriction allows the whole root.
+     */
+    private static FsPath prefixWithinRoot(Set<FsPath> prefixes, FsPath root)
+          throws ErrorResponseException {
+        if (prefixes.stream().anyMatch(root::hasPrefix)) {
+            return null;
+        }
+        List<FsPath> withinRoot = prefixes.stream().filter(p -> p.hasPrefix(root)).toList();
+        if (withinRoot.size() != 1) {
+            throw new ErrorResponseException(SC_BAD_REQUEST, withinRoot.isEmpty()
+                  ? "Path restrictions do not allow access below root"
+                  : "Cannot serialise with multiple path restrictions");
+        }
+        return withinRoot.get(0);
     }
 
 
